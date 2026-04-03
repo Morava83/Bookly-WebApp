@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bookly - McGill Booking Application</title>
+    <title>Bookly - Create Account</title>
     <style>
         * {
             box-sizing: border-box;
@@ -19,12 +19,6 @@
             max-width: 1120px;
             margin: 36px auto;
             padding: 0 18px;
-        }
-
-        .student-info {
-            margin-bottom: 16px;
-            font-size: 14px;
-            color: #444;
         }
 
         .card {
@@ -74,10 +68,7 @@
 
         .contact-item {
             margin-bottom: 14px;
-        }
-
-        .contact-item a {
-            color: #222;
+            line-height: 1.6;
         }
 
         .name-row {
@@ -98,24 +89,16 @@
         }
 
         input,
-        select,
-        textarea,
-        button {
+        button,
+        a {
             width: 100%;
             font: inherit;
         }
 
-        input,
-        select,
-        textarea {
+        input {
             padding: 12px 14px;
             border: 1px solid #9f9f9f;
             background-color: #fff;
-        }
-
-        textarea {
-            min-height: 180px;
-            resize: vertical;
         }
 
         .required-note {
@@ -130,45 +113,28 @@
             color: #444;
         }
 
-        .section-heading {
-            margin-top: 30px;
-        }
-
-        .info-list {
-            margin: 0 0 0 18px;
-            padding: 0;
-            line-height: 1.6;
-            color: #444;
-        }
-
-        .info-list li {
-            margin-bottom: 10px;
-        }
-
         .helper-text {
             margin-top: 12px;
             font-size: 13px;
             color: #666;
         }
 
-        .secondary-button {
+        .success-banner {
+            display: none;
+            margin-top: 18px;
+            padding: 14px 16px;
+            border: 1px solid #8fc58f;
+            background-color: #e7f6e7;
+            color: #235c23;
+            line-height: 1.5;
+        }
+
+        .success-banner.show {
             display: block;
-            margin-top: 12px;
-            padding: 13px 16px;
-            border: 1px solid #111;
-            background-color: #fff;
-            color: #111;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            text-align: center;
-            text-decoration: none;
         }
 
-        .secondary-button:hover {
-            background-color: #f3f3f3;
-        }
-
-        button {
+        button,
+        .return-button {
             margin-top: 10px;
             padding: 14px 16px;
             border: none;
@@ -177,10 +143,22 @@
             font-weight: bold;
             letter-spacing: 0.5px;
             cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
         }
 
-        button:hover {
+        button:hover,
+        .return-button:hover {
             background-color: #222;
+        }
+
+        .return-button {
+            display: none;
+        }
+
+        .return-button.show {
+            display: block;
         }
 
         @media (max-width: 800px) {
@@ -214,63 +192,82 @@
 
                 <div class="intro">
                     <p>
-                        Bookly is a McGill booking application for office hours, meeting requests,
-                        and group scheduling.
+                        Create your Bookly account to reserve office hours and manage bookings with
+                        McGill professors and teaching assistants.
                     </p>
                     <p>
-                        Students can reserve appointments with professors and teaching assistants
-                        without relying on long email chains.
+                        This registration page keeps the same simple layout as the login screen and is
+                        meant as a static preview for the project.
                     </p>
                 </div>
 
-                <div class="contact-item"><strong>Owners:</strong> @mcgill.ca accounts create, activate, and manage booking slots.</div>
-                <div class="contact-item"><strong>Users:</strong> @mail.mcgill.ca and @mcgill.ca accounts can request and reserve active slots.</div>
-                <div class="contact-item"><strong>Booking types:</strong> request a meeting, group meeting scheduling, and recurring office hours.</div>
+                <div class="contact-item"><strong>McGill only:</strong> use a valid @mcgill.ca or @mail.mcgill.ca address.</div>
+                <div class="contact-item"><strong>Owners:</strong> @mcgill.ca accounts can create and manage booking slots.</div>
+                <div class="contact-item"><strong>Users:</strong> all registered McGill accounts can reserve active appointments.</div>
             </section>
 
             <section class="right-panel">
-                <h2>Log in</h2>
+                <h2>Create account</h2>
                 <p class="panel-text">
-                    Sign in with your McGill email to open your dashboard, review appointments,
-                    and book available office hours.
+                    Fill in your details to create a Bookly account. After submission, you can return
+                    to the login page and sign in.
                 </p>
 
-                <form id="loginForm" action="#" method="post" novalidate>
+                <form id="createAccountForm" action="#" method="post" novalidate>
                     <div class="required-note">Fields marked with * are required.</div>
 
-                    <div class="field-group">
-                        <label for="email">*Email</label>
-                        <input type="email" id="email" name="email" placeholder="name@mcgill.ca or name@mail.mcgill.ca" autocomplete="email" required data-label="Email">
+                    <div class="name-row">
+                        <div class="field-group">
+                            <label for="firstName">*First Name</label>
+                            <input type="text" id="firstName" name="firstName" placeholder="First Name" required data-label="First Name">
+                        </div>
+
+                        <div class="field-group">
+                            <label for="lastName">*Last Name</label>
+                            <input type="text" id="lastName" name="lastName" placeholder="Last Name" required data-label="Last Name">
+                        </div>
                     </div>
 
                     <div class="field-group">
-                        <label for="password">*Password</label>
-                        <input type="password" id="password" name="password" placeholder="Password" autocomplete="current-password" required data-label="Password">
+                        <label for="createEmail">*Email</label>
+                        <input type="email" id="createEmail" name="createEmail" placeholder="name@mcgill.ca or name@mail.mcgill.ca" autocomplete="email" required data-label="Email">
                     </div>
 
-                    <button type="submit" id="loginButton">Log In</button>
-                    <a href="CreateAccountPage.html" class="secondary-button">Create Account</a>
-                    <div class="helper-text" id="loginStatus">
-                        Landing page preview only. Authentication is not connected in this file.
+                    <div class="field-group">
+                        <label for="createPassword">*Password</label>
+                        <input type="password" id="createPassword" name="createPassword" placeholder="Password" autocomplete="new-password" required data-label="Password">
+                    </div>
+
+                    <div class="field-group">
+                        <label for="confirmPassword">*Confirm Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" autocomplete="new-password" required data-label="Confirm Password">
+                    </div>
+
+                    <button type="submit" id="createAccountButton">Create Account</button>
+                    <div class="helper-text" id="createAccountStatus">
+                        Account creation is displayed as a front-end preview only.
                     </div>
                 </form>
 
-                <h2 class="section-heading">How Bookly works</h2>
-                <ul class="info-list">
-                    <li>Only McGill email addresses can register for the application.</li>
-                    <li>Owners use @mcgill.ca accounts to create private slots, activate public slots, and share invitation URLs.</li>
-                    <li>After login, users can see appointments, book open slots, cancel bookings, and email slot owners through mailto links.</li>
-                </ul>
+                <div class="success-banner" id="successBanner">
+                    Account created successfully. You can return to the login page and sign in.
+                </div>
+                <a href="Landing&LoginPage.html" class="return-button" id="returnToLogin">Return to Login</a>
             </section>
         </div>
     </div>
 
     <script>
         (function () {
-            var form = document.getElementById('loginForm');
+            var form = document.getElementById('createAccountForm');
             var requiredFields = form.querySelectorAll('[required]');
-            var emailField = document.getElementById('email');
-            var statusNote = document.getElementById('loginStatus');
+            var emailField = document.getElementById('createEmail');
+            var passwordField = document.getElementById('createPassword');
+            var confirmPasswordField = document.getElementById('confirmPassword');
+            var successBanner = document.getElementById('successBanner');
+            var returnButton = document.getElementById('returnToLogin');
+            var statusNote = document.getElementById('createAccountStatus');
+            var submitButton = document.getElementById('createAccountButton');
 
             form.addEventListener('submit', function (event) {
                 var missingFields = [];
@@ -305,6 +302,15 @@
                     }
                 }
 
+                if (passwordField.value.trim() !== '' &&
+                    confirmPasswordField.value.trim() !== '' &&
+                    passwordField.value !== confirmPasswordField.value) {
+                    missingFields.push('Matching Passwords');
+                    if (!firstProblemField) {
+                        firstProblemField = confirmPasswordField;
+                    }
+                }
+
                 if (missingFields.length > 0) {
                     event.preventDefault();
                     alert(
@@ -319,7 +325,11 @@
                 }
 
                 event.preventDefault();
-                statusNote.textContent = 'Landing page only: this preview does not include a working login yet.';
+                successBanner.classList.add('show');
+                returnButton.classList.add('show');
+                statusNote.textContent = 'Preview only: the account is not stored in a backend yet.';
+                submitButton.disabled = true;
+                submitButton.textContent = 'Account Created';
             });
         })();
     </script>
