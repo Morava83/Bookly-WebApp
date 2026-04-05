@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookly - Homepage</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f2f2f2;
+            color: #222;
+        }
+
+        .page {
+            max-width: 1280px;
+            margin: 36px auto;
+            padding: 0 18px;
+        }
+
+        .card {
+            display: flex;
+            flex-wrap: wrap;
+            background-color: #ffffff;
+            border: 1px solid #d9d9d9;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .left-panel,
+        .right-panel {
+            padding: 32px;
+        }
+
+        .left-panel {
+            flex: 1 1 760px;
+            min-width: 320px;
+            background-color: #fafafa;
+            border-right: 1px solid #ececec;
+        }
+
+        .right-panel {
+            flex: 1 1 320px;
+            min-width: 280px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 50px;
+            line-height: 1;
+        }
+
+        h2 {
+            margin: 0 0 12px;
+            font-size: 26px;
+        }
+
+        .intro {
+            margin: 0 0 26px;
+            max-width: 620px;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .month-title {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            flex: 1;
+        }
+
+        .nav-button {
+            width: 52px;
+            padding: 10px 0;
+            border: 1px solid #8d8d8d;
+            background-color: #fff;
+            color: #111;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .nav-button:hover {
+            background-color: #f3f3f3;
+        }
+
+        .nav-button:disabled {
+            cursor: default;
+            color: #999;
+            background-color: #f5f5f5;
+        }
+
+        .calendar-header,
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .calendar-header {
+            margin-bottom: 8px;
+        }
+
+        .weekday {
+            padding: 10px 8px;
+            border: 1px solid #dddddd;
+            background-color: #f0f0f0;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .calendar-grid {
+            margin-bottom: 22px;
+        }
+
+        .blank-day,
+        .day-button {
+            min-height: 74px;
+        }
+
+        .blank-day {
+            border: 1px solid transparent;
+        }
+
+        .day-button {
+            width: 100%;
+            padding: 10px 8px;
+            border: 1px solid #bdbdbd;
+            background-color: #fff;
+            color: #222;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .day-button:hover {
+            background-color: #f3f3f3;
+        }
+
+        .day-button.selected {
+            border-color: #111;
+            background-color: #ededed;
+        }
+
+        .day-button:disabled {
+            color: #999;
+            background-color: #f6f6f6;
+            cursor: default;
+        }
+
+        .day-number {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .day-text {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .selection-card,
+        .slots-card,
+        .status-card {
+            border: 1px solid #d6d6d6;
+            background-color: #fff;
+            padding: 18px;
+        }
+
+        .selection-card {
+            margin-bottom: 18px;
+        }
+
+        .selection-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .selection-value {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.5;
+        }
+
+        .slots-card-title {
+            margin: 0 0 14px;
+            font-size: 18px;
+        }
+
+        .slots-note {
+            margin: 0 0 14px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            max-height: 360px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .slot-button {
+            padding: 12px 10px;
+            border: 1px solid #a9a9a9;
+            background-color: #fff;
+            color: #222;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .slot-button:hover {
+            background-color: #f3f3f3;
+        }
+
+        .slot-button.selected {
+            border-color: #111;
+            background-color: #ededed;
+            font-weight: bold;
+        }
+
+        .book-area {
+            display: none;
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .book-area.show {
+            display: block;
+        }
+
+        .book-button {
+            width: 100%;
+            padding: 14px 16px;
+            border: none;
+            background-color: #111;
+            color: #fff;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+        }
+
+        .book-button:hover {
+            background-color: #222;
+        }
+
+        .booking-note {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border: 1px solid #93c293;
+            background-color: #e8f5e8;
+            color: #245824;
+            line-height: 1.5;
+        }
+
+        .booking-note.show {
+            display: block;
+        }
+
+        .panel-text {
+            margin: 0 0 22px;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .status-card {
+            display: none;
+            margin-bottom: 14px;
+        }
+
+        .status-card.show {
+            display: block;
+        }
+
+        .status-card-title {
+            margin: 0 0 14px;
+            font-size: 18px;
+        }
+
+        .person-card {
+            padding: 14px 0;
+            border-top: 1px solid #ececec;
+        }
+
+        .person-card:first-of-type {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .person-name {
+            margin-bottom: 8px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #333;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #2f9b2f;
+            flex: 0 0 12px;
+        }
+
+        .side-note {
+            margin-top: 18px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 860px) {
+            .left-panel {
+                border-right: none;
+                border-bottom: 1px solid #ececec;
+            }
+
+            .toolbar {
+                flex-wrap: wrap;
+            }
+
+            .month-title {
+                order: -1;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .left-panel,
+            .right-panel {
+                padding: 22px;
+            }
+
+            h1 {
+                font-size: 40px;
+            }
+
+            .calendar-header,
+            .calendar-grid {
+                gap: 6px;
+            }
+
+            .weekday {
+                padding: 8px 4px;
+                font-size: 12px;
+            }
+
+            .day-button {
+                min-height: 68px;
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="card">
+            <section class="left-panel">
+                <h1>Bookly</h1>
+                <p class="intro">
+                    Select a day in the current booking window, choose a 15-minute time slot between
+                    7:00 AM and 7:00 PM, and then book the appointment. One month is shown at a time,
+                    with access to the current month plus the next 11 months.
+                </p>
+
+                <div class="toolbar">
+                    <button type="button" class="nav-button" id="prevMonthButton" aria-label="Previous month">&lt;</button>
+                    <div class="month-title" id="monthTitle">Month Year</div>
+                    <button type="button" class="nav-button" id="nextMonthButton" aria-label="Next month">&gt;</button>
+                </div>
+
+                <div class="calendar-header" id="calendarHeader"></div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+
+                <div class="selection-card">
+                    <div class="selection-label">Selected booking slot</div>
+                    <div class="selection-value" id="selectedSlotText">Choose a date and a 15-minute time slot.</div>
+                </div>
+
+                <div class="slots-card">
+                    <h2 class="slots-card-title">Time slots</h2>
+                    <p class="slots-note" id="slotsNote">
+                        Select a date from the calendar to view 15-minute booking times.
+                    </p>
+                    <div class="slots-grid" id="slotsGrid"></div>
+
+                    <div class="book-area" id="bookArea">
+                        <button type="button" class="book-button" id="bookButton">Book</button>
+                        <div class="booking-note" id="bookingNote"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="right-panel">
+                <h2>Availability</h2>
+                <p class="panel-text" id="availabilityIntro">
+                    After you select a 15-minute time slot, the availability for Prof Vybihal and
+                    TA Yawen will appear here.
+                </p>
+
+                <div class="status-card" id="availabilityCard">
+                    <h2 class="status-card-title">Selected appointment</h2>
+                    <div class="selection-value" id="availabilitySlotText"></div>
+
+                    <div class="person-card">
+                        <div class="person-name">Prof Vybihal</div>
+                        <div class="status-row">
+                            <span class="status-dot"></span>
+                            <span>Available</span>
+                        </div>
+                    </div>
+
+                    <div class="person-card">
+                        <div class="person-name">TA Yawen</div>
+                        <div class="status-row">
+                            <span class="status-dot"></span>
+                            <span>Available</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="side-note">
+                    This homepage is an interactive front-end preview. The calendar selection,
+                    availability display, and booking button are connected in the page script only.
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // Main State Variables
+            var today = new Date();
+            var startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            var monthOffset = 0;
+            var selectedDate = null;
+            var selectedSlot = null;
+
+            // 
+            var monthNames = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            var weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            var slotOptions = buildSlotOptions();
+
+            var monthTitle = document.getElementById('monthTitle');
+            var calendarHeader = document.getElementById('calendarHeader');
+            var calendarGrid = document.getElementById('calendarGrid');
+            var slotsGrid = document.getElementById('slotsGrid');
+            var slotsNote = document.getElementById('slotsNote');
+            var selectedSlotText = document.getElementById('selectedSlotText');
+            var availabilityIntro = document.getElementById('availabilityIntro');
+            var availabilityCard = document.getElementById('availabilityCard');
+            var availabilitySlotText = document.getElementById('availabilitySlotText');
+            var bookArea = document.getElementById('bookArea');
+            var bookButton = document.getElementById('bookButton');
+            var bookingNote = document.getElementById('bookingNote');
+            var prevMonthButton = document.getElementById('prevMonthButton');
+            var nextMonthButton = document.getElementById('nextMonthButton');
+
+            renderWeekdays();
+            renderCalendar();
+            renderSlots();
+            renderAvailability();
+
+            prevMonthButton.addEventListener('click', function () {
+                if (monthOffset === 0) {
+                    return;
+                }
+
+                monthOffset -= 1;
+                clearSelection();
+                renderCalendar();
+                renderSlots();
+                renderAvailability();
+            });
+
+            nextMonthButton.addEventListener('click', function () {
+                if (monthOffset === 11) {
+                    return;
+                }
+
+                monthOffset += 1;
+                clearSelection();
+                renderCalendar();
+                renderSlots();
+                renderAvailability();
+            });
+
+            bookButton.addEventListener('click', function () {
+                if (!selectedDate || !selectedSlot) {
+                    return;
+                }
+
+                bookingNote.textContent = 'Booking preview saved for ' + formatSelectedSlot() + '.';
+                bookingNote.classList.add('show');
+            });
+
+            function renderWeekdays() {
+                calendarHeader.innerHTML = '';
+
+                for (var i = 0; i < weekdayNames.length; i++) {
+                    var weekday = document.createElement('div');
+                    weekday.className = 'weekday';
+                    weekday.textContent = weekdayNames[i];
+                    calendarHeader.appendChild(weekday);
+                }
+            }
+
+            function renderCalendar() {
+                var visibleMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+                var year = visibleMonth.getFullYear();
+                var month = visibleMonth.getMonth();
+                var firstDayIndex = new Date(year, month, 1).getDay();
+                var daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                monthTitle.textContent = monthNames[month] + ' ' + year;
+                calendarGrid.innerHTML = '';
+                prevMonthButton.disabled = monthOffset === 0;
+                nextMonthButton.disabled = monthOffset === 11;
+
+                for (var blank = 0; blank < firstDayIndex; blank++) {
+                    var blankDay = document.createElement('div');
+                    blankDay.className = 'blank-day';
+                    calendarGrid.appendChild(blankDay);
+                }
+
+                for (var day = 1; day <= daysInMonth; day++) {
+                    var date = new Date(year, month, day);
+                    var isPastDate = date < startOfToday;
+                    var button = document.createElement('button');
+                    var dayText = document.createElement('span');
+                    var dayNumber = document.createElement('span');
+
+                    button.type = 'button';
+                    button.className = 'day-button';
+                    button.disabled = isPastDate;
+
+                    if (selectedDate && isSameDate(date, selectedDate)) {
+                        button.classList.add('selected');
+                    }
+
+                    dayNumber.className = 'day-number';
+                    dayNumber.textContent = day;
+                    dayText.className = 'day-text';
+                    dayText.textContent = isPastDate ? 'Unavailable' : 'Select day';
+
+                    button.appendChild(dayNumber);
+                    button.appendChild(dayText);
+
+                    if (!isPastDate) {
+                        button.addEventListener('click', handleDateSelection(date));
+                    }
+
+                    calendarGrid.appendChild(button);
+                }
+            }
+
+            function renderSlots() {
+                slotsGrid.innerHTML = '';
+                bookingNote.classList.remove('show');
+                bookingNote.textContent = '';
+
+                if (!selectedDate) {
+                    slotsNote.textContent = 'Select a date from the calendar to view 15-minute booking times.';
+                    selectedSlotText.textContent = 'Choose a date and a 15-minute time slot.';
+                    bookArea.classList.remove('show');
+                    return;
+                }
+
+                slotsNote.textContent = 'Available 15-minute booking times for ' + formatDateOnly(selectedDate) + '.';
+
+                for (var i = 0; i < slotOptions.length; i++) {
+                    var slotButton = document.createElement('button');
+                    slotButton.type = 'button';
+                    slotButton.className = 'slot-button';
+                    slotButton.textContent = slotOptions[i].label;
+
+                    if (selectedSlot && selectedSlot.value === slotOptions[i].value) {
+                        slotButton.classList.add('selected');
+                    }
+
+                    slotButton.addEventListener('click', handleSlotSelection(slotOptions[i]));
+                    slotsGrid.appendChild(slotButton);
+                }
+
+                if (selectedSlot) {
+                    selectedSlotText.textContent = formatSelectedSlot();
+                    bookArea.classList.add('show');
+                } else {
+                    selectedSlotText.textContent = formatDateOnly(selectedDate) + ' selected. Choose a 15-minute time slot.';
+                    bookArea.classList.remove('show');
+                }
+            }
+
+            function renderAvailability() {
+                if (!selectedDate || !selectedSlot) {
+                    availabilityIntro.style.display = 'block';
+                    availabilityCard.classList.remove('show');
+                    availabilitySlotText.textContent = '';
+                    return;
+                }
+
+                availabilityIntro.style.display = 'none';
+                availabilitySlotText.textContent = formatSelectedSlot();
+                availabilityCard.classList.add('show');
+            }
+
+            function clearSelection() {
+                selectedDate = null;
+                selectedSlot = null;
+            }
+
+            function handleDateSelection(date) {
+                return function () {
+                    selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    selectedSlot = null;
+                    renderCalendar();
+                    renderSlots();
+                    renderAvailability();
+                };
+            }
+
+            function handleSlotSelection(slot) {
+                return function () {
+                    selectedSlot = slot;
+                    renderSlots();
+                    renderAvailability();
+                };
+            }
+
+            function buildSlotOptions() {
+                var options = [];
+                var minutes = [0, 15, 30, 45];
+
+                for (var hour = 7; hour < 19; hour++) {
+                    for (var i = 0; i < minutes.length; i++) {
+                        options.push({
+                            value: padNumber(hour) + ':' + padNumber(minutes[i]),
+                            label: formatTime(hour, minutes[i])
+                        });
+                    }
+                }
+
+                return options;
+            }
+
+            function formatSelectedSlot() {
+                return formatDateOnly(selectedDate) + ' at ' + selectedSlot.label;
+            }
+
+            function formatDateOnly(date) {
+                return weekdayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+            }
+
+            function formatTime(hour, minute) {
+                var suffix = hour >= 12 ? 'PM' : 'AM';
+                var displayHour = hour % 12;
+
+                if (displayHour === 0) {
+                    displayHour = 12;
+                }
+
+                return displayHour + ':' + padNumber(minute) + ' ' + suffix;
+            }
+
+            function padNumber(value) {
+                return value < 10 ? '0' + value : String(value);
+            }
+
+            function isSameDate(firstDate, secondDate) {
+                return firstDate.getFullYear() === secondDate.getFullYear() &&
+                    firstDate.getMonth() === secondDate.getMonth() &&
+                    firstDate.getDate() === secondDate.getDate();
+            }
+        })();
+    </script>
+</body>
+</html>
