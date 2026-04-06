@@ -4,12 +4,12 @@ from datetime import datetime
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash 
 import uuid
-from backend.Type1 import type1_blueprint
+from Type1 import type1_blueprint
 import database.CreateTables
 from flask_socketio import SocketIO
 
-# from backend.Type2 import type2_blueprint
-# from backend.Type3 import type3_blueprint
+# from Type2 import type2_blueprint
+# from Type3 import type3_blueprint
 
 app = Flask(__name__)
 socketio = SocketIO(app)

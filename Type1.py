@@ -1,5 +1,4 @@
 from flask import Blueprint
-from ..app import socketio
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -38,6 +37,7 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
 # )
 
 def send_notification(msg):
+    from app import socketio
     socketio.emit('notification', {'message': msg})
 
 def request_meeting(msg):
