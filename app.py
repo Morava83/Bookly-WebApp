@@ -5,6 +5,7 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash 
 import uuid
 from backend.Type1 import type1_blueprint
+import database.CreateTables
 
 # from backend.Type2 import type2_blueprint
 # from backend.Type3 import type3_blueprint
@@ -14,63 +15,64 @@ app.secret_key = "dev-secret-key" # Change later
 
 # ======== Database =========
 
-Database = "bookly.db"
+# Database = "bookly.db"
 
-def get_db_connection():
-    conn = sqlite3.connect(Database)
-    conn.row_factory = sqlite3.Row
-    return conn
+# def get_db_connection():
+#     conn = sqlite3.connect(Database)
+#     conn.row_factory = sqlite3.Row
+#     return conn
 
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+# def init_db():
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            userID INTEGER PRIMARY KEY AUTOINCREMENT,
-            email VARCHAR(100) NOT NULL UNIQUE,
-            password VARCHAR(100) NOT NULL,
-            name VARCHAR(100) NOT NULL
-        )
-    ''')
+#     cursor.execute('''
+#         CREATE TABLE IF NOT EXISTS users (
+#             userID INTEGER PRIMARY KEY AUTOINCREMENT,
+#             email VARCHAR(100) NOT NULL UNIQUE,
+#             password VARCHAR(100) NOT NULL,
+#             name VARCHAR(100) NOT NULL
+#             role TEXT CHECK(role IN ('owner', 'user')) NOT NULL
+#         )
+#     ''')
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Owners (
-            ownerID INTEGER PRIMARY KEY AUTOINCREMENT,
-            email VARCHAR(100) NOT NULL,
-            password VARCHAR(100) NOT NULL,
-            name VARCHAR(100) NOT NULL
-        )
-    ''')
+#     cursor.execute('''
+#         CREATE TABLE IF NOT EXISTS Owners (
+#             ownerID INTEGER PRIMARY KEY AUTOINCREMENT,
+#             email VARCHAR(100) NOT NULL,
+#             password VARCHAR(100) NOT NULL,
+#             name VARCHAR(100) NOT NULL
+#         )
+#     ''')
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS TimeSlot (
-            slotID INTEGER PRIMARY KEY AUTOINCREMENT,
-            ownerID INTEGER NOT NULL,
-            date DATE NOT NULL,
-            startTime TIME NOT NULL,
-            endTime TIME NOT NULL,
-            isActivated INTEGER NOT NULL CHECK (isActivated IN (0, 1)),
-            bookType INTEGER NOT NULL CHECK (bookType IN (1, 2, 3))
-            isRecurring INTEGER NOT NULL CHECK (isRecurring IN (0, 1)),
-            recurrenceType VARCHAR(10),
-            numOfRecurrences INTEGER,
-            FOREIGN KEY (ownerID) REFERENCES Owners(ownerID)
-        )
-    ''')
+#     cursor.execute('''
+#         CREATE TABLE IF NOT EXISTS TimeSlot (
+#             slotID INTEGER PRIMARY KEY AUTOINCREMENT,
+#             ownerID INTEGER NOT NULL,
+#             date DATE NOT NULL,
+#             startTime TIME NOT NULL,
+#             endTime TIME NOT NULL,
+#             isActivated INTEGER NOT NULL CHECK (isActivated IN (0, 1)),
+#             bookType INTEGER NOT NULL CHECK (bookType IN (1, 2, 3))
+#             isRecurring INTEGER NOT NULL CHECK (isRecurring IN (0, 1)),
+#             recurrenceType VARCHAR(10),
+#             numOfRecurrences INTEGER,
+#             FOREIGN KEY (ownerID) REFERENCES Owners(ownerID)
+#         )
+#     ''')
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Booking (
-            userID INTEGER NOT NULL,
-            slotID INTEGER NOT NULL,
-            PRIMARY KEY (userID, slotID),
-            FOREIGN KEY (userID) REFERENCES users(userID),
-            FOREIGN KEY (slotID) REFERENCES TimeSlot(slotID)
-        )
-    ''')
+#     cursor.execute('''
+#         CREATE TABLE IF NOT EXISTS Booking (
+#             userID INTEGER NOT NULL,
+#             slotID INTEGER NOT NULL,
+#             PRIMARY KEY (userID, slotID),
+#             FOREIGN KEY (userID) REFERENCES users(userID),
+#             FOREIGN KEY (slotID) REFERENCES TimeSlot(slotID)
+#         )
+#     ''')
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
 
 # ======== Temp Database ========

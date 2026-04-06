@@ -1,102 +1,73 @@
---Using SQLite
-PRAGMA foreign_keys = ON;
+======== Database =========
 
---Create User Entity Table
-CREATE TABLE User (
-    user_id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    role TEXT CHECK(role IN ('owner', 'user')) NOT NULL
-);
+Database = "bookly.db"
 
---Meeting Superclass
---Types 1, 2, and 3 are in an ISA relationship with the following table
-CREATE TABLE Meeting (
-    meeting_id INTEGER PRIMARY KEY,
-    owner_id INTEGER NOT NULL,
-    start_time TEXT NOT NULL,
-    end_time TEXT NOT NULL,
-    date TEXT NOT NULL,
-    status TEXT CHECK(status IN ('pending', 'confirmed', 'cancelled')) NOT NULL,
+def get_db_connection():
+    conn = sqlite3.connect(Database)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-    FOREIGN KEY (owner_id) REFERENCES User(user_id)
-);
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
---Type 1 Meeting
-CREATE TABLE RequestMeeting (
-    meeting_id INTEGER PRIMARY KEY,
-    message TEXT,
-    approval_status TEXT CHECK(approval_status IN ('pending', 'accepted', 'declined')) NOT NULL,
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            userID INTEGER PRIMARY KEY AUTOINCREMENT,
+            email VARCHAR(100) NOT NULL UNIQUE,
+            password VARCHAR(100) NOT NULL,
+            name VARCHAR(100) NOT NULL
+            role TEXT CHECK(role IN ('owner', 'user')) NOT NULL
+        )
+    ''')
 
-    FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id) ON DELETE CASCADE
-);
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Owners (
+            ownerID INTEGER PRIMARY KEY AUTOINCREMENT,
+            email VARCHAR(100) NOT NULL,
+            password VARCHAR(100) NOT NULL,
+            name VARCHAR(100) NOT NULL
+        )
+    ''')
 
---Type 2 Meeting
-CREATE TABLE GroupMeeting (
-    meeting_id INTEGER PRIMARY KEY,
-    selection_deadline TEXT,
-    max_participants INTEGER,
-    is_recurring INTEGER CHECK(is_recurring IN (0,1)),
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS TimeSlot (
+            slotID INTEGER PRIMARY KEY AUTOINCREMENT,
+            ownerID INTEGER NOT NULL,
+            date DATE NOT NULL,
+            startTime TIME NOT NULL,
+            endTime TIME NOT NULL,
+            isActivated INTEGER NOT NULL CHECK (isActivated IN (0, 1)),
+            bookType INTEGER NOT NULL CHECK (bookType IN (1, 2, 3))
+            isRecurring INTEGER NOT NULL CHECK (isRecurring IN (0, 1)),
+            recurrenceType VARCHAR(10),
+            numOfRecurrences INTEGER,
+            FOREIGN KEY (ownerID) REFERENCES Owners(ownerID)
+        )
+    ''')
 
-    FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id) ON DELETE CASCADE
-);
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Booking (
+            userID INTEGER NOT NULL,
+            slotID INTEGER NOT NULL,
+            PRIMARY KEY (userID, slotID),
+            FOREIGN KEY (userID) REFERENCES users(userID),
+            FOREIGN KEY (slotID) REFERENCES TimeSlot(slotID)
+        )
+    ''')
 
---Type 3 Meeting
-CREATE TABLE OfficeHours (
-    meeting_id INTEGER PRIMARY KEY,
-    recurrence_pattern TEXT,
-    start_date TEXT,
-    end_date TEXT,
-
-    FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id) ON DELETE CASCADE
-);
-
---Meeting Request as a separate entity
-CREATE TABLE MeetingRequest (
-    request_id INTEGER PRIMARY KEY,
-    sender_id INTEGER NOT NULL,
-    owner_id INTEGER NOT NULL,
-    message TEXT,
-    status TEXT CHECK(status IN ('pending', 'accepted', 'declined')) NOT NULL,
-
-    FOREIGN KEY (sender_id) REFERENCES User(user_id),
-    FOREIGN KEY (owner_id) REFERENCES User(user_id)
-);
-
---Owner's or Prof's Schedule
-CREATE TABLE Availability (
-    availability_id INTEGER PRIMARY KEY,
-    owner_id INTEGER NOT NULL,
-    day_of_week TEXT,
-    start_time TEXT,
-    end_time TEXT,
-    start_date TEXT,
-    end_date TEXT,
-
-    FOREIGN KEY (owner_id) REFERENCES User(user_id)
-);
-
---Participation Constraint --> Many-to-Many
-CREATE TABLE Participation (
-    participation_id INTEGER PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    meeting_id INTEGER NOT NULL,
-
-    FOREIGN KEY (user_id) REFERENCES User(user_id),
-    FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id),
-
-    UNIQUE(user_id, meeting_id)
-);
+    conn.commit()
+    conn.close()
 
 --Constraints using trigger
 --This is employed to avoid double meeting reservation
-CREATE TRIGGER one_subtype_only
-BEFORE INSERT ON RequestMeeting
-BEGIN
-    SELECT
-    CASE
-        WHEN EXISTS (SELECT 1 FROM GroupMeeting WHERE meeting_id = NEW.meeting_id)
-          OR EXISTS (SELECT 1 FROM OfficeHours WHERE meeting_id = NEW.meeting_id)
-        THEN RAISE(ABORT, 'Meeting already assigned to another subtype')
-    END;
-END;
+-- CREATE TRIGGER one_subtype_only
+-- BEFORE INSERT ON RequestMeeting
+-- BEGIN
+--     SELECT
+--     CASE
+--         WHEN EXISTS (SELECT 1 FROM GroupMeeting WHERE meeting_id = NEW.meeting_id)
+--           OR EXISTS (SELECT 1 FROM OfficeHours WHERE meeting_id = NEW.meeting_id)
+--         THEN RAISE(ABORT, 'Meeting already assigned to another subtype')
+--     END;
+-- END;
