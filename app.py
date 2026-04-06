@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, render_template
 import sqlite3 
 from datetime import datetime
 from functools import wraps
@@ -6,11 +6,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 from backend.Type1 import type1_blueprint
 import database.CreateTables
+from flask_socketio import SocketIO
 
 # from backend.Type2 import type2_blueprint
 # from backend.Type3 import type3_blueprint
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 app.secret_key = "dev-secret-key" # Change later
 
 # ======== Database =========
