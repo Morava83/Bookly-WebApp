@@ -7,7 +7,7 @@ from email.mime.multipart import MIMEMultipart
 type1_blueprint = Blueprint('Type1', __name__)
 
 #Rout inside blueprint
-@type1_blueprint.route('/process1/<data>')
+@type1_blueprint.route('/process1/<data>', methods=['POST'])
 
 def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password):
     # Create the email
@@ -18,23 +18,15 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
     msg.attach(MIMEText(body, 'plain'))  # plain text
 
     # Connect to SMTP server and send
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
-        server.starttls()  # secure the connection
-        server.login(username, password)
-        server.send_message(msg)
-        print(f"Email sent to {to_email}")
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()  # secure the connection
+            server.login(username, password)
+            server.send_message(msg)
+            print(f"Email sent to {to_email}")
+    except Exception as e:
+        print(f"Failed to send email: {e}")
 
-#EXAMPLE CALL
-# send_email(
-#     subject="Test Plain Text Email",
-#     body="Hello! This is a plain text email from Python.",
-#     to_email="recipient@example.com",
-#     from_email="you@example.com",
-#     smtp_server="smtp.gmail.com",
-#     smtp_port=587,
-#     username="you@example.com",
-#     password="your_app_password"
-# )
 
 def send_notification(msg):
     from app import socketio
@@ -46,13 +38,13 @@ def request_meeting(msg):
     #Send email
     send_email(
     subject="Test Plain Text Email",
-    body="Hello! This is a plain text email from Python.",
+    body=msg,
     to_email="recipient@example.com",
     from_email="you@example.com",
-    smtp_server="smtp.gmail.com",
+    smtp_server="smtp.office365.com", 
     smtp_port=587,
-    username="you@example.com",
-    password="your_app_password"
+    username="you@example.com", #Media Query needed
+    password="your_app_password" #Media Query needed
     )
     #Send Notification
     send_notification(msg)

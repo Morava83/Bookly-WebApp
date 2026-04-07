@@ -1,50 +1,46 @@
-======== Database =========
+--======== Database =========
 PRAGMA foreign_keys = ON;
 
-Database = "bookly.db"
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+    userID INTEGER PRIMARY KEY AUTOINCREMENT,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    role TEXT CHECK(role IN ('owner', 'user')) NOT NULL
+);
 
-def get_db_connection():
-    conn = sqlite3.connect(Database)
-    conn.row_factory = sqlite3.Row
-    return conn
+-- Owners table
+CREATE TABLE IF NOT EXISTS Owners (
+    ownerID INTEGER PRIMARY KEY AUTOINCREMENT,
+    email VARCHAR(100) NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL
+);
 
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+-- TimeSlot table
+CREATE TABLE IF NOT EXISTS TimeSlot (
+    slotID INTEGER PRIMARY KEY AUTOINCREMENT,
+    ownerID INTEGER NOT NULL,
+    date DATE NOT NULL,
+    startTime TIME NOT NULL,
+    endTime TIME NOT NULL,
+    isActivated INTEGER NOT NULL CHECK (isActivated IN (0, 1)),
+    bookType INTEGER NOT NULL CHECK (bookType IN (1, 2, 3)),
+    isRecurring INTEGER NOT NULL CHECK (isRecurring IN (0, 1)),
+    recurrenceType VARCHAR(10),
+    numOfRecurrences INTEGER,
+    FOREIGN KEY (ownerID) REFERENCES Owners(ownerID)
+);
 
-    CREATE TABLE IF NOT EXISTS users 
-        userID INTEGER PRIMARY KEY AUTOINCREMENT,
-        email VARCHAR(100) NOT NULL UNIQUE,
-        password VARCHAR(100) NOT NULL,
-        name VARCHAR(100) NOT NULL
-        role TEXT CHECK(role IN ('owner', 'user')) NOT NULL
-
-
-    CREATE TABLE IF NOT EXISTS Owners 
-        ownerID INTEGER PRIMARY KEY AUTOINCREMENT,
-        email VARCHAR(100) NOT NULL,
-        password VARCHAR(100) NOT NULL,
-        name VARCHAR(100) NOT NULL
-
-    CREATE TABLE IF NOT EXISTS TimeSlot 
-        slotID INTEGER PRIMARY KEY AUTOINCREMENT,
-        ownerID INTEGER NOT NULL,
-        date DATE NOT NULL,
-        startTime TIME NOT NULL,
-        endTime TIME NOT NULL,
-        isActivated INTEGER NOT NULL CHECK (isActivated IN (0, 1)),
-        bookType INTEGER NOT NULL CHECK (bookType IN (1, 2, 3))
-        isRecurring INTEGER NOT NULL CHECK (isRecurring IN (0, 1)),
-        recurrenceType VARCHAR(10),
-        numOfRecurrences INTEGER,
-        FOREIGN KEY (ownerID) REFERENCES Owners(ownerID)
-
-    CREATE TABLE IF NOT EXISTS Booking 
-        userID INTEGER NOT NULL,
-        slotID INTEGER NOT NULL,
-        PRIMARY KEY (userID, slotID),
-        FOREIGN KEY (userID) REFERENCES users(userID),
-        FOREIGN KEY (slotID) REFERENCES TimeSlot(slotID)
+-- Booking table
+CREATE TABLE IF NOT EXISTS Booking (
+    userID INTEGER NOT NULL,
+    slotID INTEGER NOT NULL,
+    PRIMARY KEY (userID, slotID),
+    FOREIGN KEY (userID) REFERENCES users(userID),
+    FOREIGN KEY (slotID) REFERENCES TimeSlot(slotID)
+);
 
 
 --Constraints using trigger
