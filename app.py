@@ -15,6 +15,17 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 app.secret_key = "dev-secret-key" # Change later
 
+# Dynamic media query / SMTP config
+app.config.update({
+    "FROM_EMAIL": "your_email@mail.mcgill.ca",
+    "EMAIL_PASSWORD": "your_app_password",
+    "SMTP_SERVER": "smtp.office365.com",
+    "SMTP_PORT": 587
+})
+
+# Register blueprint
+app.register_blueprint(type1_blueprint)
+
 # ======== Database =========
 
 # Database = "bookly.db"
@@ -226,9 +237,6 @@ def create_booking_slot(owner_id, booking_type, start_datetime, end_datetime, ti
     return slot
 
 
-# Register blueprint
-app.register_blueprint(type1_blueprint)
-
 @app.route("/")
 #LOGIN PAGE
 def login():
@@ -244,5 +252,5 @@ def home():
 
 if __name__ == "__main__":
     #print("hello world")
-    app.run(debug=False)  # <- This starts the server
+    app.run(debug=True)  # <- This starts the server
 
