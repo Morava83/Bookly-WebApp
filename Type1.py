@@ -99,6 +99,10 @@ def approve_meeting(slotID, userID):
     """, (1, slotID, userID)) #Status changes from 0 to 1 as meeting request is now approved
     conn.commit()
     conn.close()
-    #TODO Send email to notify student
+    #TODO Send email to notify student (with Zoom link)
+
     #TODO Display on user dashboard
+    #Set template to Home Page
+    
+
     #TODO Display on owner dashboard
