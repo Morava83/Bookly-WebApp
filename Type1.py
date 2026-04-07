@@ -4,6 +4,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+#Type1: Request Meeting
+
 #Create Blueprint Object
 type1_blueprint = Blueprint('Type1', __name__)
 
@@ -84,3 +86,19 @@ def request_meeting(msg):
     send_notification(f"New meeting request from {user_email}")
 
     return "Meeting request submitted successfully"
+
+#Function called on event where Owner presses on some accept button
+#in home page to accept meeting
+def approve_meeting(slotID, userID):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE Booking
+        SET status = ?
+        WHERE slotID = ? AND userID = ?
+    """, (1, slotID, userID)) #Status changes from 0 to 1 as meeting request is now approved
+    conn.commit()
+    conn.close()
+    #Send email to notify student
+    #Display on user dashboard
+    #Display on owner dashboard
