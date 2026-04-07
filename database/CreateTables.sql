@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS User (
 );
 
 -- ========= User subtypes ==========
-CREATE TABLE IF NOT EXISTS Students (
+CREATE TABLE IF NOT EXISTS Student (
     userID INTEGER PRIMARY KEY,
     FOREIGN KEY (userID) REFERENCES User(userID) ON DELETE CASCADE
 );
