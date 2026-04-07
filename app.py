@@ -28,6 +28,8 @@ app.register_blueprint(type1_blueprint)
 
 # ======== Database =========
 
+#Call CreateTables.py script to initialize DB
+
 # Database = "bookly.db"
 
 # def get_db_connection():
