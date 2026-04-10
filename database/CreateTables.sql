@@ -118,15 +118,16 @@ CREATE TABLE IF NOT EXISTS Booking3 (
     FOREIGN KEY (slotID) REFERENCES TimeSlot(slotID) ON DELETE CASCADE
 );
 
---Constraints using trigger
---This is employed to avoid double meeting reservation
--- CREATE TRIGGER one_subtype_only
--- BEFORE INSERT ON RequestMeeting
--- BEGIN
---     SELECT
---     CASE
---         WHEN EXISTS (SELECT 1 FROM GroupMeeting WHERE meeting_id = NEW.meeting_id)
---           OR EXISTS (SELECT 1 FROM OfficeHours WHERE meeting_id = NEW.meeting_id)
---         THEN RAISE(ABORT, 'Meeting already assigned to another subtype')
---     END;
--- END;
+--Constraint added to avoid duplicate meetings
+Constraints using trigger
+This is employed to avoid double meeting reservation
+CREATE TRIGGER one_subtype_only
+BEFORE INSERT ON RequestMeeting
+BEGIN
+    SELECT
+    CASE
+        WHEN EXISTS (SELECT 1 FROM GroupMeeting WHERE meetingID = NEW.meetingID)
+          OR EXISTS (SELECT 1 FROM OfficeHours WHERE meetingID = NEW.meetingID)
+        THEN RAISE(ABORT, 'Meeting already assigned to another subtype')
+    END;
+END;
