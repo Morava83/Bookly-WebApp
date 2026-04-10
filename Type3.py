@@ -1,4 +1,7 @@
 #Type3: Recurring Office Hours
+from flask import Blueprint, request, current_app, jsonify
+
+type3_blueprint = Blueprint('Type3', __name__)
 
 #LOGIC
 

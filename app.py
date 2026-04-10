@@ -1,15 +1,15 @@
-from flask import Flask, request, jsonify, session, render_template
-import sqlite3 
-from datetime import datetime
+from flask import Flask, render_template, request, jsonify, session
 from functools import wraps
-from werkzeug.security import generate_password_hash, check_password_hash 
-import uuid
-from Type1 import type1_blueprint
-import database.CreateTables
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO
+import sqlite3
 
-# from Type2 import type2_blueprint
-# from Type3 import type3_blueprint
+# Blueprint is registered at the bottom
+from Type1 import type1_blueprint
+from Type2 import type2_blueprint
+from Type3 import type3_blueprint
+
+import database.CreateTables
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -20,38 +20,16 @@ app.config.update({
     "FROM_EMAIL": "your_email@mail.mcgill.ca",
     "EMAIL_PASSWORD": "your_app_password",
     "SMTP_SERVER": "smtp.office365.com",
-    "SMTP_PORT": 587
+    "SMTP_PORT": 587,
+    "DB_PATH": "bookly.db"
 })
 
-# Register blueprint
-app.register_blueprint(type1_blueprint)
-
-# ======== Temp Database ========
-
-users = []
-booking_slots = []
-meeting_requests = []
-group_meetings = []
-group_votes = []
-type3_series_list = []
-invitation_links = []
-
-next_ids = {
-    "users": 1,
-    "booking_slots": 1,
-    "meeting_requests": 1,
-    "group_meetings": 1,
-    "type3_series": 1,
-    "invitation_links": 1
-}
-
-def now():
-    return datetime.now().isoformat(timespec="seconds")
-
-def next_id(table_name):
-    value = next_ids[table_name]
-    next_ids[table_name] += 1
-    return value
+# ======== DB helper ========
+def get_db_connection():
+    conn = sqlite3.connect(app.config["DB_PATH"])
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 # ======== Authentication ========
 
@@ -94,101 +72,102 @@ def owner_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-# ======= Validators ========
-def required_fields(data, fields):
-    missing = []
-    for field in fields:
-        value = data.get(field)
-        if value is None:
-            missing.append(field)
-        elif not isinstance(value, str) and value.strip() == "":
-            missing.append(field)
-    return missing
 
-def validate_type1_payload(data):
-    #TODO
-    return None
+# ======== Auth Routes ========
+@app.route("/api/register", methods=["POST"])
+def register():
+    from flask import request
+    data = request.get_json() or {}
 
-def validate_type2_payload(data):
-    #TODO
-    return None
+    first_name = (data.get("first_name") or "").strip()
+    last_name = (data.get("last_name") or "").strip()
+    email = normalize_email(data.get("email"))
+    password = data.get("password") or ""
 
-def validate_type3_payload(data):
-    #TODO
-    return None
+    if not first_name or not last_name or not email or not password:
+        return jsonify({"error": "Missing required fields"}), 400
 
-# ======== Repository Functions ========
+    if not is_mcgill_email(email):
+        return jsonify({"error": "Only McGill emails can register"}), 400
 
-def create_user(first_name, last_name, email, password_hash, role):
-    user = {
-        "id": next_id("users"),
-        "first_name": first_name,
-        "last_name": last_name,
-        "email": email,
-        "password_hash": password_hash,
-        "role": role,
-        "created_at": now()
-    }
-    users.append(user)
+    role = get_role_from_email(email)
+    full_name = f"{first_name} {last_name}".strip()
 
-    # Future DB version:
-    # conn = get_db_connection()
-    # cursor = conn.cursor()
-    # cursor.execute(
-    #     "INSERT INTO users (first_name, last_name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-    #     (first_name, last_name, email, password_hash, role, now())
-    # )
-    # conn.commit()
-    # conn.close()
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-    return user
+    cur.execute("SELECT userID FROM users WHERE email = ?", (email,))
+    if cur.fetchone():
+        conn.close()
+        return jsonify({"error": "Email already registered"}), 409
 
-def find_user_by_email(email):
-    email = normalize_email(email)
-    for user in users:
-        if user["email"] == email:
-            return user
-    return None
+    cur.execute(
+        "INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)",
+        (email, hash_password(password), full_name, role)
+    )
+    user_id = cur.lastrowid
 
-def find_user_by_id(user_id):
-    for user in users:
-        if user["id"] == user_id:
-            return user
-    return None
+    if role == "owner":
+        cur.execute("INSERT INTO Owners (ownerID, email, password, name) VALUES (?, ?, ?, ?)",
+                    (user_id, email, hash_password(password), full_name))
+    else:
+        cur.execute("INSERT INTO Student (userID) VALUES (?)", (user_id,))
 
-def create_booking_slot(owner_id, booking_type, start_datetime, end_datetime, title="", description="", source_id=None, is_active=True, is_booked=False, booked_by_user_id=None):
-    slot = {
-        "id": next_id("booking_slots"),
-        "owner_id": owner_id,
-        "booking_type": booking_type,
-        "source_id": source_id,
-        "title": title,
-        "description": description,
-        "start_datetime": start_datetime,
-        "end_datetime": end_datetime,
-        "is_active": is_active,
-        "is_booked": is_booked,
-        "booked_by_user_id": booked_by_user_id,
-        "created_at": now()
-    }
-    booking_slots.append(slot)
-    return slot
+    conn.commit()
+    conn.close()
 
+    return jsonify({"message": "Registered successfully", "role": role}), 201
 
+@app.route("/api/login", methods=["POST"])
+def login_api():
+    from flask import request
+    data = request.get_json() or {}
+    email = normalize_email(data.get("email"))
+    password = data.get("password") or ""
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE email = ?", (email,))
+    user = cur.fetchone()
+    conn.close()
+
+    if not user or not verify_password(user["password"], password):
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    session["user_id"] = user["userID"]
+    session["email"] = user["email"]
+    session["role"] = user["role"]
+
+    return jsonify({
+        "message": "Login successful",
+        "userID": user["userID"],
+        "role": user["role"]
+    }), 200
+
+@app.route("/api/logout", methods=["POST"])
+def logout_api():
+    session.clear()
+    return jsonify({"message": "Logged out"}), 200
+
+# ======== Pages ==========
 @app.route("/")
-#LOGIN PAGE
-def login():
-    return render_template('Landing&LoginPage.html')
+def login_page():
+    return render_template("Landing&LoginPage.html")
 
-# CREATE ACCOUNT PAGE
-def create_account():
-    return render_template('CreateAccountPage.html')
+@app.route("/create-account")
+def create_account_page():
+    return render_template("CreateAccountPage.html")
 
-def home():
-    return render_template('HomePage.html')
-    #return "<h1>Hello from Flask!</h1>"
+@app.route("/home")
+@login_required
+def home_page():
+    return render_template("HomePage.html")
+
+# ======== Blueprints ======== 
+app.register_blueprint(type1_blueprint, url_prefix="/api/type1")
+app.register_blueprint(type2_blueprint, url_prefix="/api/type2")
+app.register_blueprint(type3_blueprint, url_prefix="/api/type3")
 
 if __name__ == "__main__":
-    #print("hello world")
-    app.run(debug=True)  # <- This starts the server
-
+    database.CreateTables.create_tables()
+    socketio.run(app, debug=True)

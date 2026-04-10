@@ -1,4 +1,8 @@
 #Type2: Group Meeting
+from flask import Blueprint, request, current_app, jsonify
+
+type2_blueprint = Blueprint('Type2', __name__)
+
 
 #--------Media Query----------
 #LOGIC
