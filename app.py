@@ -12,7 +12,8 @@ from Type3 import type3_blueprint
 import database.CreateTables
 
 app = Flask(__name__, template_folder="templates")
-socketio = SocketIO(app)
+#socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 app.secret_key = "dev-secret-key" # Change later
 
 # Dynamic media query / SMTP config

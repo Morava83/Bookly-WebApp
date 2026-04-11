@@ -690,5 +690,39 @@
             }
         })();
     </script>
+
+    <!--Backend-to-Frontend Bridge-->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        const socket = io(); // connects to same host that served page
+        socket.emit("join", userID);
+        socket.on("notification", function(data) {
+            showNotification(data.message);
+        });
+
+        function showNotification(message) {
+            let div = document.createElement("div");
+            div.textContent = message;
+
+            // simple styling
+            div.style.position = "fixed";
+            div.style.top = "20px";
+            div.style.right = "20px";
+            div.style.background = "#111";
+            div.style.color = "#fff";
+            div.style.padding = "12px 16px";
+            div.style.borderRadius = "8px";
+            div.style.zIndex = "9999";
+
+            document.body.appendChild(div);
+
+            setTimeout(() => div.remove(), 4000);
+        }
+        //Listen for Notifications
+        socket.on("notification", function(data) {
+            showNotification(data.message);
+        });
+    </script>
+    
 </body>
 </html>
