@@ -11,7 +11,7 @@ from Type3 import type3_blueprint
 
 import database.CreateTables
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="frontend")
 socketio = SocketIO(app)
 app.secret_key = "dev-secret-key" # Change later
 
@@ -21,7 +21,7 @@ app.config.update({
     "EMAIL_PASSWORD": "your_app_password",
     "SMTP_SERVER": "smtp.office365.com",
     "SMTP_PORT": 587,
-    "DB_PATH": "bookly.db"
+    "DB_PATH": "database/bookly.db"
 })
 
 # ======== DB helper ========
@@ -54,6 +54,19 @@ def hash_password(password):
 def verify_password(password_hash, password):
     return check_password_hash(password_hash, password)
 
+def get_role_for_user(conn, user_id):
+    cur = conn.cursor()
+
+    cur.execute("SELECT 1 FROM Owner WHERE userID = ?", (user_id,))
+    if cur.fetchone():
+        return "owner"
+
+    cur.execute("SELECT 1 FROM Student WHERE userID = ?", (user_id,))
+    if cur.fetchone():
+        return "user"
+
+    return None
+
 def login_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -76,7 +89,6 @@ def owner_required(fn):
 # ======== Auth Routes ========
 @app.route("/api/register", methods=["POST"])
 def register():
-    from flask import request
     data = request.get_json() or {}
 
     first_name = (data.get("first_name") or "").strip()
@@ -91,63 +103,108 @@ def register():
         return jsonify({"error": "Only McGill emails can register"}), 400
 
     role = get_role_from_email(email)
+    if role is None:
+        return jsonify({"error": "Invalid email domain"}), 400
+
     full_name = f"{first_name} {last_name}".strip()
+    password_hash = hash_password(password)
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT userID FROM users WHERE email = ?", (email,))
-    if cur.fetchone():
+    try:
+        # User table from ER-style schema
+        cur.execute("SELECT userID FROM User WHERE email = ?", (email,))
+        if cur.fetchone():
+            conn.close()
+            return jsonify({"error": "Email already registered"}), 409
+
+        cur.execute(
+            "INSERT INTO User (email, password, name) VALUES (?, ?, ?)",
+            (email, password_hash, full_name)
+        )
+        user_id = cur.lastrowid
+
+        if role == "owner":
+            cur.execute("INSERT INTO Owner (userID) VALUES (?)", (user_id,))
+        else:
+            cur.execute("INSERT INTO Student (userID) VALUES (?)", (user_id,))
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Registered successfully",
+            "userID": user_id,
+            "role": role
+        }), 201
+
+    finally:
         conn.close()
-        return jsonify({"error": "Email already registered"}), 409
-
-    cur.execute(
-        "INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)",
-        (email, hash_password(password), full_name, role)
-    )
-    user_id = cur.lastrowid
-
-    if role == "owner":
-        cur.execute("INSERT INTO Owners (ownerID, email, password, name) VALUES (?, ?, ?, ?)",
-                    (user_id, email, hash_password(password), full_name))
-    else:
-        cur.execute("INSERT INTO Student (userID) VALUES (?)", (user_id,))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"message": "Registered successfully", "role": role}), 201
 
 @app.route("/api/login", methods=["POST"])
 def login_api():
-    from flask import request
     data = request.get_json() or {}
+
     email = normalize_email(data.get("email"))
     password = data.get("password") or ""
 
+    if not email or not password:
+        return jsonify({"error": "Missing email or password"}), 400
+
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM users WHERE email = ?", (email,))
-    user = cur.fetchone()
-    conn.close()
 
-    if not user or not verify_password(user["password"], password):
-        return jsonify({"error": "Invalid email or password"}), 401
+    try:
+        cur.execute("SELECT * FROM User WHERE email = ?", (email,))
+        user = cur.fetchone()
 
-    session["user_id"] = user["userID"]
-    session["email"] = user["email"]
-    session["role"] = user["role"]
+        if not user or not verify_password(user["password"], password):
+            return jsonify({"error": "Invalid email or password"}), 401
 
-    return jsonify({
-        "message": "Login successful",
-        "userID": user["userID"],
-        "role": user["role"]
-    }), 200
+        role = get_role_for_user(conn, user["userID"])
+        if role is None:
+            return jsonify({"error": "User role not found"}), 500
+
+        session["user_id"] = user["userID"]
+        session["email"] = user["email"]
+        session["role"] = role
+
+        return jsonify({
+            "message": "Login successful",
+            "userID": user["userID"],
+            "role": role
+        }), 200
+
+    finally:
+        conn.close()
 
 @app.route("/api/logout", methods=["POST"])
 def logout_api():
     session.clear()
     return jsonify({"message": "Logged out"}), 200
+
+@app.route("/api/me", methods=["GET"])
+@login_required
+def me():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("SELECT * FROM User WHERE userID = ?", (session["user_id"],))
+        user = cur.fetchone()
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        return jsonify({
+            "userID": user["userID"],
+            "email": user["email"],
+            "name": user["name"],
+            "role": session["role"]
+        }), 200
+
+    finally:
+        conn.close()
 
 # ======== Pages ==========
 @app.route("/")
