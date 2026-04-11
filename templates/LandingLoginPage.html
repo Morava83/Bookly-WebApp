@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookly - McGill Booking Application</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f2f2f2;
+            color: #222;
+        }
+
+        .page {
+            max-width: 1120px;
+            margin: 36px auto;
+            padding: 0 18px;
+        }
+
+        .student-info {
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .card {
+            display: flex;
+            flex-wrap: wrap;
+            background-color: #ffffff;
+            border: 1px solid #d9d9d9;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .left-panel,
+        .right-panel {
+            padding: 32px;
+        }
+
+        .left-panel {
+            flex: 1 1 320px;
+            min-width: 280px;
+            background-color: #fafafa;
+            border-right: 1px solid #ececec;
+        }
+
+        .right-panel {
+            flex: 1 1 560px;
+            min-width: 320px;
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 58px;
+            line-height: 0.95;
+        }
+
+        h2 {
+            margin: 0 0 10px;
+            font-size: 28px;
+        }
+
+        .intro {
+            max-width: 360px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .contact-item {
+            margin-bottom: 14px;
+        }
+
+        .contact-item a {
+            color: #222;
+        }
+
+        .name-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .field-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        textarea,
+        button {
+            width: 100%;
+            font: inherit;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 12px 14px;
+            border: 1px solid #9f9f9f;
+            background-color: #fff;
+        }
+
+        textarea {
+            min-height: 180px;
+            resize: vertical;
+        }
+
+        .required-note {
+            margin-bottom: 18px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .panel-text {
+            margin: 0 0 22px;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .section-heading {
+            margin-top: 30px;
+        }
+
+        .info-list {
+            margin: 0 0 0 18px;
+            padding: 0;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .info-list li {
+            margin-bottom: 10px;
+        }
+
+        .helper-text {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .secondary-button {
+            display: block;
+            margin-top: 12px;
+            padding: 13px 16px;
+            border: 1px solid #111;
+            background-color: #fff;
+            color: #111;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .secondary-button:hover {
+            background-color: #f3f3f3;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 14px 16px;
+            border: none;
+            background-color: #111;
+            color: #fff;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #222;
+        }
+
+        @media (max-width: 800px) {
+            h1 {
+                font-size: 42px;
+            }
+
+            .left-panel {
+                border-right: none;
+                border-bottom: 1px solid #ececec;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .name-row {
+                grid-template-columns: 1fr;
+            }
+
+            .left-panel,
+            .right-panel {
+                padding: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="card">
+            <section class="left-panel">
+                <h1>Bookly</h1>
+
+                <div class="intro">
+                    <p>
+                        Bookly is a McGill booking application for office hours, meeting requests,
+                        and group scheduling.
+                    </p>
+                    <p>
+                        Students can reserve appointments with professors and teaching assistants
+                        without relying on long email chains.
+                    </p>
+                </div>
+
+                <div class="contact-item"><strong>Owners:</strong> @mcgill.ca accounts create, activate, and manage booking slots.</div>
+                <div class="contact-item"><strong>Users:</strong> @mail.mcgill.ca and @mcgill.ca accounts can request and reserve active slots.</div>
+                <div class="contact-item"><strong>Booking types:</strong> request a meeting, group meeting scheduling, and recurring office hours.</div>
+            </section>
+
+            <section class="right-panel">
+                <h2>Log in</h2>
+                <p class="panel-text">
+                    Sign in with your McGill email to open your dashboard, review appointments,
+                    and book available office hours.
+                </p>
+
+                <form id="loginForm" action="#" method="post" novalidate>
+                    <div class="required-note">Fields marked with * are required.</div>
+
+                    <div class="field-group">
+                        <label for="email">*Email</label>
+                        <input type="email" id="email" name="email" placeholder="name@mcgill.ca or name@mail.mcgill.ca" autocomplete="email" required data-label="Email">
+                    </div>
+
+                    <div class="field-group">
+                        <label for="password">*Password</label>
+                        <input type="password" id="password" name="password" placeholder="Password" autocomplete="current-password" required data-label="Password">
+                    </div>
+
+                    <button type="submit" id="loginButton">Log In</button>
+                    <a href="CreateAccountPage.html" class="secondary-button">Create Account</a>
+                </form>
+
+                <h2 class="section-heading">How Bookly works</h2>
+                <ul class="info-list">
+                    <li>Only McGill email addresses can register for the application.</li>
+                    <li>Owners use @mcgill.ca accounts to create private slots, activate public slots, and share invitation URLs.</li>
+                    <li>After login, users can see appointments, book open slots, cancel bookings, and email slot owners through mailto links.</li>
+                </ul>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var form = document.getElementById('loginForm');
+            var requiredFields = form.querySelectorAll('[required]');
+            var emailField = document.getElementById('email');
+            var statusNote = document.getElementById('loginStatus');
+
+            form.addEventListener('submit', function (event) {
+                var missingFields = [];
+                var firstProblemField = null;
+
+                for (var i = 0; i < requiredFields.length; i++) {
+                    var field = requiredFields[i];
+                    var value = field.value.trim();
+
+                    if (value === '') {
+                        missingFields.push(field.getAttribute('data-label'));
+                        if (!firstProblemField) {
+                            firstProblemField = field;
+                        }
+                        continue;
+                    }
+
+                    if (field.type === 'email' && !field.checkValidity()) {
+                        missingFields.push('Valid Email');
+                        if (!firstProblemField) {
+                            firstProblemField = field;
+                        }
+                    }
+                }
+
+                if (emailField.value.trim() !== '' &&
+                    emailField.checkValidity() &&
+                    !/@(mcgill\.ca|mail\.mcgill\.ca)$/i.test(emailField.value.trim())) {
+                    missingFields.push('McGill Email');
+                    if (!firstProblemField) {
+                        firstProblemField = emailField;
+                    }
+                }
+
+                if (missingFields.length > 0) {
+                    event.preventDefault();
+                    alert(
+                        'Please complete all required fields before submitting.\n\n' +
+                        'Missing or invalid: ' + missingFields.join(', ')
+                    );
+
+                    if (firstProblemField) {
+                        firstProblemField.focus();
+                    }
+                    return;
+                }
+
+                event.preventDefault();
+                statusNote.textContent = 'Landing page only: this preview does not include a working login yet.';
+            });
+        })();
+    </script>
+</body>
+</html>

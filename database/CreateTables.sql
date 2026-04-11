@@ -119,9 +119,9 @@ CREATE TABLE IF NOT EXISTS Booking3 (
 );
 
 --Constraint added to avoid duplicate meetings
--- Constraints using trigger
--- This is employed to avoid double meeting reservation
-CREATE TRIGGER one_subtype_only
+--Constraints using trigger
+--This is employed to avoid double meeting reservation
+CREATE TRIGGER IF NOT EXISTS one_subtype_only
 BEFORE INSERT ON RequestMeeting
 BEGIN
     SELECT

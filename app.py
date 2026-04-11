@@ -209,7 +209,7 @@ def me():
 # ======== Pages ==========
 @app.route("/")
 def login_page():
-    return render_template("Landing&LoginPage.html")
+    return render_template("LandingLoginPage.html")
 
 @app.route("/create-account")
 def create_account_page():

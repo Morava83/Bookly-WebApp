@@ -4,22 +4,24 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-#Type1: Request Meeting
 
-#Create Blueprint Object
-type1_blueprint = Blueprint('Type1', __name__)
+# Blueprint
+
+type1_blueprint = Blueprint('type1', __name__)
 
 DB_PATH = "bookly.db"
 
+
+
+# EMAIL FUNCTION
+
 def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password):
-    # Create the email
     msg = MIMEMultipart()
     msg['From'] = from_email
     msg['To'] = to_email
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'plain'))
 
-    # Connect to SMTP server and send
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
@@ -27,82 +29,234 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
             server.send_message(msg)
             print(f"Email sent to {to_email}")
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        print(f"Email error: {e}")
 
 
-def send_notification(msg):
-    from app import socketio
-    socketio.emit('notification', {'message': msg})
 
-# Database helper
-def insert_meeting_request(user_email, owner_email, message):
+# SOCKET NOTIFICATION
+
+def send_notification(message):
+    try:
+        from app import socketio
+        socketio.emit('notification', {'message': message})
+    except Exception as e:
+        print("Socket error:", e)
+
+
+
+# DB HELPERS
+
+def get_user_id(email):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    cursor.execute("SELECT userID FROM User WHERE email=?", (email,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+def create_meeting(student_id, owner_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
     cursor.execute("""
-        INSERT INTO Booking (userID, slotID)
-        VALUES (
-            (SELECT userID FROM users WHERE email=?),
-            (SELECT slotID FROM TimeSlot WHERE ownerID=(SELECT ownerID FROM Owners WHERE email=?) LIMIT 1)
-        )
-    """, (user_email, owner_email))
+        INSERT INTO Meeting (date, start_time, end_time, status)
+        VALUES (DATE('now'), '00:00', '00:00', 'pending')
+    """)
+
+    meeting_id = cursor.lastrowid
+
+    cursor.execute("""
+        INSERT INTO RequestMeeting (meetingID, ownerID, studentID, message)
+        VALUES (?, ?, ?, '')
+    """, (meeting_id, owner_id, student_id))
+
+    cursor.execute("""
+        INSERT INTO Booking1 (studentID, ownerID, meetingID)
+        VALUES (?, ?, ?)
+    """, (student_id, owner_id, meeting_id))
+
     conn.commit()
     conn.close()
 
-# Flask route to request a meeting
-@type1_blueprint.route('/request_meeting', methods=['POST'])
-def request_meeting(msg):
-    #Student sends Owner a message requesting meeting
+    return meeting_id
 
-    # Read form data
-    user_email = request.form.get('student_email') #TODO find email via media query
-    owner_email = request.form.get('owner_email') #Using media query
+
+
+# TYPE 1 - REQUEST MEETING
+
+@type1_blueprint.route('/request_meeting', methods=['POST'])
+def request_meeting():
+    user_email = request.form.get('student_email')
+    owner_email = request.form.get('owner_email')
     message = request.form.get('message')
 
     if not user_email or not owner_email or not message:
-        return "Missing required fields", 400
+        return jsonify({"error": "Missing required fields"}), 400
 
-    # Get dynamic config from app.py
-    FROM_EMAIL = current_app.config.get("FROM_EMAIL")
-    EMAIL_PASSWORD = current_app.config.get("EMAIL_PASSWORD")
-    SMTP_SERVER = current_app.config.get("SMTP_SERVER")
-    SMTP_PORT = current_app.config.get("SMTP_PORT")
+    student_id = get_user_id(user_email)
+    owner_id = get_user_id(owner_email)
 
-    # Save request in DB
-    insert_meeting_request(user_email, owner_email, message)
+    if not student_id or not owner_id:
+        return jsonify({"error": "Invalid user"}), 400
 
-    # Send email
-    send_email(
-        subject="New Meeting Request",
-        body=f"Student {user_email} requests a meeting:\n\n{message}",
-        to_email=owner_email,
-        from_email=FROM_EMAIL,
-        smtp_server=SMTP_SERVER,
-        smtp_port=SMTP_PORT,
-        username=FROM_EMAIL,
-        password=EMAIL_PASSWORD
-    )
+    # Create meeting request
+    meeting_id = create_meeting(student_id, owner_id)
 
-    # Send dashboard notification
-    send_notification(f"New meeting request from {user_email}")
-
-    return "Meeting request submitted successfully"
-
-#Function called on event where Owner presses on some accept button
-#in home page to accept meeting
-def approve_meeting(slotID, userID):
+    # Update message in RequestMeeting (since insert used empty string earlier)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE Booking
-        SET status = ?
-        WHERE slotID = ? AND userID = ?
-    """, (1, slotID, userID)) #Status changes from 0 to 1 as meeting request is now approved
+        UPDATE RequestMeeting
+        SET message = ?
+        WHERE meetingID = ?
+    """, (message, meeting_id))
     conn.commit()
     conn.close()
+
+    # Email owner
+    config = current_app.config
+
+    send_email(
+        subject="New Meeting Request",
+        body=f"New request from {user_email}:\n\n{message}",
+        to_email=owner_email,
+        from_email=config.get("FROM_EMAIL"),
+        smtp_server=config.get("SMTP_SERVER"),
+        smtp_port=config.get("SMTP_PORT"),
+        username=config.get("FROM_EMAIL"),
+        password=config.get("EMAIL_PASSWORD")
+    )
+
+    # Socket notification
+    send_notification(f"New meeting request from {user_email}")
+
+    return jsonify({
+        "success": True,
+        "meetingID": meeting_id
+    })
+
+
+
+# GET PENDING REQUESTS (OWNER DASHBOARD)
+
+@type1_blueprint.route('/pending/<owner_email>', methods=['GET'])
+def get_pending(owner_email):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            m.meetingID,
+            u.email AS student_email,
+            r.message,
+            m.status
+        FROM Meeting m
+        JOIN RequestMeeting r ON m.meetingID = r.meetingID
+        JOIN User u ON r.studentID = u.userID
+        JOIN User o ON r.ownerID = o.userID
+        WHERE o.email = ?
+        AND m.status = 'pending'
+    """, (owner_email,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return jsonify([
+        {
+            "meetingID": r[0],
+            "student_email": r[1],
+            "message": r[2],
+            "status": r[3]
+        }
+        for r in rows
+    ])
+
+
+
+# ACCEPT MEETING
+
+@type1_blueprint.route('/accept', methods=['POST'])
+def accept_meeting():
+    data = request.get_json()
+    meeting_id = data.get("meetingID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE Meeting
+        SET status = 'accepted'
+        WHERE meetingID = ?
+    """, (meeting_id,))
+
+    # Get student email
+    cursor.execute("""
+        SELECT u.email
+        FROM RequestMeeting r
+        JOIN User u ON r.studentID = u.userID
+        WHERE r.meetingID = ?
+    """, (meeting_id,))
+
+    row = cursor.fetchone()
+    conn.commit()
+    conn.close()
+
+    student_email = row[0] if row else None
+
+    # Notify student
+    if student_email:
+        config = current_app.config
+
+        send_email(
+            subject="Meeting Accepted",
+            body="Your meeting request has been accepted.",
+            to_email=student_email,
+            from_email=config.get("FROM_EMAIL"),
+            smtp_server=config.get("SMTP_SERVER"),
+            smtp_port=config.get("SMTP_PORT"),
+            username=config.get("FROM_EMAIL"),
+            password=config.get("EMAIL_PASSWORD")
+        )
+
+        send_notification(f"Meeting accepted for {student_email}")
+
+    return jsonify({"success": True})
+
+
+
+# DECLINE MEETING
+
+@type1_blueprint.route('/decline', methods=['POST'])
+def decline_meeting():
+    data = request.get_json()
+    meeting_id = data.get("meetingID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE Meeting
+        SET status = 'declined'
+        WHERE meetingID = ?
+    """, (meeting_id,))
+
+    conn.commit()
+    conn.close()
+
+    send_notification(f"Meeting declined (ID: {meeting_id})")
+
+    return jsonify({"success": True})
+
     #TODO Send email to notify student (with Zoom link)
 
     #TODO Display on user dashboard
-    #Set template to Home Page
     
 
     #TODO Display on owner dashboard
