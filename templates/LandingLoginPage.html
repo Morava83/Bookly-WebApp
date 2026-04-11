@@ -249,7 +249,7 @@
                     </div>
 
                     <button type="submit" id="loginButton">Log In</button>
-                    <a href="CreateAccountPage.html" class="secondary-button">Create Account</a>
+                    <a href="/create-account" class="secondary-button">Create Account</a>
                 </form>
 
                 <h2 class="section-heading">How Bookly works</h2>
@@ -267,9 +267,11 @@
             var form = document.getElementById('loginForm');
             var requiredFields = form.querySelectorAll('[required]');
             var emailField = document.getElementById('email');
-            var statusNote = document.getElementById('loginStatus');
+            var passwordField = document.getElementById('password');
 
-            form.addEventListener('submit', function (event) {
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+
                 var missingFields = [];
                 var firstProblemField = null;
 
@@ -293,9 +295,11 @@
                     }
                 }
 
-                if (emailField.value.trim() !== '' &&
+                if (
+                    emailField.value.trim() !== '' &&
                     emailField.checkValidity() &&
-                    !/@(mcgill\.ca|mail\.mcgill\.ca)$/i.test(emailField.value.trim())) {
+                    !/@(mcgill\.ca|mail\.mcgill\.ca)$/i.test(emailField.value.trim())
+                ) {
                     missingFields.push('McGill Email');
                     if (!firstProblemField) {
                         firstProblemField = emailField;
@@ -303,7 +307,6 @@
                 }
 
                 if (missingFields.length > 0) {
-                    event.preventDefault();
                     alert(
                         'Please complete all required fields before submitting.\n\n' +
                         'Missing or invalid: ' + missingFields.join(', ')
@@ -315,8 +318,29 @@
                     return;
                 }
 
-                event.preventDefault();
-                statusNote.textContent = 'Landing page only: this preview does not include a working login yet.';
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            email: emailField.value.trim(),
+                            password: passwordField.value
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        alert(result.error || 'Login failed.');
+                        return;
+                    }
+
+                    window.location.href = '/home';
+                } catch (error) {
+                    alert('Could not connect to the server.');
+                }
             });
         })();
     </script>

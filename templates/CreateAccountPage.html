@@ -245,7 +245,7 @@
                 <div class="success-banner" id="successBanner">
                     Account created successfully. You can return to the login page and sign in.
                 </div>
-                <a href="Landing&LoginPage.html" class="return-button" id="returnToLogin">Return to Login</a>
+                <a href="/" class="return-button" id="returnToLogin">Return to Login</a>
             </section>
         </div>
     </div>
@@ -259,10 +259,11 @@
             var confirmPasswordField = document.getElementById('confirmPassword');
             var successBanner = document.getElementById('successBanner');
             var returnButton = document.getElementById('returnToLogin');
-            var statusNote = document.getElementById('createAccountStatus');
             var submitButton = document.getElementById('createAccountButton');
 
-            form.addEventListener('submit', function (event) {
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+
                 var missingFields = [];
                 var firstProblemField = null;
 
@@ -286,18 +287,22 @@
                     }
                 }
 
-                if (emailField.value.trim() !== '' &&
+                if (
+                    emailField.value.trim() !== '' &&
                     emailField.checkValidity() &&
-                    !/@(mcgill\.ca|mail\.mcgill\.ca)$/i.test(emailField.value.trim())) {
+                    !/@(mcgill\.ca|mail\.mcgill\.ca)$/i.test(emailField.value.trim())
+                ) {
                     missingFields.push('McGill Email');
                     if (!firstProblemField) {
                         firstProblemField = emailField;
                     }
                 }
 
-                if (passwordField.value.trim() !== '' &&
+                if (
+                    passwordField.value.trim() !== '' &&
                     confirmPasswordField.value.trim() !== '' &&
-                    passwordField.value !== confirmPasswordField.value) {
+                    passwordField.value !== confirmPasswordField.value
+                ) {
                     missingFields.push('Matching Passwords');
                     if (!firstProblemField) {
                         firstProblemField = confirmPasswordField;
@@ -305,7 +310,6 @@
                 }
 
                 if (missingFields.length > 0) {
-                    event.preventDefault();
                     alert(
                         'Please complete all required fields before submitting.\n\n' +
                         'Missing or invalid: ' + missingFields.join(', ')
@@ -317,12 +321,34 @@
                     return;
                 }
 
-                event.preventDefault();
-                successBanner.classList.add('show');
-                returnButton.classList.add('show');
-                statusNote.textContent = 'Preview only: the account is not stored in a backend yet.';
-                submitButton.disabled = true;
-                submitButton.textContent = 'Account Created';
+                try {
+                    const response = await fetch('/api/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            first_name: document.getElementById('firstName').value.trim(),
+                            last_name: document.getElementById('lastName').value.trim(),
+                            email: emailField.value.trim(),
+                            password: passwordField.value
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        alert(result.error || 'Registration failed.');
+                        return;
+                    }
+
+                    successBanner.classList.add('show');
+                    returnButton.classList.add('show');
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Account Created';
+                } catch (error) {
+                    alert('Could not connect to the server.');
+                }
             });
         })();
     </script>
