@@ -11,7 +11,7 @@ from Type3 import type3_blueprint
 
 import database.CreateTables
 
-app = Flask(__name__, template_folder="frontend")
+app = Flask(__name__, template_folder="templates")
 socketio = SocketIO(app)
 app.secret_key = "dev-secret-key" # Change later
 
