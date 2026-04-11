@@ -35,10 +35,16 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
 
 # SOCKET NOTIFICATION
 
-def send_notification(message):
+def send_notification(message, user_id):
     try:
         from app import socketio
-        socketio.emit('notification', {'message': message})
+
+        socketio.emit(
+            "notification",
+            {"message": message},
+            to=str(user_id)
+        )
+
     except Exception as e:
         print("Socket error:", e)
 
@@ -64,6 +70,7 @@ def create_meeting(student_id, owner_id):
         VALUES (DATE('now'), '00:00', '00:00', 'pending')
     """)
 
+    #Access the last inserted meeting
     meeting_id = cursor.lastrowid
 
     cursor.execute("""
@@ -129,7 +136,7 @@ def request_meeting():
     )
 
     # Socket notification
-    send_notification(f"New meeting request from {user_email}")
+    send_notification(f"New meeting request from {user_email}", owner_id)
 
     return jsonify({
         "success": True,
@@ -195,13 +202,21 @@ def accept_meeting():
 
     # Get student email
     cursor.execute("""
-        SELECT u.email
+        SELECT r.studentID, u.email
         FROM RequestMeeting r
         JOIN User u ON r.studentID = u.userID
         WHERE r.meetingID = ?
     """, (meeting_id,))
 
     row = cursor.fetchone()
+    student_id = row[0]
+    student_email = row[1]
+
+    send_notification(
+        f"Meeting accepted for {student_email}",
+        student_id
+)
+
     conn.commit()
     conn.close()
 
@@ -222,7 +237,7 @@ def accept_meeting():
             password=config.get("EMAIL_PASSWORD")
         )
 
-        send_notification(f"Meeting accepted for {student_email}")
+        send_notification(f"Meeting accepted for {student_email}", student_id)
 
     return jsonify({"success": True})
 
@@ -250,7 +265,19 @@ def decline_meeting():
     conn.commit()
     conn.close()
 
-    send_notification(f"Meeting declined (ID: {meeting_id})")
+    cursor.execute("""
+        SELECT r.studentID, u.email
+        FROM RequestMeeting r
+        JOIN User u ON r.studentID = u.userID
+        WHERE r.meetingID = ?
+    """, (meeting_id,))
+
+    row = cursor.fetchone()
+
+    student_id = row[0]
+    student_email = row[1]  
+
+    send_notification(f"Meeting declined (ID: {meeting_id})", student_id)
 
     return jsonify({"success": True})
 
