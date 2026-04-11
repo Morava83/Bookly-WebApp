@@ -723,6 +723,28 @@
             showNotification(data.message);
         });
     </script>
-    
+    <!--Stor Meeting in Database-->
+    <script>
+        document.getElementById("bookButton").addEventListener("click", function () {
+            fetch("/create_meeting", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    student_id: 1,   // replace with real value
+                    owner_id: 2      // replace with real value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("bookingNote").innerText =
+                    "Meeting created! ID: " + data.meeting_id;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        });
+</script>
 </body>
 </html>
