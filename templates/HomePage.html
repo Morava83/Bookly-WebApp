@@ -172,7 +172,8 @@
 
         .selection-card,
         .slots-card,
-        .status-card {
+        .status-card,
+        .request-card {
             border: 1px solid #d6d6d6;
             background-color: #fff;
             padding: 18px;
@@ -244,7 +245,8 @@
             display: block;
         }
 
-        .book-button {
+        .book-button,
+        .send-button {
             width: 100%;
             padding: 14px 16px;
             border: none;
@@ -255,7 +257,8 @@
             cursor: pointer;
         }
 
-        .book-button:hover {
+        .book-button:hover,
+        .send-button:hover {
             background-color: #222;
         }
 
@@ -270,6 +273,20 @@
         }
 
         .booking-note.show {
+            display: block;
+        }
+
+        .error-note {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border: 1px solid #d2a0a0;
+            background-color: #fbeaea;
+            color: #7a1f1f;
+            line-height: 1.5;
+        }
+
+        .error-note.show {
             display: block;
         }
 
@@ -324,11 +341,44 @@
             flex: 0 0 12px;
         }
 
-        .side-note {
+        .request-card {
             margin-top: 18px;
-            font-size: 13px;
-            color: #666;
+        }
+
+        .request-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .request-select,
+        .request-textarea {
+            width: 100%;
+            font: inherit;
+            padding: 12px 14px;
+            border: 1px solid #9f9f9f;
+            background-color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .request-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .current-user-box {
+            margin-bottom: 18px;
+            padding: 12px 14px;
+            border: 1px solid #dddddd;
+            background-color: #f7f7f7;
+            font-size: 14px;
             line-height: 1.5;
+        }
+
+        .current-user-box strong {
+            display: inline-block;
+            min-width: 110px;
         }
 
         @media (max-width: 860px) {
@@ -381,8 +431,7 @@
                 <h1>Bookly</h1>
                 <p class="intro">
                     Select a day in the current booking window, choose a 15-minute time slot between
-                    7:00 AM and 7:00 PM, and then book the appointment. One month is shown at a time,
-                    with access to the current month plus the next 11 months.
+                    7:00 AM and 7:00 PM, and then prepare a Type 1 meeting request to an owner.
                 </p>
 
                 <div class="toolbar">
@@ -407,8 +456,9 @@
                     <div class="slots-grid" id="slotsGrid"></div>
 
                     <div class="book-area" id="bookArea">
-                        <button type="button" class="book-button" id="bookButton">Book</button>
+                        <button type="button" class="book-button" id="bookButton">Select Meeting Slot</button>
                         <div class="booking-note" id="bookingNote"></div>
+                        <div class="error-note" id="errorNote"></div>
                     </div>
                 </div>
             </section>
@@ -416,8 +466,7 @@
             <section class="right-panel">
                 <h2>Availability</h2>
                 <p class="panel-text" id="availabilityIntro">
-                    After you select a 15-minute time slot, the availability for Prof Vybihal and
-                    TA Yawen will appear here.
+                    After you select a 15-minute time slot, the availability panel updates and you can choose an owner to request a meeting with.
                 </p>
 
                 <div class="status-card" id="availabilityCard">
@@ -425,25 +474,40 @@
                     <div class="selection-value" id="availabilitySlotText"></div>
 
                     <div class="person-card">
-                        <div class="person-name">Prof Vybihal</div>
+                        <div class="person-name">Meeting request status</div>
                         <div class="status-row">
                             <span class="status-dot"></span>
-                            <span>Available</span>
+                            <span>Ready to send when owner and message are provided</span>
                         </div>
                     </div>
+                </div>
 
-                    <div class="person-card">
-                        <div class="person-name">TA Yawen</div>
-                        <div class="status-row">
-                            <span class="status-dot"></span>
-                            <span>Available</span>
-                        </div>
-                    </div>
+                <div class="current-user-box" id="currentUserBox">
+                    <div><strong>Logged-in user:</strong> <span id="currentUserName">Loading...</span></div>
+                    <div><strong>Email:</strong> <span id="currentUserEmail">Loading...</span></div>
+                    <div><strong>Role:</strong> <span id="currentUserRole">Loading...</span></div>
+                </div>
+
+                <div class="request-card">
+                    <label class="request-label" for="ownerSelect">Select owner</label>
+                    <select id="ownerSelect" class="request-select">
+                        <option value="">Choose an owner</option>
+                    </select>
+
+                    <label class="request-label" for="meetingMessage">Request message</label>
+                    <textarea
+                        id="meetingMessage"
+                        class="request-textarea"
+                        placeholder="Write your meeting request here..."
+                    ></textarea>
+
+                    <button type="button" class="send-button" id="sendRequestButton">Send Meeting Request</button>
                 </div>
             </section>
         </div>
     </div>
 
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         (function () {
             var today = new Date();
@@ -451,10 +515,13 @@
             var monthOffset = 0;
             var selectedDate = null;
             var selectedSlot = null;
+            var currentUser = null;
+
             var monthNames = [
                 'January', 'February', 'March', 'April', 'May', 'June',
                 'July', 'August', 'September', 'October', 'November', 'December'
             ];
+
             var weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             var slotOptions = buildSlotOptions();
 
@@ -469,14 +536,26 @@
             var availabilitySlotText = document.getElementById('availabilitySlotText');
             var bookArea = document.getElementById('bookArea');
             var bookButton = document.getElementById('bookButton');
+            var sendRequestButton = document.getElementById('sendRequestButton');
             var bookingNote = document.getElementById('bookingNote');
+            var errorNote = document.getElementById('errorNote');
             var prevMonthButton = document.getElementById('prevMonthButton');
             var nextMonthButton = document.getElementById('nextMonthButton');
+            var ownerSelect = document.getElementById('ownerSelect');
+            var meetingMessage = document.getElementById('meetingMessage');
+
+            var currentUserName = document.getElementById('currentUserName');
+            var currentUserEmail = document.getElementById('currentUserEmail');
+            var currentUserRole = document.getElementById('currentUserRole');
 
             renderWeekdays();
             renderCalendar();
             renderSlots();
             renderAvailability();
+
+            loadCurrentUser();
+            loadOwners();
+            setupSocket();
 
             prevMonthButton.addEventListener('click', function () {
                 if (monthOffset === 0) {
@@ -503,14 +582,137 @@
             });
 
             bookButton.addEventListener('click', function () {
+                clearMessages();
+
                 if (!selectedDate || !selectedSlot) {
+                    showError('Please choose a date and a 15-minute time slot first.');
                     return;
                 }
 
-                bookingNote.textContent = 'Booking preview saved for ' + formatSelectedSlot() + '.';
-                bookingNote.classList.add('show');
-                
+                showSuccess('Selected slot: ' + formatSelectedSlot());
             });
+
+            sendRequestButton.addEventListener('click', async function () {
+                clearMessages();
+
+                if (!selectedDate || !selectedSlot) {
+                    showError('Please choose a date and a 15-minute time slot first.');
+                    return;
+                }
+
+                if (!currentUser || !currentUser.email) {
+                    showError('You must be logged in.');
+                    return;
+                }
+
+                if (!ownerSelect.value) {
+                    showError('Please choose an owner.');
+                    return;
+                }
+
+                if (!meetingMessage.value.trim()) {
+                    showError('Please enter a request message.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/type1/request_meeting', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            student_email: currentUser.email,
+                            owner_email: ownerSelect.value,
+                            message: meetingMessage.value.trim()
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        showError(data.error || 'Could not create meeting request.');
+                        return;
+                    }
+
+                    showSuccess(
+                        'Successfully requested a meeting for ' +
+                        formatSelectedSlot() +
+                        '. Request ID: ' + data.meetingID
+                    );
+                } catch (error) {
+                    console.error('Error:', error);
+                    showError('Could not connect to the server.');
+                }
+            });
+
+            async function loadCurrentUser() {
+                try {
+                    const response = await fetch('/api/me');
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        currentUserName.textContent = 'Unavailable';
+                        currentUserEmail.textContent = 'Unavailable';
+                        currentUserRole.textContent = 'Unavailable';
+                        return;
+                    }
+
+                    currentUser = {
+                        userID: data.userID,
+                        email: data.email,
+                        name: data.name,
+                        role: data.role
+                    };
+
+                    currentUserName.textContent = currentUser.name || 'Unknown';
+                    currentUserEmail.textContent = currentUser.email || 'Unknown';
+                    currentUserRole.textContent = currentUser.role || 'Unknown';
+                } catch (error) {
+                    console.error('Error loading current user:', error);
+                    currentUserName.textContent = 'Unavailable';
+                    currentUserEmail.textContent = 'Unavailable';
+                    currentUserRole.textContent = 'Unavailable';
+                }
+            }
+
+            async function loadOwners() {
+                try {
+                    const response = await fetch('/api/owners');
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        showError(data.error || 'Could not load owners.');
+                        return;
+                    }
+
+                    ownerSelect.innerHTML = '<option value="">Choose an owner</option>';
+
+                    data.owners.forEach(function (owner) {
+                        var option = document.createElement('option');
+                        option.value = owner.email;
+                        option.textContent = owner.name + ' (' + owner.email + ')';
+                        ownerSelect.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('Error loading owners:', error);
+                    showError('Could not load owner list.');
+                }
+            }
+
+            function setupSocket() {
+                try {
+                    const socket = io();
+
+                    socket.on('notification', function (data) {
+                        if (data && data.message) {
+                            showSuccess(data.message);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Socket setup error:', error);
+                }
+            }
 
             function renderWeekdays() {
                 calendarHeader.innerHTML = '';
@@ -574,8 +776,7 @@
 
             function renderSlots() {
                 slotsGrid.innerHTML = '';
-                bookingNote.classList.remove('show');
-                bookingNote.textContent = '';
+                clearMessages();
 
                 if (!selectedDate) {
                     slotsNote.textContent = 'Select a date from the calendar to view 15-minute booking times.';
@@ -689,65 +890,28 @@
                     firstDate.getMonth() === secondDate.getMonth() &&
                     firstDate.getDate() === secondDate.getDate();
             }
+
+            function clearMessages() {
+                bookingNote.classList.remove('show');
+                bookingNote.textContent = '';
+                errorNote.classList.remove('show');
+                errorNote.textContent = '';
+            }
+
+            function showSuccess(message) {
+                bookingNote.textContent = message;
+                bookingNote.classList.add('show');
+                errorNote.classList.remove('show');
+                errorNote.textContent = '';
+            }
+
+            function showError(message) {
+                errorNote.textContent = message;
+                errorNote.classList.add('show');
+                bookingNote.classList.remove('show');
+                bookingNote.textContent = '';
+            }
         })();
     </script>
-
-    <!--Backend-to-Frontend Bridge-->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script>
-        const socket = io(); // connects to same host that served page
-        socket.emit("join", userID);
-        socket.on("notification", function(data) {
-            showNotification(data.message);
-        });
-
-        function showNotification(message) {
-            let div = document.createElement("div");
-            div.textContent = message;
-
-            // simple styling
-            div.style.position = "fixed";
-            div.style.top = "20px";
-            div.style.right = "20px";
-            div.style.background = "#111";
-            div.style.color = "#fff";
-            div.style.padding = "12px 16px";
-            div.style.borderRadius = "8px";
-            div.style.zIndex = "9999";
-
-            document.body.appendChild(div);
-
-            setTimeout(() => div.remove(), 4000);
-        }
-        //Listen for Notifications
-        socket.on("notification", function(data) {
-            showNotification(data.message);
-        });
-    </script>
-
-    <!--Store Meeting in Database-->
-    <script>
-        document.getElementById("bookButton").addEventListener("click", function () {
-            fetch("/create_meeting", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    student_id: 1,   // replace with real value
-                    owner_id: 2      // replace with real value
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("bookingNote").innerText =
-                    "Meeting created! ID: " + data.meeting_id;
-            })
-            .catch(error => {
-                console.error("Error:", error);
-            });
-        });
-    </script>
-    
 </body>
 </html>

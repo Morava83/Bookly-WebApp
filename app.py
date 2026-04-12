@@ -207,6 +207,34 @@ def me():
     finally:
         conn.close()
 
+@app.route("/api/owners", methods=["GET"])
+@login_required
+def get_owners():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT u.userID, u.name, u.email
+            FROM Owner o
+            JOIN User u ON o.userID = u.userID
+            ORDER BY u.name
+        """)
+        rows = cur.fetchall()
+
+        return jsonify({
+            "owners": [
+                {
+                    "userID": row["userID"],
+                    "name": row["name"],
+                    "email": row["email"]
+                }
+                for row in rows
+            ]
+        }), 200
+    finally:
+        conn.close()
+
 # ======== Pages ==========
 @app.route("/")
 def login_page():
