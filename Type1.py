@@ -60,7 +60,7 @@ def get_user_id(email):
     conn.close()
     return row[0] if row else None
 
-
+@type1_blueprint.route("/create_meeting", methods=["POST"])
 def create_meeting(student_id, owner_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()

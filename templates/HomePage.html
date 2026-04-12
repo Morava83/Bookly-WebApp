@@ -509,6 +509,7 @@
 
                 bookingNote.textContent = 'Booking preview saved for ' + formatSelectedSlot() + '.';
                 bookingNote.classList.add('show');
+                
             });
 
             function renderWeekdays() {
@@ -723,7 +724,8 @@
             showNotification(data.message);
         });
     </script>
-    <!--Stor Meeting in Database-->
+
+    <!--Store Meeting in Database-->
     <script>
         document.getElementById("bookButton").addEventListener("click", function () {
             fetch("/create_meeting", {
@@ -745,6 +747,7 @@
                 console.error("Error:", error);
             });
         });
-</script>
+    </script>
+    
 </body>
 </html>
