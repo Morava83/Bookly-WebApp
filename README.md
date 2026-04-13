@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 python app.py
 
-Visit: requirements.txt
+Visit: (http://127.0.0.1:5000)
 
 # Database
 The SQLite3 database file is stored at database/bookly.db
