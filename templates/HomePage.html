@@ -381,6 +381,17 @@
             min-width: 110px;
         }
 
+        .right-panel-tabs button {
+            display: block;
+            width: 100%;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        .view-appointment-tab-view {
+            display: none;
+        }
+
         @media (max-width: 860px) {
             .left-panel {
                 border-right: none;
@@ -428,43 +439,68 @@
     <div class="page">
         <div class="card">
             <section class="left-panel">
-                <h1>Bookly</h1>
-                <p class="intro">
-                    Select a day in the current booking window, choose a 15-minute time slot between
-                    7:00 AM and 7:00 PM, and then prepare a Type 1 meeting request to an owner.
-                </p>
-
-                <div class="toolbar">
-                    <button type="button" class="nav-button" id="prevMonthButton" aria-label="Previous month">&lt;</button>
-                    <div class="month-title" id="monthTitle">Month Year</div>
-                    <button type="button" class="nav-button" id="nextMonthButton" aria-label="Next month">&gt;</button>
-                </div>
-
-                <div class="calendar-header" id="calendarHeader"></div>
-                <div class="calendar-grid" id="calendarGrid"></div>
-
-                <div class="selection-card">
-                    <div class="selection-label">Selected booking slot</div>
-                    <div class="selection-value" id="selectedSlotText">Choose a date and a 15-minute time slot.</div>
-                </div>
-
-                <div class="slots-card">
-                    <h2 class="slots-card-title">Time slots</h2>
-                    <p class="slots-note" id="slotsNote">
-                        Select a date from the calendar to view 15-minute booking times.
+                <div class="make-appointment-tab-view">
+                    <h1>Bookly</h1>
+                    <p class="intro">
+                        Select a day in the current booking window, choose a 15-minute time slot between
+                        7:00 AM and 7:00 PM, and then prepare a Type 1 meeting request to an owner.
                     </p>
-                    <div class="slots-grid" id="slotsGrid"></div>
 
-                    <div class="book-area" id="bookArea">
-                        <button type="button" class="book-button" id="bookButton">Select Meeting Slot</button>
-                        <div class="booking-note" id="bookingNote"></div>
-                        <div class="error-note" id="errorNote"></div>
+                    <div class="toolbar">
+                        <button type="button" class="nav-button" id="prevMonthButton" aria-label="Previous month">&lt;</button>
+                        <div class="month-title" id="monthTitle">Month Year</div>
+                        <button type="button" class="nav-button" id="nextMonthButton" aria-label="Next month">&gt;</button>
                     </div>
+
+                    <div class="calendar-header" id="calendarHeader"></div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+
+                    <div class="selection-card">
+                        <div class="selection-label">Selected booking slot</div>
+                        <div class="selection-value" id="selectedSlotText">Choose a date and a 15-minute time slot.</div>
+                    </div>
+
+                    <div class="slots-card">
+                        <h2 class="slots-card-title">Time slots</h2>
+                        <p class="slots-note" id="slotsNote">
+                            Select a date from the calendar to view 15-minute booking times.
+                        </p>
+                        <div class="slots-grid" id="slotsGrid"></div>
+
+                        <div class="book-area" id="bookArea">
+                            <button type="button" class="book-button" id="bookButton">Select Meeting Slot</button>
+                            <div class="booking-note" id="bookingNote"></div>
+                            <div class="error-note" id="errorNote"></div>
+                        </div>
+                    </div>
+                
+                </div>
+                <div class="view-appointment-tab-view">
+                    <h1>Your Appointments</h1>
+                    <p class="intro">
+                        Browse the calendar to view your booked appointments.
+                    </p>
+ 
+                    <div class="toolbar">
+                        <button type="button" class="nav-button" id="viewPrevMonthButton" aria-label="Previous month">&lt;</button>
+                        <div class="month-title" id="viewMonthTitle">Month Year</div>
+                        <button type="button" class="nav-button" id="viewNextMonthButton" aria-label="Next month">&gt;</button>
+                    </div>
+ 
+                    <div class="calendar-header" id="viewCalendarHeader"></div>
+                    <div class="calendar-grid" id="viewCalendarGrid"></div>
                 </div>
             </section>
 
             <section class="right-panel">
                 <h2>Availability</h2>
+
+                <div class="current-user-box" id="currentUserBox">
+                    <div><strong>Logged-in user:</strong> <span id="currentUserName">Loading...</span></div>
+                    <div><strong>Email:</strong> <span id="currentUserEmail">Loading...</span></div>
+                    <div><strong>Role:</strong> <span id="currentUserRole">Loading...</span></div>
+                </div>
+
                 <p class="panel-text" id="availabilityIntro">
                     After you select a 15-minute time slot, the availability panel updates and you can choose an owner to request a meeting with.
                 </p>
@@ -482,10 +518,13 @@
                     </div>
                 </div>
 
-                <div class="current-user-box" id="currentUserBox">
-                    <div><strong>Logged-in user:</strong> <span id="currentUserName">Loading...</span></div>
-                    <div><strong>Email:</strong> <span id="currentUserEmail">Loading...</span></div>
-                    <div><strong>Role:</strong> <span id="currentUserRole">Loading...</span></div>
+                <div class="right-panel-tabs">
+                    <button onclick="make_appointment()">
+                        <h3>Make a new appointment</h3>
+                    </button>
+                    <button onclick="view_appointments()">
+                        <h3>View appointments</h3>
+                    </button>
                 </div>
 
                 <div class="request-card">
@@ -509,6 +548,14 @@
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
+        function view_appointments(){
+            document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
+            document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'block';
+        }
+        function make_appointment(){
+            document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'block';
+            document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'none';
+        }
         (function () {
             var today = new Date();
             var startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
