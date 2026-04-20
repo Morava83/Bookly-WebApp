@@ -156,6 +156,56 @@ def create_office_hours():
         conn.close() 
 
 
+# Get avaliable slots for students
+@type3_blueprint.route("/available_slots", methods=["GET"])
+@login_required
+def available_slots():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                ts.slotID,
+                ts.meetingID
+                ts.start_date,
+                ts.end_date,
+                ts.start_time,
+                ts.end_time,
+                ts.ownerID,
+                u.name AS owner_name
+                u.email AS owner_email
+            FROM TimeSlot ts
+            JOIN OfficeHours oh ON ts.meetingID = oh.meetingID
+            JOIN Meeting m ON m.meetingID = oh.meetingID
+            JOIN User u ON u.userID = oh.ownerID
+            LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
+            WHERE b3.slotID IS NULL
+            AND m.status IN ('open', 'booked')
+            ORDER BY ts.start_date, ts.start_time
+        """)
+
+        rows = cur.fetchall()
+
+        return jsonify({
+            "slots": [
+                {
+                    "slotID": row["slotID"],
+                    "meetingID": row["meetingID"],
+                    "date": row["start_date"],
+                    "start_time": row["start_time"],
+                    "end_time": row["end_time"],
+                    "ownerID": row["ownerID"],
+                    "owner_name": row["owner_name"],
+                    "owner_email": row["owner_email"]
+                }
+                for row in rows
+            ]
+        }), 200
+
+    finally:
+        conn.close()
+
 
 #User picks slots to book appointment
 #Email is sent to owner
