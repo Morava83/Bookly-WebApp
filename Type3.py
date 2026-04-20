@@ -14,14 +14,20 @@ DB_PATH = os.path.join(BASE_DIR, "database", "bookly.db")
 
 # Database connection
 def get_db_connection():
+    # Opens connection to SQLite database file at DB_PATH
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foregin_keys = ON")
 
+    # returns DB with dictionary format -> row["slotID"]
+    conn.row_factory = sqlite3.Row
+
+    # Emnable SQLite foreign-key checks
+    conn.execute("PRAGMA foreign_keys = ON")
+
+    return conn
 
 # Email function
-
 def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password):
+    # Multipart email message container
     msg = MIMEMultipart()
     msg["From"] = from_email
     msg["To"] = to_email
@@ -36,6 +42,7 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
     except Exception as e:
         print("Email error:", e)
 
+# Socket information
 def send_notification(message, user_id):
     try:
         from app import socketio
@@ -43,7 +50,7 @@ def send_notification(message, user_id):
     except Exception as e:
         print("Socket error:", e)
 
-
+# Flask: only logged-in user can access
 def login_required(fn):
     def wrapper(*args, **kwargs):
         if "user_id" not in session:
@@ -52,7 +59,8 @@ def login_required(fn):
     wrapper.__name__ = fn.__name__
     return wrapper
 
-def owner_requried(fn):
+# Flask: restrict access to owners only
+def owner_required(fn):
     def wrapper(*args, **kwargs):
         if "user_id" not in session:
             return jsonify({"error": "Login required"}), 401
@@ -62,6 +70,7 @@ def owner_requried(fn):
     wrapper.__name__ = fn.__name__
     return wrapper
 
+# Converts weekday name to weekday number
 def weekday_name_to_index(name):
     mapping = {
         "monday": 0,
@@ -74,28 +83,32 @@ def weekday_name_to_index(name):
     }
     return mapping.get((name or "").strip().lower())
 
-
+# Generates recurring dates for one weekday accross serveral weeks
 def generate_dates_for_weekday(start_date_str, weekday_index, num_weeks):
+    # Parse ipnut string into python "date" objects
     start_dt = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+
+    # how many days forward to move from the start date
     days_ahead = (weekday_index - start_dt.weekday()) % 7
+
+    # computes the first date of the requested weekday
     first_occurrence = start_dt + timedelta(days=days_ahead)
 
+    # recurring date storage
     dates = []
     for i in range(num_weeks):
         dates.append(first_occurrence + timedelta(weeks=i))
     return dates
 
-#---------Media Query-----------
-#Get available slots from timeSlot table
-
 
 #---------Create Meeting---------
 # owner creates recurring office hours
 @type3_blueprint.route("/create_office_hours", methods=["POST"])
-@owner_requried
+@owner_required
 def create_office_hours():
     data = request.get_json() or {}
 
+    # Pulls expected fields out the JSON
     start_date = data.get("start_date")
     num_weeks = int(data.get("num_weeks", 0))
     weekly_slots = data.get("weekly_slots", [])
@@ -104,24 +117,30 @@ def create_office_hours():
     if not start_date or num_weeks <= 0 or not weekly_slots:
         return jsonify({"error": "Missing required fields"}), 400
     
+    # Takes logged-in owner's user ID from session
     owner_id = session["user_id"]
 
+    # Get database connection
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
+        # insert one row into meeting using start date with status 'open'
         cur.execute("""
             INSERT INTO Meeting (date, start_time, end_time, status)
-            VALUES (?, ?, ?, 'open)
+            VALUES (?, ?, ?, 'open')
         """, (start_date, weekly_slots[0]["start_time"], weekly_slots[0]["end_time"]))
 
+        # stores ID of the newly inserted Meeting 
         meeting_id = cur.lastrowid
 
+        # Creates link between the meeting and the owner in OfficeHour table
         cur.execute("""
             INSERT INTO OfficeHours (meetingID, ownerID)
             VALUES (?, ?)
         """, (meeting_id, owner_id))
 
+        # Counts how many slots was created
         inserted_slots = 0
 
         for slot in weekly_slots:
@@ -129,9 +148,11 @@ def create_office_hours():
             if weekday_index is None:
                 continue
             
+            # Generate recurring calendar dates
             dates = generate_dates_for_weekday(start_date, weekday_index, num_weeks)
 
             for d in dates:
+                # Inserts one TimeSlot row for each recurring date
                 cur.execute("""
                     INSERT INTO TimeSlot (meetingID, start_date, end_date, start_time, end_time)
                     VALUES (?, ?, ?, ?, ?)
@@ -164,16 +185,17 @@ def available_slots():
     cur = conn.cursor()
 
     try:
+        # Select slot details and owner information
         cur.execute("""
             SELECT
                 ts.slotID,
-                ts.meetingID
+                ts.meetingID,
                 ts.start_date,
                 ts.end_date,
                 ts.start_time,
                 ts.end_time,
-                ts.ownerID,
-                u.name AS owner_name
+                oh.ownerID,
+                u.name AS owner_name,
                 u.email AS owner_email
             FROM TimeSlot ts
             JOIN OfficeHours oh ON ts.meetingID = oh.meetingID
