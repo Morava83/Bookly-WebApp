@@ -90,6 +90,73 @@ def generate_dates_for_weekday(start_date_str, weekday_index, num_weeks):
 
 
 #---------Create Meeting---------
+# owner creates recurring office hours
+@type3_blueprint.route("/create_office_hours", methods=["POST"])
+@owner_requried
+def create_office_hours():
+    data = request.get_json() or {}
+
+    start_date = data.get("start_date")
+    num_weeks = int(data.get("num_weeks", 0))
+    weekly_slots = data.get("weekly_slots", [])
+    # e.g. {"weekday": "monday", "start_time": "10:00", "end_time": "10:15"}
+
+    if not start_date or num_weeks <= 0 or not weekly_slots:
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    owner_id = session["user_id"]
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            INSERT INTO Meeting (date, start_time, end_time, status)
+            VALUES (?, ?, ?, 'open)
+        """, (start_date, weekly_slots[0]["start_time"], weekly_slots[0]["end_time"]))
+
+        meeting_id = cur.lastrowid
+
+        cur.execute("""
+            INSERT INTO OfficeHours (meetingID, ownerID)
+            VALUES (?, ?)
+        """, (meeting_id, owner_id))
+
+        inserted_slots = 0
+
+        for slot in weekly_slots:
+            weekday_index = weekday_name_to_index(slot.get("weekday"))
+            if weekday_index is None:
+                continue
+            
+            dates = generate_dates_for_weekday(start_date, weekday_index, num_weeks)
+
+            for d in dates:
+                cur.execute("""
+                    INSERT INTO TimeSlot (meetingID, start_date, end_date, start_time, end_time)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (
+                    meeting_id,
+                    d.isoformat(),
+                    d.isoformat(),
+                    slot["start_time"],
+                    slot["end_time"]
+                ))
+                inserted_slots += 1
+        
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "meetingID": meeting_id,
+            "slots_created": inserted_slots
+        }), 201
+
+    finally:
+        conn.close() 
+
+
+
 #User picks slots to book appointment
 #Email is sent to owner
 #Possibly include zoom link in email
