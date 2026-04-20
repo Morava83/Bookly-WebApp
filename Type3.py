@@ -257,14 +257,17 @@ def book_slots():
                 ts.start_time,
                 ts.end_time,
                 oh.ownerID,
-                u.email AS owner_email
+                u.email AS owner_email,
+                su.email AS student_email,
+                su.name AS student_name   
             FROM TimeSlot ts
             JOIN OfficeHours oh ON ts.meetingID = oh.meetingID
             JOIN User u ON u.userID = oh.ownerID
+            JOIN User su ON su.userID = ?
             LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
             WHERE ts.slotID = ?
               AND b3.slotID IS NULL
-        """, (slot_id,))
+        """, (student_id, slot_id,))
 
         row = cur.fetchone()
 
@@ -287,7 +290,12 @@ def book_slots():
         config = current_app.config
         send_email(
             subject="Office Hours Slot Booked",
-            body=f"A student booked your office hours slot on {row['start_date']} from {row['start_time']} to {row['end_time']}.",
+            body=(
+                f"Your office hours slot has been booked.\n\n"
+                f"Student: {row['student_name']} ({row['student_email']})\n"
+                f"Date: {row['start_date']}\n"
+                f"Time: {row['start_time']} - {row['end_time']}\n"
+            ),
             to_email=row["owner_email"],
             from_email=config.get("FROM_EMAIL"),
             smtp_server=config.get("SMTP_SERVER"),
@@ -395,8 +403,6 @@ def cancel_booking():
 
 
 #Possibly include zoom link in email
-
-#Booking must appear on user and owner dashboard
 
 #----------Database------------
 #Update Booking table with a modification (insert) command
