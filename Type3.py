@@ -209,6 +209,7 @@ def available_slots():
 
         rows = cur.fetchall()
 
+        # returns a JSON response containing a list of available slots
         return jsonify({
             "slots": [
                 {
@@ -230,7 +231,169 @@ def available_slots():
 
 
 #User picks slots to book appointment
+@type3_blueprint.route("/book_slot", methods=["POST"])
+@login_required
+def book_slots():
+    if session.get("role") != "user":
+        return jsonify({"error": "Only students can book office hours"}), 403
+    
+    data = request.get_json() or {}
+    slot_id = data.get("slotID")
+
+    if not slot_id:
+        return jsonify({"error": "Missing slotID"}), 400 
+    
+    student_id = session["user_id"]
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                ts.slotID,
+                ts.meetingID,
+                ts.start_date,
+                ts.start_time,
+                ts.end_time,
+                oh.ownerID,
+                u.email AS owner_email
+            FROM TimeSlot ts
+            JOIN OfficeHours oh ON ts.meetingID = oh.meetingID
+            JOIN User u ON u.userID = oh.ownerID
+            LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
+            WHERE ts.slotID = ?
+              AND b3.slotID IS NULL
+        """, (slot_id,))
+
+        row = cur.fetchone()
+
+        if not row:
+            return jsonify({"error": "Slot not found or already booked"}), 409
+
+        cur.execute("""
+            INSERT INTO Booking3 (studentID, ownerID, meetingID, slotID)
+            VALUES (?, ?, ?, ?)
+        """, (student_id, row["ownerID"], row["meetingID"], row["slotID"]))
+
+        cur.execute("""
+            UPDATE Meeting
+            SET status = 'booked'
+            WHERE meetingID = ?
+        """, (row["meetingID"],))
+
+        conn.commit()
+
+        config = current_app.config
+        send_email(
+            subject="Office Hours Slot Booked",
+            body=f"A student booked your office hours slot on {row['start_date']} from {row['start_time']} to {row['end_time']}.",
+            to_email=row["owner_email"],
+            from_email=config.get("FROM_EMAIL"),
+            smtp_server=config.get("SMTP_SERVER"),
+            smtp_port=config.get("SMTP_PORT"),
+            username=config.get("FROM_EMAIL"),
+            password=config.get("EMAIL_PASSWORD")
+        )
+
+        send_notification(
+            f"New office hours booking on {row['start_date']} at {row['start_time']}",
+            row["ownerID"]
+        )
+
+        return jsonify({"success": True}), 201
+
+    finally:
+        conn.close()
+
+
+# Viewing bookings
+@type3_blueprint.route("/my_bookings", methods=["GET"])
+@login_required
+def my_bookings():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        if session.get("role") == "user":
+            cur.execute("""
+                SELECT
+                    b3.booking3ID,
+                    b3.slotID,
+                    ts.start_date,
+                    ts.start_time,
+                    ts.end_time,
+                    u.name AS owner_name,
+                    u.email AS owner_email
+                FROM Booking3 b3
+                JOIN TimeSlot ts ON ts.slotID = b3.slotID
+                JOIN User u ON u.userID = b3.ownerID
+                WHERE b3.studentID = ?
+                ORDER BY ts.start_date, ts.start_time
+            """, (session["user_id"],))
+        else:
+            cur.execute("""
+                SELECT
+                    b3.booking3ID,
+                    b3.slotID,
+                    ts.start_date,
+                    ts.start_time,
+                    ts.end_time,
+                    su.name AS student_name,
+                    su.email AS student_email
+                FROM Booking3 b3
+                JOIN TimeSlot ts ON ts.slotID = b3.slotID
+                JOIN User su ON su.userID = b3.studentID
+                WHERE b3.ownerID = ?
+                ORDER BY ts.start_date, ts.start_time
+            """, (session["user_id"],))
+
+        rows = cur.fetchall()
+
+        return jsonify({"bookings": [dict(row) for row in rows]}), 200
+
+    finally:
+        conn.close()
+
+
+# Cancels Booking
+@type3_blueprint.route("/cancel_booking", methods=["POST"])
+@login_required
+def cancel_booking():
+    data = request.get_json() or {}
+    booking_id = data.get("booking3ID")
+
+    if not booking_id:
+        return jsonify({"error": "Missing booking3ID"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        if session.get("role") == "user":
+            cur.execute("""
+                DELETE FROM Booking3
+                WHERE booking3ID = ? AND studentID = ?
+            """, (booking_id, session["user_id"]))
+        else:
+            cur.execute("""
+                DELETE FROM Booking3
+                WHERE booking3ID = ? AND ownerID = ?
+            """, (booking_id, session["user_id"]))
+
+        if cur.rowcount == 0:
+            return jsonify({"error": "Booking not found"}), 404
+
+        conn.commit()
+        return jsonify({"success": True}), 200
+
+    finally:
+        conn.close()
+
+
 #Email is sent to owner
+
+
 #Possibly include zoom link in email
 
 #Booking must appear on user and owner dashboard
