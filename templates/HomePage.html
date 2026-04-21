@@ -594,6 +594,27 @@
             }
             return options;
         }
+
+        function formatDateForApi(dateObj) {
+            var year = dateObj.getFullYear();
+            var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            var day = String(dateObj.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        function calculateEndTime(startTime) {
+            var parts = startTime.split(':');
+            var hour = parseInt(parts[0], 10);
+            var minute = parseInt(parts[1], 10);
+
+            minute += 15;
+            if (minute >= 60) {
+                hour += 1;
+                minute -= 60;
+            }
+
+            return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+        }
  
         /* Reusable calendar factory
             Pass element IDs + optional callbacks */
@@ -790,7 +811,11 @@
                         body: JSON.stringify({
                             student_email: currentUser.email,
                             owner_email: ownerSelect.value,
-                            message: meetingMessage.value.trim()
+                            message: meetingMessage.value.trim(),
+                            date: formatDateForApi(cal.getSelectedDate()),
+                            start_time: selectedSlot.value,
+                            end_time: calculateEndTime(selectedSlot.value, 15)
+                            
                         })
                     });
  
