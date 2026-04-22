@@ -3,6 +3,7 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO
 import sqlite3
+import os
 
 # Blueprint is registered at the bottom
 from Type1 import type1_blueprint
@@ -14,16 +15,18 @@ import database.CreateTables
 app = Flask(__name__, template_folder="templates")
 #socketio = SocketIO(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-app.secret_key = "dev-secret-key" # Change later
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key") # Change later
 
 # Dynamic media query / SMTP config
 app.config.update({
-    "FROM_EMAIL": "your_email@mail.mcgill.ca",
-    "EMAIL_PASSWORD": "your_app_password",
-    "SMTP_SERVER": "smtp.office365.com",
-    "SMTP_PORT": 587,
-    "DB_PATH": "database/bookly.db"
+    "FROM_EMAIL": os.environ.get("FROM_EMAIL", "your_email@mail.mcgill.ca"),
+    "EMAIL_PASSWORD": os.environ.get("EMAIL_PASSWORD", "your_app_password"),
+    "SMTP_SERVER": os.environ.get("SMTP_SERVER", "smtp.office365.com"),
+    "SMTP_PORT": int(os.environ.get("SMTP_PORT", "587")),
+    "DB_PATH": os.environ.get("DB_PATH", "database/bookly.db"),
 })
+
+database.CreateTables.create_tables()
 
 # ======== DB helper ========
 def get_db_connection():
