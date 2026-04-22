@@ -67,8 +67,35 @@ def get_user_id(email):
     conn.close()
     return row[0] if row else None
 
+def get_student_id(email):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT s.userID
+        FROM Student s
+        JOIN User u ON s.userID = u.userID
+        WHERE u.email = ?
+    """, (email,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["userID"] if row else None
+
+
+def get_owner_id(email):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT o.userID
+        FROM Owner o
+        JOIN User u ON o.userID = u.userID
+        WHERE u.email = ?
+    """, (email,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["userID"] if row else None
+
 # @type1_blueprint.route("/create_meeting", methods=["POST"])
-def create_meeting(student_id, owner_id, message):
+def create_meeting(student_id, owner_id, message, meeting_date, start_time, end_time):
     """
     Insert into Meeting + RequestMeeting 
     """
@@ -78,8 +105,8 @@ def create_meeting(student_id, owner_id, message):
 
     cursor.execute("""
         INSERT INTO Meeting (date, start_time, end_time, status)
-        VALUES (DATE('now'), '00:00', '00:00', 'pending')
-    """)
+        VALUES (?, ?, ?, 'pending')
+    """, (meeting_date, start_time, end_time))
 
     #Access the last inserted meeting
     meeting_id = cursor.lastrowid
@@ -105,18 +132,32 @@ def request_meeting():
     user_email = data.get('student_email')
     owner_email = data.get('owner_email')
     message = data.get('message')
+    meeting_date = data.get('date')
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')
 
-    if not user_email or not owner_email or not message:
+    if not user_email or not owner_email or not message or not meeting_date or not start_time or not end_time:
         return jsonify({"error": "Missing required fields"}), 400
 
-    student_id = get_user_id(user_email)
-    owner_id = get_user_id(owner_email)
 
-    if not student_id or not owner_id:
+    student_id = get_student_id(user_email)
+    owner_id = get_owner_id(owner_email)
+
+    if not student_id:
         return jsonify({"error": "Invalid user"}), 400
+    
+    if not owner_id:
+        return jsonify({"error": "Selected owner is not a registered owner"})
 
     # Create meeting request
-    meeting_id = create_meeting(student_id, owner_id, message)
+    meeting_id = create_meeting(
+        student_id, 
+        owner_id, 
+        message,
+        meeting_date,
+        start_time,
+        end_time
+    )
 
     # # Update message in RequestMeeting (since insert used empty string earlier)
     # conn = sqlite3.connect(DB_PATH)
