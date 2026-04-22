@@ -112,6 +112,7 @@ def create_office_hours():
     start_date = data.get("start_date")
     num_weeks = int(data.get("num_weeks", 0))
     weekly_slots = data.get("weekly_slots", [])
+    zoom_link = (data,get("zoom_link") or "").strip() or None
     # e.g. {"weekday": "monday", "start_time": "10:00", "end_time": "10:15"}
 
     if not start_date or num_weeks <= 0 or not weekly_slots:
@@ -127,9 +128,9 @@ def create_office_hours():
     try:
         # insert one row into meeting using start date with status 'open'
         cur.execute("""
-            INSERT INTO Meeting (date, start_time, end_time, status)
+            INSERT INTO Meeting (date, start_time, end_time, status, zoom_link)
             VALUES (?, ?, ?, 'open')
-        """, (start_date, weekly_slots[0]["start_time"], weekly_slots[0]["end_time"]))
+        """, (start_date, weekly_slots[0]["start_time"], weekly_slots[0]["end_time"], zoom_link))
 
         # stores ID of the newly inserted Meeting 
         meeting_id = cur.lastrowid
@@ -197,6 +198,7 @@ def available_slots():
                 oh.ownerID,
                 u.name AS owner_name,
                 u.email AS owner_email
+                m.zoom_link
             FROM TimeSlot ts
             JOIN OfficeHours oh ON ts.meetingID = oh.meetingID
             JOIN Meeting m ON m.meetingID = oh.meetingID
@@ -220,7 +222,8 @@ def available_slots():
                     "end_time": row["end_time"],
                     "ownerID": row["ownerID"],
                     "owner_name": row["owner_name"],
-                    "owner_email": row["owner_email"]
+                    "owner_email": row["owner_email"],
+                    "zoom_link": row["zoom_link"]
                 }
                 for row in rows
             ]
@@ -259,9 +262,11 @@ def book_slots():
                 oh.ownerID,
                 u.email AS owner_email,
                 su.email AS student_email,
-                su.name AS student_name   
+                su.name AS student_name  
+                m.zoom_link 
             FROM TimeSlot ts
             JOIN OfficeHours oh ON ts.meetingID = oh.meetingID
+            JOIN Meeting m ON m.meetingID = ts.meetingID
             JOIN User u ON u.userID = oh.ownerID
             JOIN User su ON su.userID = ?
             LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
@@ -295,6 +300,7 @@ def book_slots():
                 f"Student: {row['student_name']} ({row['student_email']})\n"
                 f"Date: {row['start_date']}\n"
                 f"Time: {row['start_time']} - {row['end_time']}\n"
+                f"Zoom Link: {row['zoom_link'] or 'Not provided'}\n"
             ),
             to_email=row["owner_email"],
             from_email=config.get("FROM_EMAIL"),
@@ -333,6 +339,7 @@ def my_bookings():
                     ts.end_time,
                     u.name AS owner_name,
                     u.email AS owner_email
+                    m.zoom_link
                 FROM Booking3 b3
                 JOIN TimeSlot ts ON ts.slotID = b3.slotID
                 JOIN User u ON u.userID = b3.ownerID
@@ -349,6 +356,7 @@ def my_bookings():
                     ts.end_time,
                     su.name AS student_name,
                     su.email AS student_email
+                    m.zoom_link
                 FROM Booking3 b3
                 JOIN TimeSlot ts ON ts.slotID = b3.slotID
                 JOIN User su ON su.userID = b3.studentID

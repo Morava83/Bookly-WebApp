@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS Meeting (
     date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'accepted', 'declined', 'open', 'booked', 'cancelled'))
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'accepted', 'declined', 'open', 'booked', 'cancelled')),
+    zoom_link TEXT
 );
 
 -- ======== Type 1 : Request Meeting ========
