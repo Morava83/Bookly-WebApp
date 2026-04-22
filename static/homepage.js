@@ -167,6 +167,7 @@ function createCalendar(opts) {
     var selectedSlot = null;
     var currentUser = null;
     var slotOptions = buildSlotOptions();
+    var logoutButton = document.getElementById('logoutButton');
 
     var slotsGrid = document.getElementById('slotsGrid');
     var slotsNote = document.getElementById('slotsNote');
@@ -209,6 +210,30 @@ function createCalendar(opts) {
     loadCurrentUser();
     loadOwners();
     setupSocket();
+
+    logoutButton.addEventListener('click', async function(){
+        try {
+            const response = await fetch('/api/logout', {
+                method: 'POST',
+                header: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(data.error || 'Could not log out.');
+                return;
+            }
+
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Logout error:', error);
+            showError('Could not log out.')
+        }
+    });
+
 
     bookButton.addEventListener('click', function () {
         clearMessages();
