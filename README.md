@@ -20,3 +20,7 @@ The SQLite3 database file is stored at database/bookly.db
 Database Schema: database/CreateTables.sql
 Database Initialized: database/CreateTables.py
 
+# Deployment 
+Deployed to the Render Hosting Service 
+
+Public URL: https://bookly-webapp.onrender.com/
