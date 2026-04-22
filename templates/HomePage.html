@@ -3,444 +3,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bookly - Homepage</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #f2f2f2;
-            color: #222;
-        }
-
-        .page {
-            max-width: 1280px;
-            margin: 36px auto;
-            padding: 0 18px;
-        }
-
-        .card {
-            display: flex;
-            flex-wrap: wrap;
-            background-color: #ffffff;
-            border: 1px solid #d9d9d9;
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-        }
-
-        .left-panel,
-        .right-panel {
-            padding: 32px;
-        }
-
-        .left-panel {
-            flex: 1 1 760px;
-            min-width: 320px;
-            background-color: #fafafa;
-            border-right: 1px solid #ececec;
-        }
-
-        .right-panel {
-            flex: 1 1 320px;
-            min-width: 280px;
-        }
-
-        h1 {
-            margin: 0 0 12px;
-            font-size: 50px;
-            line-height: 1;
-        }
-
-        h2 {
-            margin: 0 0 12px;
-            font-size: 26px;
-        }
-
-        .intro {
-            margin: 0 0 26px;
-            max-width: 620px;
-            line-height: 1.6;
-            color: #444;
-        }
-
-        .toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-            margin-bottom: 18px;
-        }
-
-        .month-title {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            flex: 1;
-        }
-
-        .nav-button {
-            width: 52px;
-            padding: 10px 0;
-            border: 1px solid #8d8d8d;
-            background-color: #fff;
-            color: #111;
-            font-size: 20px;
-            cursor: pointer;
-        }
-
-        .nav-button:hover {
-            background-color: #f3f3f3;
-        }
-
-        .nav-button:disabled {
-            cursor: default;
-            color: #999;
-            background-color: #f5f5f5;
-        }
-
-        .calendar-header,
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-            gap: 8px;
-        }
-
-        .calendar-header {
-            margin-bottom: 8px;
-        }
-
-        .weekday {
-            padding: 10px 8px;
-            border: 1px solid #dddddd;
-            background-color: #f0f0f0;
-            font-size: 13px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .calendar-grid {
-            margin-bottom: 22px;
-        }
-
-        .blank-day,
-        .day-button {
-            min-height: 74px;
-        }
-
-        .blank-day {
-            border: 1px solid transparent;
-        }
-
-        .day-button {
-            width: 100%;
-            padding: 10px 8px;
-            border: 1px solid #bdbdbd;
-            background-color: #fff;
-            color: #222;
-            text-align: left;
-            cursor: pointer;
-        }
-
-        .day-button:hover {
-            background-color: #f3f3f3;
-        }
-
-        .day-button.selected {
-            border-color: #111;
-            background-color: #ededed;
-        }
-
-        .day-button:disabled {
-            color: #999;
-            background-color: #f6f6f6;
-            cursor: default;
-        }
-
-        .day-number {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: bold;
-        }
-
-        .day-text {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .selection-card,
-        .slots-card,
-        .status-card,
-        .request-card {
-            border: 1px solid #d6d6d6;
-            background-color: #fff;
-            padding: 18px;
-        }
-
-        .selection-card {
-            margin-bottom: 18px;
-        }
-
-        .selection-label {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 6px;
-        }
-
-        .selection-value {
-            font-size: 18px;
-            font-weight: bold;
-            line-height: 1.5;
-        }
-
-        .slots-card-title {
-            margin: 0 0 14px;
-            font-size: 18px;
-        }
-
-        .slots-note {
-            margin: 0 0 14px;
-            color: #555;
-            line-height: 1.5;
-        }
-
-        .slots-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            max-height: 360px;
-            overflow-y: auto;
-            padding-right: 4px;
-        }
-
-        .slot-button {
-            padding: 12px 10px;
-            border: 1px solid #a9a9a9;
-            background-color: #fff;
-            color: #222;
-            text-align: center;
-            cursor: pointer;
-        }
-
-        .slot-button:hover {
-            background-color: #f3f3f3;
-        }
-
-        .slot-button.selected {
-            border-color: #111;
-            background-color: #ededed;
-            font-weight: bold;
-        }
-
-        .book-area {
-            display: none;
-            margin-top: 18px;
-            padding-top: 18px;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .book-area.show {
-            display: block;
-        }
-
-        .book-button,
-        .send-button {
-            width: 100%;
-            padding: 14px 16px;
-            border: none;
-            background-color: #111;
-            color: #fff;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-        }
-
-        .book-button:hover,
-        .send-button:hover {
-            background-color: #222;
-        }
-
-        .booking-note {
-            display: none;
-            margin-top: 12px;
-            padding: 12px 14px;
-            border: 1px solid #93c293;
-            background-color: #e8f5e8;
-            color: #245824;
-            line-height: 1.5;
-        }
-
-        .booking-note.show {
-            display: block;
-        }
-
-        .error-note {
-            display: none;
-            margin-top: 12px;
-            padding: 12px 14px;
-            border: 1px solid #d2a0a0;
-            background-color: #fbeaea;
-            color: #7a1f1f;
-            line-height: 1.5;
-        }
-
-        .error-note.show {
-            display: block;
-        }
-
-        .panel-text {
-            margin: 0 0 22px;
-            line-height: 1.6;
-            color: #444;
-        }
-
-        .status-card {
-            display: none;
-            margin-bottom: 14px;
-        }
-
-        .status-card.show {
-            display: block;
-        }
-
-        .status-card-title {
-            margin: 0 0 14px;
-            font-size: 18px;
-        }
-
-        .person-card {
-            padding: 14px 0;
-            border-top: 1px solid #ececec;
-        }
-
-        .person-card:first-of-type {
-            border-top: none;
-            padding-top: 0;
-        }
-
-        .person-name {
-            margin-bottom: 8px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .status-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #333;
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #2f9b2f;
-            flex: 0 0 12px;
-        }
-
-        .request-card {
-            margin-top: 18px;
-        }
-
-        .request-label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .request-select,
-        .request-textarea {
-            width: 100%;
-            font: inherit;
-            padding: 12px 14px;
-            border: 1px solid #9f9f9f;
-            background-color: #fff;
-            margin-bottom: 12px;
-        }
-
-        .request-textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .current-user-box {
-            margin-bottom: 18px;
-            padding: 12px 14px;
-            border: 1px solid #dddddd;
-            background-color: #f7f7f7;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .current-user-box strong {
-            display: inline-block;
-            min-width: 110px;
-        }
-
-        .right-panel-tabs button {
-            display: block;
-            width: 100%;
-            margin-top: 5px;
-            margin-bottom: 5px;
-        }
-
-        .view-appointment-tab-view {
-            display: none;
-        }
-
-        @media (max-width: 860px) {
-            .left-panel {
-                border-right: none;
-                border-bottom: 1px solid #ececec;
-            }
-
-            .toolbar {
-                flex-wrap: wrap;
-            }
-
-            .month-title {
-                order: -1;
-                width: 100%;
-            }
-        }
-
-        @media (max-width: 560px) {
-            .left-panel,
-            .right-panel {
-                padding: 22px;
-            }
-
-            h1 {
-                font-size: 40px;
-            }
-
-            .calendar-header,
-            .calendar-grid {
-                gap: 6px;
-            }
-
-            .weekday {
-                padding: 8px 4px;
-                font-size: 12px;
-            }
-
-            .day-button {
-                min-height: 68px;
-                padding: 8px 6px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='homepage.css') }}">
 </head>
 <body>
     <div class="page">
         <div class="card">
             <section class="left-panel">
                 <div class="make-appointment-tab-view">
-                    <h1>Bookly</h1>
+                    <h1>Book Appointments</h1>
                     <p class="intro">
                         Select a day in the current booking window, choose a 15-minute time slot between
                         7:00 AM and 7:00 PM, and then prepare a Type 1 meeting request to an owner.
@@ -475,32 +45,213 @@
                     </div>
                 
                 </div>
+
                 <div class="view-appointment-tab-view">
                     <h1>Your Appointments</h1>
                     <p class="intro">
-                        Browse the calendar to view your booked appointments.
+                        View and manage your booked appointments.
                     </p>
- 
-                    <div class="toolbar">
-                        <button type="button" class="nav-button" id="viewPrevMonthButton" aria-label="Previous month">&lt;</button>
-                        <div class="month-title" id="viewMonthTitle">Month Year</div>
-                        <button type="button" class="nav-button" id="viewNextMonthButton" aria-label="Next month">&gt;</button>
+                    <div class="meeting-tables">
+                        <h2> Individual meetings </h2>
+                        <div class="appt-table-wrap">
+                            <table class="appt-table" id="individualMeetingsTable">
+                                <thead>
+                                    <tr>
+                                        <th> Meeting ID </th>
+                                        <th>Owner </th>
+                                        <th>Date</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Prof. Vybihal</td>
+                                        <td>2026-04-22</td>
+                                        <td>10:00</td>
+                                        <td>10:15</td>
+                                        <td><span class="status-badge accepted">Accepted</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:vybihal@mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td>Prof. Bhatt</td>
+                                        <td>2026-04-25</td>
+                                        <td>14:00</td>
+                                        <td>14:15</td>
+                                        <td><span class="status-badge pending">Pending</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:bhatt@mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>7</td>
+                                        <td>Prof. Pientka</td>
+                                        <td>2026-04-18</td>
+                                        <td>09:00</td>
+                                        <td>09:15</td>
+                                        <td><span class="status-badge declined">Declined</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:pientka@mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
- 
-                    <div class="calendar-header" id="viewCalendarHeader"></div>
-                    <div class="calendar-grid" id="viewCalendarGrid"></div>
+                    <div class="meeting-tables">
+                        <h2> Group meetings </h2>
+                        <div class="appt-table-wrap">
+                            <table class="appt-table" id="groupMeetingsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Meeting Title</th>
+                                        <th>Owner</th>
+                                        <th>Date</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Recurrence</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>COMP 307 Project Sync</td>
+                                        <td>Prof. Vybihal</td>
+                                        <td>2026-04-23</td>
+                                        <td>13:00</td>
+                                        <td>14:00</td>
+                                        <td>Weekly × 4</td>
+                                        <td><span class="status-badge booked">Booked</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:vybihal@mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>TA Review Session</td>
+                                        <td>Sarah Chen</td>
+                                        <td>2026-04-28</td>
+                                        <td>15:00</td>
+                                        <td>16:00</td>
+                                        <td>One-time</td>
+                                        <td><span class="status-badge open">Open</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:sarah.chen@mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="meeting-tables">
+                        <h2> Office hours </h2>
+                        <div class="appt-table-wrap">
+                            <table class="appt-table" id="officeHoursTable">
+                                <thead>
+                                    <tr>
+                                        <th>Meeting ID</th>
+                                        <th> Owner </th>
+                                        <th>Date</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>12</td>
+                                        <td>Prof. Vybihal</td>
+                                        <td>2026-04-21</td>
+                                        <td>11:00</td>
+                                        <td>11:15</td>
+                                        <td><span class="status-badge booked">Booked</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:vybihal@mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>15</td>
+                                        <td>Prof. Pientka</td>
+                                        <td>2026-04-24</td>
+                                        <td>09:00</td>
+                                        <td>09:15</td>
+                                        <td><span class="status-badge booked">Booked</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:pientka@mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>18</td>
+                                        <td>Prof. Bhatt</td>
+                                        <td>2026-04-29</td>
+                                        <td>16:00</td>
+                                        <td>16:15</td>
+                                        <td><span class="status-badge pending">Pending</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:bhatt@mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>21</td>
+                                        <td>Sarah Chen</td>
+                                        <td>2026-05-01</td>
+                                        <td>14:00</td>
+                                        <td>14:15</td>
+                                        <td><span class="status-badge cancelled">Cancelled</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:sarah.chen@mcgill.ca">Email</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <section class="right-panel">
-                <h2>Availability</h2>
+                <h2>Bookly</h2>
 
                 <div class="current-user-box" id="currentUserBox">
                     <div><strong>Logged-in user:</strong> <span id="currentUserName">Loading...</span></div>
                     <div><strong>Email:</strong> <span id="currentUserEmail">Loading...</span></div>
                     <div><strong>Role:</strong> <span id="currentUserRole">Loading...</span></div>
 
-                    <button type="button" id="logoutButton">Log Out</button>
+                    <button type="button" class="logout-button" id="logoutButton">Log out</button>
                 </div>
 
                 <p class="panel-text" id="availabilityIntro">
@@ -527,6 +278,32 @@
                     <button onclick="view_appointments()">
                         <h3>View appointments</h3>
                     </button>
+                    <div class="notif-wrapper">
+                        <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications(event)">
+                            <h3>Notifications <span class="notif-count" id="notifCount">3</span></h3>
+                        </button>
+                        <div class="notif-panel" id="notifPanel">
+                            <div class="notif-header">Notifications</div>
+                            <div class="notif-list" id="notifList">
+                                <div class="notif-item unread">
+                                    <div class="notif-text">Prof. Vybihal <strong>accepted</strong> your meeting request</div>
+                                    <div class="notif-time">2 hours ago</div>
+                                </div>
+                                <div class="notif-item unread">
+                                    <div class="notif-text">Prof. Bhatt <strong>declined</strong> your meeting request</div>
+                                    <div class="notif-time">5 hours ago</div>
+                                </div>
+                                <div class="notif-item">
+                                    <div class="notif-text">Your office hours slot with Prof. Pientka was <strong>cancelled</strong></div>
+                                    <div class="notif-time">Yesterday</div>
+                                </div>
+                                <div class="notif-item">
+                                    <div class="notif-text">Sarah Chen booked a group meeting: <strong>TA Review Session</strong></div>
+                                    <div class="notif-time">2 days ago</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="request-card">
@@ -549,478 +326,8 @@
     </div>
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script>
-        function view_appointments(){
-            document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
-            document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'block';
-        }
-        function make_appointment(){
-            document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'block';
-            document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'none';
-        }
- 
-        /* Helpers */
-        var monthNames = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        var weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        var today = new Date();
-        var startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
- 
-        function padNumber(value) {
-            return value < 10 ? '0' + value : String(value);
-        }
-        function formatTime(hour, minute) {
-            var suffix = hour >= 12 ? 'PM' : 'AM';
-            var displayHour = hour % 12;
-            if (displayHour === 0) displayHour = 12;
-            return displayHour + ':' + padNumber(minute) + ' ' + suffix;
-        }
-        function formatDateOnly(date) {
-            return weekdayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
-        }
-        function isSameDate(a, b) {
-            return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-        }
-        function buildSlotOptions() {
-            var options = [];
-            var minutes = [0, 15, 30, 45];
-            for (var hour = 7; hour < 19; hour++) {
-                for (var i = 0; i < minutes.length; i++) {
-                    options.push({
-                        value: padNumber(hour) + ':' + padNumber(minutes[i]),
-                        label: formatTime(hour, minutes[i])
-                    });
-                }
-            }
-            return options;
-        }
-
-        function formatDateForApi(dateObj) {
-            var year = dateObj.getFullYear();
-            var month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            var day = String(dateObj.getDate()).padStart(2, '0');
-            return year + '-' + month + '-' + day;
-        }
-
-        function calculateEndTime(startTime) {
-            var parts = startTime.split(':');
-            var hour = parseInt(parts[0], 10);
-            var minute = parseInt(parts[1], 10);
-
-            minute += 15;
-            if (minute >= 60) {
-                hour += 1;
-                minute -= 60;
-            }
-
-            return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
-        }
- 
-        /* Reusable calendar factory
-            Pass element IDs + optional callbacks */
-        function createCalendar(opts) {
-            var monthOffset = 0;
-            var selectedDate = null;
- 
-            var monthTitle = document.getElementById(opts.monthTitleId);
-            var calendarHeader = document.getElementById(opts.calendarHeaderId);
-            var calendarGrid = document.getElementById(opts.calendarGridId);
-            var prevBtn = document.getElementById(opts.prevBtnId);
-            var nextBtn = document.getElementById(opts.nextBtnId);
-            var onDateClick = opts.onDateClick || null;
- 
-            renderWeekdays();
-            renderCalendar();
- 
-            prevBtn.addEventListener('click', function () {
-                if (monthOffset === 0) return;
-                monthOffset -= 1;
-                selectedDate = null;
-                renderCalendar();
-                if (opts.onNavigate) opts.onNavigate();
-            });
- 
-            nextBtn.addEventListener('click', function () {
-                if (monthOffset === 11) return;
-                monthOffset += 1;
-                selectedDate = null;
-                renderCalendar();
-                if (opts.onNavigate) opts.onNavigate();
-            });
- 
-            function renderWeekdays() {
-                calendarHeader.innerHTML = '';
-                for (var i = 0; i < weekdayNames.length; i++) {
-                    var el = document.createElement('div');
-                    el.className = 'weekday';
-                    el.textContent = weekdayNames[i];
-                    calendarHeader.appendChild(el);
-                }
-            }
- 
-            function renderCalendar() {
-                var visibleMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-                var year = visibleMonth.getFullYear();
-                var month = visibleMonth.getMonth();
-                var firstDayIndex = new Date(year, month, 1).getDay();
-                var daysInMonth = new Date(year, month + 1, 0).getDate();
- 
-                monthTitle.textContent = monthNames[month] + ' ' + year;
-                calendarGrid.innerHTML = '';
-                prevBtn.disabled = monthOffset === 0;
-                nextBtn.disabled = monthOffset === 11;
- 
-                for (var blank = 0; blank < firstDayIndex; blank++) {
-                    var blankDay = document.createElement('div');
-                    blankDay.className = 'blank-day';
-                    calendarGrid.appendChild(blankDay);
-                }
- 
-                for (var day = 1; day <= daysInMonth; day++) {
-                    var date = new Date(year, month, day);
-                    var isPastDate = date < startOfToday;
-                    var button = document.createElement('button');
-                    var dayNumber = document.createElement('span');
-                    var dayText = document.createElement('span');
- 
-                    button.type = 'button';
-                    button.className = 'day-button';
-                    button.disabled = isPastDate;
- 
-                    if (selectedDate && isSameDate(date, selectedDate)) {
-                        button.classList.add('selected');
-                    }
- 
-                    dayNumber.className = 'day-number';
-                    dayNumber.textContent = day;
-                    dayText.className = 'day-text';
-                    dayText.textContent = isPastDate ? 'Unavailable' : 'Select day';
- 
-                    button.appendChild(dayNumber);
-                    button.appendChild(dayText);
- 
-                    if (!isPastDate && onDateClick) {
-                        (function (d) {
-                            button.addEventListener('click', function () {
-                                selectedDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-                                renderCalendar();
-                                onDateClick(selectedDate);
-                            });
-                        })(date);
-                    }
- 
-                    calendarGrid.appendChild(button);
-                }
-            }
- 
-            return {
-                render: renderCalendar,
-                getSelectedDate: function () { return selectedDate; },
-                clearSelection: function () { selectedDate = null; renderCalendar(); }
-            };
-        }
- 
-        /* Booking calendar w/ backend integration */
-        (function () {
-            var selectedSlot = null;
-            var currentUser = null;
-            var slotOptions = buildSlotOptions();
-            var logoutButton = document.getElementById('logoutButton')
- 
-            var slotsGrid = document.getElementById('slotsGrid');
-            var slotsNote = document.getElementById('slotsNote');
-            var selectedSlotText = document.getElementById('selectedSlotText');
-            var availabilityIntro = document.getElementById('availabilityIntro');
-            var availabilityCard = document.getElementById('availabilityCard');
-            var availabilitySlotText = document.getElementById('availabilitySlotText');
-            var bookArea = document.getElementById('bookArea');
-            var bookButton = document.getElementById('bookButton');
-            var sendRequestButton = document.getElementById('sendRequestButton');
-            var bookingNote = document.getElementById('bookingNote');
-            var errorNote = document.getElementById('errorNote');
-            var ownerSelect = document.getElementById('ownerSelect');
-            var meetingMessage = document.getElementById('meetingMessage');
- 
-            var currentUserName = document.getElementById('currentUserName');
-            var currentUserEmail = document.getElementById('currentUserEmail');
-            var currentUserRole = document.getElementById('currentUserRole');
- 
-            var cal = createCalendar({
-                monthTitleId: 'monthTitle',
-                calendarHeaderId: 'calendarHeader',
-                calendarGridId: 'calendarGrid',
-                prevBtnId: 'prevMonthButton',
-                nextBtnId: 'nextMonthButton',
-                onDateClick: function () {
-                    selectedSlot = null;
-                    renderSlots();
-                    renderAvailability();
-                },
-                onNavigate: function () {
-                    selectedSlot = null;
-                    renderSlots();
-                    renderAvailability();
-                }
-            });
- 
-            renderSlots();
-            renderAvailability();
-            loadCurrentUser();
-            loadOwners();
-            setupSocket();
-
-            logoutButton.addEventListener('click', async function(){
-                try {
-                    const response = await fetch('/api/logout', {
-                        method: 'POST',
-                        header: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        showError(data.error || 'Could not log out.');
-                        return;
-                    }
-
-                    window.location.href = '/';
-                } catch (error) {
-                    console.error('Logout error:', error);
-                    showError('Could not log out.')
-                }
-            });
- 
-            bookButton.addEventListener('click', function () {
-                clearMessages();
- 
-                if (!cal.getSelectedDate() || !selectedSlot) {
-                    showError('Please choose a date and a 15-minute time slot first.');
-                    return;
-                }
- 
-                showSuccess('Selected slot: ' + formatSelectedSlot());
-            });
- 
-            sendRequestButton.addEventListener('click', async function () {
-                clearMessages();
- 
-                if (!cal.getSelectedDate() || !selectedSlot) {
-                    showError('Please choose a date and a 15-minute time slot first.');
-                    return;
-                }
- 
-                if (!currentUser || !currentUser.email) {
-                    showError('You must be logged in.');
-                    return;
-                }
- 
-                if (!ownerSelect.value) {
-                    showError('Please choose an owner.');
-                    return;
-                }
- 
-                if (!meetingMessage.value.trim()) {
-                    showError('Please enter a request message.');
-                    return;
-                }
- 
-                try {
-                    const response = await fetch('/api/type1/request_meeting', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            student_email: currentUser.email,
-                            owner_email: ownerSelect.value,
-                            message: meetingMessage.value.trim(),
-                            date: formatDateForApi(cal.getSelectedDate()),
-                            start_time: selectedSlot.value,
-                            end_time: calculateEndTime(selectedSlot.value, 15)
-                            
-                        })
-                    });
- 
-                    const data = await response.json();
- 
-                    if (!response.ok) {
-                        showError(data.error || 'Could not create meeting request.');
-                        return;
-                    }
- 
-                    showSuccess(
-                        'Successfully requested a meeting for ' +
-                        formatSelectedSlot() +
-                        '. Request ID: ' + data.meetingID
-                    );
-                } catch (error) {
-                    console.error('Error:', error);
-                    showError('Could not connect to the server.');
-                }
-            });
- 
-            async function loadCurrentUser() {
-                try {
-                    const response = await fetch('/api/me');
-                    const data = await response.json();
- 
-                    if (!response.ok) {
-                        currentUserName.textContent = 'Unavailable';
-                        currentUserEmail.textContent = 'Unavailable';
-                        currentUserRole.textContent = 'Unavailable';
-                        return;
-                    }
- 
-                    currentUser = {
-                        userID: data.userID,
-                        email: data.email,
-                        name: data.name,
-                        role: data.role
-                    };
- 
-                    currentUserName.textContent = currentUser.name || 'Unknown';
-                    currentUserEmail.textContent = currentUser.email || 'Unknown';
-                    currentUserRole.textContent = currentUser.role || 'Unknown';
-                } catch (error) {
-                    console.error('Error loading current user:', error);
-                    currentUserName.textContent = 'Unavailable';
-                    currentUserEmail.textContent = 'Unavailable';
-                    currentUserRole.textContent = 'Unavailable';
-                }
-            }
- 
-            async function loadOwners() {
-                try {
-                    const response = await fetch('/api/owners');
-                    const data = await response.json();
- 
-                    if (!response.ok) {
-                        showError(data.error || 'Could not load owners.');
-                        return;
-                    }
- 
-                    ownerSelect.innerHTML = '<option value="">Choose an owner</option>';
- 
-                    data.owners.forEach(function (owner) {
-                        var option = document.createElement('option');
-                        option.value = owner.email;
-                        option.textContent = owner.name + ' (' + owner.email + ')';
-                        ownerSelect.appendChild(option);
-                    });
-                } catch (error) {
-                    console.error('Error loading owners:', error);
-                    showError('Could not load owner list.');
-                }
-            }
- 
-            function setupSocket() {
-                try {
-                    const socket = io();
- 
-                    socket.on('notification', function (data) {
-                        if (data && data.message) {
-                            showSuccess(data.message);
-                        }
-                    });
-                } catch (error) {
-                    console.error('Socket setup error:', error);
-                }
-            }
- 
-            function renderSlots() {
-                var d = cal.getSelectedDate();
-                slotsGrid.innerHTML = '';
-                clearMessages();
- 
-                if (!d) {
-                    slotsNote.textContent = 'Select a date from the calendar to view 15-minute booking times.';
-                    selectedSlotText.textContent = 'Choose a date and a 15-minute time slot.';
-                    bookArea.classList.remove('show');
-                    return;
-                }
- 
-                slotsNote.textContent = 'Available 15-minute booking times for ' + formatDateOnly(d) + '.';
- 
-                for (var i = 0; i < slotOptions.length; i++) {
-                    var btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'slot-button';
-                    btn.textContent = slotOptions[i].label;
-                    if (selectedSlot && selectedSlot.value === slotOptions[i].value) {
-                        btn.classList.add('selected');
-                    }
-                    (function (slot) {
-                        btn.addEventListener('click', function () {
-                            selectedSlot = slot;
-                            renderSlots();
-                            renderAvailability();
-                        });
-                    })(slotOptions[i]);
-                    slotsGrid.appendChild(btn);
-                }
- 
-                if (selectedSlot) {
-                    selectedSlotText.textContent = formatSelectedSlot();
-                    bookArea.classList.add('show');
-                } else {
-                    selectedSlotText.textContent = formatDateOnly(d) + ' selected. Choose a 15-minute time slot.';
-                    bookArea.classList.remove('show');
-                }
-            }
- 
-            function renderAvailability() {
-                var d = cal.getSelectedDate();
-                if (!d || !selectedSlot) {
-                    availabilityIntro.style.display = 'block';
-                    availabilityCard.classList.remove('show');
-                    availabilitySlotText.textContent = '';
-                    return;
-                }
-                availabilityIntro.style.display = 'none';
-                availabilitySlotText.textContent = formatSelectedSlot();
-                availabilityCard.classList.add('show');
-            }
- 
-            function formatSelectedSlot() {
-                return formatDateOnly(cal.getSelectedDate()) + ' at ' + selectedSlot.label;
-            }
- 
-            function clearMessages() {
-                bookingNote.classList.remove('show');
-                bookingNote.textContent = '';
-                errorNote.classList.remove('show');
-                errorNote.textContent = '';
-            }
- 
-            function showSuccess(message) {
-                bookingNote.textContent = message;
-                bookingNote.classList.add('show');
-                errorNote.classList.remove('show');
-                errorNote.textContent = '';
-            }
- 
-            function showError(message) {
-                errorNote.textContent = message;
-                errorNote.classList.add('show');
-                bookingNote.classList.remove('show');
-                bookingNote.textContent = '';
-            }
-        })();
- 
-        /* View Appointments calendar (w/o backend integration) */
-        (function () {
-            createCalendar({
-                monthTitleId: 'viewMonthTitle',
-                calendarHeaderId: 'viewCalendarHeader',
-                calendarGridId: 'viewCalendarGrid',
-                prevBtnId: 'viewPrevMonthButton',
-                nextBtnId: 'viewNextMonthButton'
-            });
-        })();
-    </script>
+    <script src="{{ url_for('static', filename='homepage.js') }}"></script>
 </body>
 </html>
+
+

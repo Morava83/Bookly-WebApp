@@ -1,0 +1,729 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f2f2f2;
+    color: #222;
+}
+
+.page {
+    max-width: 1280px;
+    margin: 36px auto;
+    padding: 0 18px;
+}
+
+.card {
+    display: flex;
+    flex-wrap: wrap;
+    background-color: #ffffff;
+    border: 1px solid #d9d9d9;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.left-panel,
+.right-panel {
+    padding: 32px;
+}
+
+.left-panel {
+    flex: 1 1 760px;
+    min-width: 320px;
+    background-color: #fafafa;
+    border-right: 1px solid #ececec;
+}
+
+.right-panel {
+    flex: 1 1 320px;
+    min-width: 280px;
+}
+
+h1 {
+    margin: 0 0 12px;
+    font-size: 50px;
+    line-height: 1;
+}
+
+h2 {
+    margin: 0 0 12px;
+    font-size: 26px;
+}
+
+.intro {
+    margin: 0 0 26px;
+    max-width: 620px;
+    line-height: 1.6;
+    color: #444;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.month-title {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    flex: 1;
+}
+
+.nav-button {
+    width: 52px;
+    padding: 10px 0;
+    border: 1px solid #8d8d8d;
+    background-color: #fff;
+    color: #111;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.nav-button:hover {
+    background-color: #f3f3f3;
+}
+
+.nav-button:disabled {
+    cursor: default;
+    color: #999;
+    background-color: #f5f5f5;
+}
+
+.calendar-header,
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.calendar-header {
+    margin-bottom: 8px;
+}
+
+.weekday {
+    padding: 10px 8px;
+    border: 1px solid #dddddd;
+    background-color: #f0f0f0;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.calendar-grid {
+    margin-bottom: 22px;
+}
+
+.blank-day,
+.day-button {
+    min-height: 74px;
+}
+
+.blank-day {
+    border: 1px solid transparent;
+}
+
+.day-button {
+    width: 100%;
+    padding: 10px 8px;
+    border: 1px solid #bdbdbd;
+    background-color: #fff;
+    color: #222;
+    text-align: left;
+    cursor: pointer;
+}
+
+.day-button:hover {
+    background-color: #f3f3f3;
+}
+
+.day-button.selected {
+    border-color: #111;
+    background-color: #ededed;
+}
+
+.day-button:disabled {
+    color: #999;
+    background-color: #f6f6f6;
+    cursor: default;
+}
+
+.day-number {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.day-text {
+    font-size: 12px;
+    color: #666;
+}
+
+.selection-card,
+.slots-card,
+.status-card,
+.request-card {
+    border: 1px solid #d6d6d6;
+    background-color: #fff;
+    padding: 18px;
+}
+
+.selection-card {
+    margin-bottom: 18px;
+}
+
+.selection-label {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.selection-value {
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1.5;
+}
+
+.slots-card-title {
+    margin: 0 0 14px;
+    font-size: 18px;
+}
+
+.slots-note {
+    margin: 0 0 14px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.slot-button {
+    padding: 12px 10px;
+    border: 1px solid #a9a9a9;
+    background-color: #fff;
+    color: #222;
+    text-align: center;
+    cursor: pointer;
+}
+
+.slot-button:hover {
+    background-color: #f3f3f3;
+}
+
+.slot-button.selected {
+    border-color: #111;
+    background-color: #ededed;
+    font-weight: bold;
+}
+
+.book-area {
+    display: none;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.book-area.show {
+    display: block;
+}
+
+.book-button,
+.send-button {
+    width: 100%;
+    padding: 14px 16px;
+    border: none;
+    background-color: #111;
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+}
+
+.book-button:hover,
+.send-button:hover {
+    background-color: #222;
+}
+
+.booking-note {
+    display: none;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid #93c293;
+    background-color: #e8f5e8;
+    color: #245824;
+    line-height: 1.5;
+}
+
+.booking-note.show {
+    display: block;
+}
+
+.error-note {
+    display: none;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid #d2a0a0;
+    background-color: #fbeaea;
+    color: #7a1f1f;
+    line-height: 1.5;
+}
+
+.error-note.show {
+    display: block;
+}
+
+.panel-text {
+    margin: 0 0 22px;
+    line-height: 1.6;
+    color: #444;
+}
+
+.status-card {
+    display: none;
+    margin-bottom: 14px;
+}
+
+.status-card.show {
+    display: block;
+}
+
+.status-card-title {
+    margin: 0 0 14px;
+    font-size: 18px;
+}
+
+.person-card {
+    padding: 14px 0;
+    border-top: 1px solid #ececec;
+}
+
+.person-card:first-of-type {
+    border-top: none;
+    padding-top: 0;
+}
+
+.person-name {
+    margin-bottom: 8px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #333;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #2f9b2f;
+    flex: 0 0 12px;
+}
+
+.request-card {
+    margin-top: 18px;
+}
+
+.request-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.request-select,
+.request-textarea {
+    width: 100%;
+    font: inherit;
+    padding: 12px 14px;
+    border: 1px solid #9f9f9f;
+    background-color: #fff;
+    margin-bottom: 12px;
+}
+
+.request-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.current-user-box {
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border: 1px solid #dddddd;
+    background-color: #f7f7f7;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.current-user-box strong {
+    display: inline-block;
+    min-width: 110px;
+}
+
+.right-panel-tabs button {
+    display: block;
+    width: 100%;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.make-appointment-tab-view {
+    display: none;
+}
+
+/*Tables CSS*/
+.meeting-tables {
+    margin-bottom: 28px;
+}
+
+.appt-table-wrap {
+    overflow-x: auto;
+    margin-top: 8px;
+}
+
+.appt-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+    border: 1px solid #d6d6d6;
+}
+
+/* Header */
+.appt-table thead th {
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: bold;
+    color: #444;
+    background-color: #f0f0f0;
+    border-bottom: 2px solid #d6d6d6;
+    white-space: nowrap;
+}
+
+.appt-table thead th:first-child {
+    padding-left: 18px;
+}
+
+/* Body rows */
+.appt-table tbody td {
+    padding: 12px 14px;
+    color: #222;
+    border-bottom: 1px solid #ececec;
+    vertical-align: middle;
+}
+
+.appt-table tbody td:first-child {
+    padding-left: 18px;
+}
+
+.appt-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.appt-table tbody tr:hover {
+    background-color: #f7f7f7;
+}
+
+.appt-table tbody tr.selected {
+    background-color: #ededed;
+}
+
+/* ── Status badges ── */
+
+.status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 2px;
+    text-transform: capitalize;
+    letter-spacing: 0.3px;
+}
+
+.status-badge.pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffc107;
+}
+
+.status-badge.accepted,
+.status-badge.booked {
+    background-color: #e8f5e8;
+    color: #245824;
+    border: 1px solid #93c293;
+}
+
+.status-badge.declined,
+.status-badge.cancelled {
+    background-color: #fbeaea;
+    color: #7a1f1f;
+    border: 1px solid #d2a0a0;
+}
+
+.status-badge.open {
+    background-color: #e3f0fc;
+    color: #1a5276;
+    border: 1px solid #85c1e9;
+}
+
+.status-badge.private {
+    background-color: #f0f0f0;
+    color: #666;
+    border: 1px solid #bdbdbd;
+}
+
+/* ── Row action buttons ── */
+
+.table-action {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: bold;
+    border: 1px solid #8d8d8d;
+    background-color: #fff;
+    color: #111;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.table-action:hover {
+    background-color: #f3f3f3;
+}
+
+.table-action.danger {
+    border-color: #d2a0a0;
+    color: #7a1f1f;
+}
+
+.table-action.danger:hover {
+    background-color: #fbeaea;
+}
+
+.table-action.primary {
+    border: none;
+    background-color: #111;
+    color: #fff;
+}
+
+.table-action.primary:hover {
+    background-color: #222;
+}
+
+.table-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* ── Empty state ── */
+
+.appt-table-empty {
+    padding: 32px 18px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/*Notification CSS*/
+/* ── Notification dropdown ── */
+
+.notif-wrapper {
+    position: relative;
+}
+
+.notif-toggle {
+    display: block;
+    width: 100%;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.notif-count {
+    display: inline-block;
+    min-width: 20px;
+    padding: 2px 7px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #c0392b;
+    border-radius: 10px;
+    text-align: center;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+
+.notif-count:empty {
+    display: none;
+}
+
+.notif-panel {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    width: 340px;
+    max-height: 380px;
+    background-color: #fff;
+    border: 1px solid #d6d6d6;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 200;
+    overflow: hidden;
+}
+
+.notif-panel.open {
+    display: flex;
+    flex-direction: column;
+}
+
+.notif-header {
+    padding: 12px 16px;
+    font-size: 15px;
+    font-weight: bold;
+    border-bottom: 1px solid #ececec;
+    background-color: #fafafa;
+}
+
+.notif-list {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.notif-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #ececec;
+    cursor: default;
+}
+
+.notif-item:last-child {
+    border-bottom: none;
+}
+
+.notif-item:hover {
+    background-color: #f7f7f7;
+}
+
+.notif-item.unread {
+    background-color: #f0f7ff;
+    border-left: 3px solid #111;
+}
+
+.notif-item.unread:hover {
+    background-color: #e8f0fa;
+}
+
+.notif-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #222;
+}
+
+.notif-time {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+}
+/*#######################################################################################*/
+
+/*Logout button*/
+.logout-button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    width: 100%;
+    font: inherit;
+    font-size: 13px;
+    font-weight: bold;
+    border: 1px solid #8d8d8d;
+    background-color: #fff;
+    color: #111;
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background-color: #f3f3f3;
+}
+
+@media (max-width: 860px) {
+    .left-panel {
+        border-right: none;
+        border-bottom: 1px solid #ececec;
+    }
+
+    .toolbar {
+        flex-wrap: wrap;
+    }
+
+    .month-title {
+        order: -1;
+        width: 100%;
+    }
+
+    /*Tables*/
+    .appt-table thead th,
+    .appt-table tbody td {
+        padding: 10px 10px;
+    }
+
+    .appt-table thead th:first-child,
+    .appt-table tbody td:first-child {
+        padding-left: 10px;
+    }
+}
+
+@media (max-width: 560px) {
+    .left-panel,
+    .right-panel {
+        padding: 22px;
+    }
+
+    h1 {
+        font-size: 40px;
+    }
+
+    .calendar-header,
+    .calendar-grid {
+        gap: 6px;
+    }
+
+    .weekday {
+        padding: 8px 4px;
+        font-size: 12px;
+    }
+
+    .day-button {
+        min-height: 68px;
+        padding: 8px 6px;
+    }
+    /*Tables*/
+    .appt-table {
+        font-size: 13px;
+    }
+
+    .appt-table thead th,
+    .appt-table tbody td {
+        padding: 8px 8px;
+    }
+
+    .table-action {
+        padding: 5px 8px;
+        font-size: 12px;
+    }
+}
+
