@@ -20,7 +20,7 @@ def get_db_connection():
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
-#Get Owner
+#Get Owner Record
 def get_owner(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -30,16 +30,28 @@ def get_owner(id):
                    JOIN Owner o ON u.userId = o.userId 
                    WHERE o.userId = ?
                    """, (id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row if row else None
 
 
-#Get list of invited users
+#Get list of invited users --> assumes students as a list of student ids --> list of integers
+def get_guests(students):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    for student in students:
+        cursor.execute("""
+                       SELECT *
+                       FROM User u
+                       JOIN Student s ON u.userId = s.userId
+                       WHERE u.userId = ?
+                       """, (student,))
+    row = cursor.fetchone()
+    conn.close()
+    return row if row else None
 
 #Get owner recurring time slots
 
 #--------Schedule Meeting----------
 #User picks set of slots
 
-#Once every invited user has selected availability
-#Owner picks most favorable time slot to hold meeting
-#Function for owner to set meeting --> called when owner submits 
-#meeting form on dashboard
