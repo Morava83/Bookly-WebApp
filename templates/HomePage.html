@@ -69,11 +69,12 @@
                             <table class="appt-table" id="individualMeetingsTable">
                                 <thead>
                                     <tr>
-                                        <th> Meeting ID </th>
-                                        <th>Owner </th>
+                                        <th>Meeting ID</th>
+                                        <th>Owner</th>
                                         <th>Date</th>
                                         <th>Start Time</th>
                                         <th>End Time</th>
+                                        <th>Zoom Link</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -85,6 +86,7 @@
                                         <td>2026-04-22</td>
                                         <td>10:00</td>
                                         <td>10:15</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/123456789" target="_blank">Join</a></td>
                                         <td><span class="status-badge accepted">Accepted</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -99,6 +101,7 @@
                                         <td>2026-04-25</td>
                                         <td>14:00</td>
                                         <td>14:15</td>
+                                        <td><span class="no-link">Pending</span></td>
                                         <td><span class="status-badge pending">Pending</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -113,6 +116,7 @@
                                         <td>2026-04-18</td>
                                         <td>09:00</td>
                                         <td>09:15</td>
+                                        <td><span class="no-link">—</span></td>
                                         <td><span class="status-badge declined">Declined</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -137,6 +141,7 @@
                                         <th>Start Time</th>
                                         <th>End Time</th>
                                         <th>Recurrence</th>
+                                        <th>Zoom Link</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -149,6 +154,7 @@
                                         <td>13:00</td>
                                         <td>14:00</td>
                                         <td>Weekly × 4</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/987654321" target="_blank">Join</a></td>
                                         <td><span class="status-badge booked">Booked</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -164,6 +170,7 @@
                                         <td>15:00</td>
                                         <td>16:00</td>
                                         <td>One-time</td>
+                                        <td><span class="no-link">—</span></td>
                                         <td><span class="status-badge open">Open</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -172,7 +179,6 @@
                                             </div>
                                         </td>
                                     </tr>
-
                                     <tr>
                                         <td>COMP 307 Project Sync</td>
                                         <td>Prof. Vybihal</td>
@@ -180,12 +186,13 @@
                                         <td>13:00</td>
                                         <td>14:00</td>
                                         <td>Weekly × 4</td>
+                                        <td><span class="no-link">—</span></td>
                                         <td><span class="status-badge invited">Invited</span></td>
                                         <td>
                                             <div class="table-actions">
                                                 <a class="table-action" href="mailto:vybihal@mcgill.ca">Email</a>
                                                 <button class="table-action danger">Cancel</button>
-                                                <button class="table-action vote" onclick="open_vote_view(2, 'COMP 307 Project Sync', 'Prof. Vybihal');">Vote</button>
+                                                <button class="table-action vote" onclick="open_vote_view();">Vote</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -200,10 +207,11 @@
                                 <thead>
                                     <tr>
                                         <th>Meeting ID</th>
-                                        <th> Owner </th>
+                                        <th>Owner</th>
                                         <th>Date</th>
                                         <th>Start Time</th>
                                         <th>End Time</th>
+                                        <th>Zoom Link</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -215,6 +223,7 @@
                                         <td>2026-04-21</td>
                                         <td>11:00</td>
                                         <td>11:15</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/111222333" target="_blank">Join</a></td>
                                         <td><span class="status-badge booked">Booked</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -229,6 +238,7 @@
                                         <td>2026-04-24</td>
                                         <td>09:00</td>
                                         <td>09:15</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/444555666" target="_blank">Join</a></td>
                                         <td><span class="status-badge booked">Booked</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -243,6 +253,7 @@
                                         <td>2026-04-29</td>
                                         <td>16:00</td>
                                         <td>16:15</td>
+                                        <td><span class="no-link">Pending</span></td>
                                         <td><span class="status-badge pending">Pending</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -257,6 +268,7 @@
                                         <td>2026-05-01</td>
                                         <td>14:00</td>
                                         <td>14:15</td>
+                                        <td><span class="no-link">—</span></td>
                                         <td><span class="status-badge cancelled">Cancelled</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -265,7 +277,6 @@
                                         </td>
                                     </tr>
                                 </tbody>
-
                             </table>
                         </div>
                     </div>

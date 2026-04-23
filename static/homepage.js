@@ -3,6 +3,7 @@ function open_vote_view(meetingID, title, ownerName) {
     document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
     document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'none';
     document.getElementsByClassName('vote-meeting-tab-view')[0].style.display = 'block';
+    document.getElementsByClassName('right-panel')[0].style.display = 'none';
 
     document.getElementById('voteIntro').textContent =
         'Voting on "' + title + '" by ' + ownerName + '.';
@@ -85,6 +86,7 @@ function open_vote_view(meetingID, title, ownerName) {
     };
 
     document.getElementById('backToApptsBtn').onclick = function () {
+        document.getElementsByClassName('right-panel')[0].style.display = 'block';
         view_appointments();
     };
 }
