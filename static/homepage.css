@@ -962,3 +962,98 @@ h2 {
     }
 }
 
+/*owner specific css*/
+.oh-slot-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: end;
+    margin-bottom: 12px;
+}
+
+.oh-slot-row > div {
+    flex: 1;
+    min-width: 100px;
+}
+
+.oh-slot-row .request-select {
+    margin-bottom: 0;
+}
+
+.oh-slot-entry,
+.gm-slot-entry {
+    border-bottom: 1px solid #ececec;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+
+.oh-slot-entry:last-child,
+.gm-slot-entry:last-child {
+    border-bottom: none;
+}
+
+/* ── Invitation URL box ── */
+
+.invite-url-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.invite-url-text {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: #f7f7f7;
+    border: 1px solid #dddddd;
+    font-family: monospace;
+    font-size: 13px;
+    word-break: break-all;
+    min-width: 180px;
+}
+
+/* ── Finalize vote count ── */
+
+.finalize-count {
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    min-width: 70px;
+    text-align: right;
+    margin-right: 8px;
+}
+
+/* ── Responsive additions ── */
+
+@media (max-width: 860px) {
+    .oh-slot-row {
+        gap: 8px;
+    }
+
+    .invite-url-text {
+        font-size: 12px;
+        min-width: 140px;
+    }
+}
+
+@media (max-width: 560px) {
+    .oh-slot-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .oh-slot-row > div {
+        min-width: 100%;
+    }
+
+    .invite-url-box {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .finalize-count {
+        text-align: left;
+        margin-right: 0;
+    }
+}
