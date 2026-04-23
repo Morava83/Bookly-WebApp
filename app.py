@@ -253,6 +253,8 @@ def create_account_page():
 @app.route("/home")
 @login_required
 def home_page():
+    if session["role"] == "owner":
+        return render_template("OwnerHomePage.html")
     return render_template("HomePage.html")
 
 # ======== Blueprints ======== 
