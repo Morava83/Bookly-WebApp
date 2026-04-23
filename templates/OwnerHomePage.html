@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookly - Owner Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='homepage.css') }}">
+</head>
+<body>
+    <div class="page">
+        <div class="card">
+            <section class="left-panel">
+
+                <!-- ═══ TAB 1: My Slots (manage office hours) ═══ -->
+                <div class="owner-tab-view" id="mySlotsView">
+                    <h1>My Slots</h1>
+                    <p class="intro">
+                        Manage your recurring office-hours slots. Activate slots to make them visible
+                        to students, or delete slots you no longer need.
+                    </p>
+
+                    <div style="margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="table-action primary" onclick="activateAllSlots()">Activate all</button>
+                        <button class="table-action" onclick="deactivateAllSlots()">Deactivate all</button>
+                    </div>
+
+                    <div class="appt-table-wrap">
+                        <table class="appt-table" id="ownerSlotsTable">
+                            <thead>
+                                <tr>
+                                    <th>Slot ID</th>
+                                    <th>Date</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Status</th>
+                                    <th>Booked By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>2026-04-21</td>
+                                    <td>10:00</td>
+                                    <td>10:15</td>
+                                    <td><span class="status-badge open">Active</span></td>
+                                    <td><span class="no-link">—</span></td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="table-action" onclick="toggleSlotStatus(this)">Deactivate</button>
+                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>2026-04-21</td>
+                                    <td>10:15</td>
+                                    <td>10:30</td>
+                                    <td><span class="status-badge booked">Booked</span></td>
+                                    <td>
+                                        Alice Wang
+                                        <a class="table-link" href="mailto:alice.wang@mail.mcgill.ca">(email)</a>
+                                    </td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="table-action danger" onclick="deleteSlot(this, 'alice.wang@mail.mcgill.ca')">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>2026-04-22</td>
+                                    <td>14:00</td>
+                                    <td>14:15</td>
+                                    <td><span class="status-badge private">Private</span></td>
+                                    <td><span class="no-link">—</span></td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="table-action vote" onclick="toggleSlotStatus(this)">Activate</button>
+                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td>2026-04-22</td>
+                                    <td>14:15</td>
+                                    <td>14:30</td>
+                                    <td><span class="status-badge private">Private</span></td>
+                                    <td><span class="no-link">—</span></td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="table-action vote" onclick="toggleSlotStatus(this)">Activate</button>
+                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>5</td>
+                                    <td>2026-04-28</td>
+                                    <td>10:00</td>
+                                    <td>10:15</td>
+                                    <td><span class="status-badge open">Active</span></td>
+                                    <td><span class="no-link">—</span></td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="table-action" onclick="toggleSlotStatus(this)">Deactivate</button>
+                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>6</td>
+                                    <td>2026-04-28</td>
+                                    <td>10:15</td>
+                                    <td>10:30</td>
+                                    <td><span class="status-badge open">Active</span></td>
+                                    <td><span class="no-link">—</span></td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="table-action" onclick="toggleSlotStatus(this)">Deactivate</button>
+                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="booking-note" id="slotsMsg"></div>
+                    <div class="error-note" id="slotsError"></div>
+                </div>
+
+                <!-- ═══ TAB 2: Create Office Hours ═══ -->
+                <div class="owner-tab-view" id="createOHView" style="display:none;">
+                    <h1>Create Office Hours</h1>
+                    <p class="intro">
+                        Define weekly recurring time slots. They start as private — activate them
+                        from "My Slots" when you're ready for students to book.
+                    </p>
+
+                    <div class="slots-card">
+                        <label class="request-label" for="ohStartDate">Start date</label>
+                        <input type="date" class="request-select" id="ohStartDate">
+
+                        <label class="request-label" for="ohWeeks">Number of weeks</label>
+                        <input type="number" class="request-select" id="ohWeeks" value="12" min="1" max="52">
+
+                        <label class="request-label">Weekly slot definitions</label>
+                        <div id="ohSlotEntries">
+                            <div class="oh-slot-entry">
+                                <div class="oh-slot-row">
+                                    <div>
+                                        <label class="request-label">Day</label>
+                                        <select class="request-select oh-day">
+                                            <option>Monday</option><option>Tuesday</option>
+                                            <option>Wednesday</option><option>Thursday</option>
+                                            <option>Friday</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="request-label">Start</label>
+                                        <input type="time" class="request-select oh-start" value="10:00">
+                                    </div>
+                                    <div>
+                                        <label class="request-label">End</label>
+                                        <input type="time" class="request-select oh-end" value="10:15">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="table-action" onclick="addOHSlotEntry()" style="margin-bottom:18px;">
+                            + Add another slot
+                        </button>
+
+                        <div class="book-area show">
+                            <button type="button" class="book-button" id="ohCreateBtn" onclick="createOfficeHours()">
+                                Create office hours
+                            </button>
+                            <div class="booking-note" id="ohSuccessNote"></div>
+                            <div class="error-note" id="ohErrorNote"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ TAB 3: Create Group Meeting ═══ -->
+                <div class="owner-tab-view" id="createGMView" style="display:none;">
+                    <h1>Create Group Meeting</h1>
+                    <p class="intro">
+                        Define available time options and invite users. They'll vote on which times
+                        work, and you pick the winning slot from "Manage Group Meetings."
+                    </p>
+
+                    <div class="slots-card">
+                        <label class="request-label" for="gmTitle">Meeting title</label>
+                        <input type="text" class="request-select" id="gmTitle" placeholder="e.g. COMP 307 Project Sync">
+
+                        <label class="request-label" for="gmDesc">Description (optional)</label>
+                        <textarea class="request-textarea" id="gmDesc"
+                            placeholder="What is this meeting about?" style="min-height:60px;"></textarea>
+
+                        <label class="request-label">Time options</label>
+                        <div id="gmSlotEntries">
+                            <div class="gm-slot-entry">
+                                <div class="oh-slot-row">
+                                    <div>
+                                        <label class="request-label">Date</label>
+                                        <input type="date" class="request-select gm-date">
+                                    </div>
+                                    <div>
+                                        <label class="request-label">Start</label>
+                                        <input type="time" class="request-select gm-start" value="14:00">
+                                    </div>
+                                    <div>
+                                        <label class="request-label">End</label>
+                                        <input type="time" class="request-select gm-end" value="15:00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="table-action" onclick="addGMSlotEntry()" style="margin-bottom:18px;">
+                            + Add time option
+                        </button>
+
+                        <label class="request-label" for="gmInvitees">Invite users (one email per line)</label>
+                        <textarea class="request-textarea" id="gmInvitees"
+                            placeholder="alice.wang@mail.mcgill.ca&#10;bob.smith@mail.mcgill.ca"
+                            style="min-height:80px;"></textarea>
+
+                        <div class="book-area show">
+                            <button type="button" class="book-button" onclick="createGroupMeeting()">
+                                Create &amp; send invitations
+                            </button>
+                            <div class="booking-note" id="gmSuccessNote"></div>
+                            <div class="error-note" id="gmErrorNote"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ TAB 4: Manage Group Meetings ═══ -->
+                <div class="owner-tab-view" id="manageGMView" style="display:none;">
+                    <h1>Manage Group Meetings</h1>
+                    <p class="intro">
+                        View responses and finalize the best time for each group meeting.
+                    </p>
+
+                    <div class="meeting-tables">
+                        <div class="appt-table-wrap">
+                            <table class="appt-table" id="groupMeetingsManageTable">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Date Range</th>
+                                        <th>Invite Link</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>COMP 307 Project Sync</td>
+                                        <td>2026-04-28 to 2026-04-30</td>
+                                        <td>
+                                            <span class="invite-url-text">/book/abc123xyz</span>
+                                            <button class="table-action" onclick="copyInviteUrl(this)" style="margin-left:4px;">Copy</button>
+                                        </td>
+                                        <td><span class="status-badge open">Open</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action vote" onclick="openFinalizeView(1, 'COMP 307 Project Sync')">View votes</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>TA Review Session</td>
+                                        <td>2026-05-01 to 2026-05-02</td>
+                                        <td>
+                                            <span class="invite-url-text">/book/def456uvw</span>
+                                            <button class="table-action" onclick="copyInviteUrl(this)" style="margin-left:4px;">Copy</button>
+                                        </td>
+                                        <td><span class="status-badge booked">Finalized</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <span class="no-link">Done</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="booking-note" id="mgmSuccessNote"></div>
+                    <div class="error-note" id="mgmErrorNote"></div>
+                </div>
+
+                <!-- ═══ TAB 4b: Finalize Group Meeting (sub-view) ═══ -->
+                <div class="owner-tab-view" id="finalizeGMView" style="display:none;">
+                    <h1>Finalize Meeting</h1>
+                    <p class="intro" id="finalizeIntro"></p>
+
+                    <div class="selection-card">
+                        <div class="selection-label">Meeting</div>
+                        <div class="selection-value" id="finalizeTitle"></div>
+                    </div>
+
+                    <div class="slots-card">
+                        <h2 class="slots-card-title">Vote results</h2>
+                        <p class="slots-note">Pick the slot with the most votes, then finalize.</p>
+                        <div id="finalizeSlotList"></div>
+
+                        <div class="book-area show" style="margin-top:18px;">
+                            <button type="button" class="book-button" id="backToManageGMBtn"
+                                style="background:#fff; color:#111; border:1px solid #8d8d8d;">
+                                ← Back to group meetings
+                            </button>
+                            <div class="booking-note" id="finalizeSuccessNote"></div>
+                            <div class="error-note" id="finalizeErrorNote"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ TAB 5: Pending Requests ═══ -->
+                <div class="owner-tab-view" id="pendingView" style="display:none;">
+                    <h1>Pending Requests</h1>
+                    <p class="intro">
+                        Students who want to meet with you. Accept or decline each request.
+                        Use the mailto: link to notify them of your decision.
+                    </p>
+
+                    <div class="appt-table-wrap">
+                        <table class="appt-table" id="pendingRequestsTable">
+                            <thead>
+                                <tr>
+                                    <th>Meeting ID</th>
+                                    <th>Student</th>
+                                    <th>Message</th>
+                                    <th>Date Requested</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="pending-row-10">
+                                    <td>10</td>
+                                    <td>Alice Wang<br><span class="no-link">alice.wang@mail.mcgill.ca</span></td>
+                                    <td>I need help with the project deliverable for COMP 307.</td>
+                                    <td>2026-04-20</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="table-action vote" onclick="acceptRequest(10, 'alice.wang@mail.mcgill.ca')">Accept</button>
+                                            <button class="table-action danger" onclick="declineRequest(10, 'alice.wang@mail.mcgill.ca')">Decline</button>
+                                            <a class="table-action" href="mailto:alice.wang@mail.mcgill.ca?subject=Bookly%20-%20Meeting%20request">Email</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr id="pending-row-11">
+                                    <td>11</td>
+                                    <td>Bob Smith<br><span class="no-link">bob.smith@mail.mcgill.ca</span></td>
+                                    <td>Could we discuss my midterm grade?</td>
+                                    <td>2026-04-21</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="table-action vote" onclick="acceptRequest(11, 'bob.smith@mail.mcgill.ca')">Accept</button>
+                                            <button class="table-action danger" onclick="declineRequest(11, 'bob.smith@mail.mcgill.ca')">Decline</button>
+                                            <a class="table-action" href="mailto:bob.smith@mail.mcgill.ca?subject=Bookly%20-%20Meeting%20request">Email</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr id="pending-row-12">
+                                    <td>12</td>
+                                    <td>Carol Lee<br><span class="no-link">carol.lee@mail.mcgill.ca</span></td>
+                                    <td>I'd like to discuss research opportunities for the summer.</td>
+                                    <td>2026-04-22</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="table-action vote" onclick="acceptRequest(12, 'carol.lee@mail.mcgill.ca')">Accept</button>
+                                            <button class="table-action danger" onclick="declineRequest(12, 'carol.lee@mail.mcgill.ca')">Decline</button>
+                                            <a class="table-action" href="mailto:carol.lee@mail.mcgill.ca?subject=Bookly%20-%20Meeting%20request">Email</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="booking-note" id="pendingSuccessNote"></div>
+                    <div class="error-note" id="pendingErrorNote"></div>
+                </div>
+
+                <!-- ═══ TAB 6: View Appointments ═══ -->
+                <div class="owner-tab-view" id="ownerApptsView" style="display:none;">
+                    <h1>My Appointments</h1>
+                    <p class="intro">
+                        All your confirmed appointments across meeting types.
+                    </p>
+
+                    <div class="meeting-tables">
+                        <h2>Individual meetings</h2>
+                        <div class="appt-table-wrap">
+                            <table class="appt-table" id="ownerIndividualTable">
+                                <thead>
+                                    <tr>
+                                        <th>Meeting ID</th>
+                                        <th>Student</th>
+                                        <th>Date</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Zoom Link</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>10</td>
+                                        <td>Alice Wang</td>
+                                        <td>2026-04-24</td>
+                                        <td>10:00</td>
+                                        <td>10:15</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/111222333" target="_blank">Join</a></td>
+                                        <td><span class="status-badge accepted">Accepted</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:alice.wang@mail.mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="meeting-tables">
+                        <h2>Group meetings</h2>
+                        <div class="appt-table-wrap">
+                            <table class="appt-table" id="ownerGroupTable">
+                                <thead>
+                                    <tr>
+                                        <th>Meeting Title</th>
+                                        <th>Date</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Recurrence</th>
+                                        <th>Zoom Link</th>
+                                        <th>Status</th>
+                                        <th>Attendees</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>COMP 307 Project Sync</td>
+                                        <td>2026-04-28</td>
+                                        <td>13:00</td>
+                                        <td>14:00</td>
+                                        <td>Weekly × 4</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/987654321" target="_blank">Join</a></td>
+                                        <td><span class="status-badge booked">Finalized</span></td>
+                                        <td>Alice Wang, Bob Smith</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="meeting-tables">
+                        <h2>Office hours bookings</h2>
+                        <div class="appt-table-wrap">
+                            <table class="appt-table" id="ownerOHTable">
+                                <thead>
+                                    <tr>
+                                        <th>Slot ID</th>
+                                        <th>Student</th>
+                                        <th>Date</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Zoom Link</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Alice Wang</td>
+                                        <td>2026-04-21</td>
+                                        <td>10:15</td>
+                                        <td>10:30</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/444555666" target="_blank">Join</a></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:alice.wang@mail.mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <section class="right-panel">
+                <h2>Bookly</h2>
+
+                <div class="current-user-box" id="currentUserBox">
+                    <div><strong>Logged-in user:</strong> <span id="currentUserName">Prof. Vybihal</span></div>
+                    <div><strong>Email:</strong> <span id="currentUserEmail">vybihal@mcgill.ca</span></div>
+                    <div><strong>Role:</strong> <span id="currentUserRole">Owner</span></div>
+                    <button type="button" class="logout-button" id="logoutButton">Log out</button>
+                </div>
+
+                <!-- Invitation URLs -->
+                <div class="status-card show" id="inviteUrlCard">
+                    <h2 class="status-card-title">Invitation URLs</h2>
+                    <p class="slots-note">Share these links so students can go directly to your available slots.</p>
+                    <div class="invite-url-box">
+                        <span class="invite-url-text" id="inviteUrl1">/book/xyZ_abc123</span>
+                        <button class="table-action" onclick="copyInviteUrl(this)">Copy</button>
+                    </div>
+                </div>
+
+                <!-- Tab buttons -->
+                <div class="right-panel-tabs">
+                    <button onclick="ownerSwitchTab('mySlotsView')">
+                        <h3>My slots</h3>
+                    </button>
+                    <button onclick="ownerSwitchTab('createOHView')">
+                        <h3>Create office hours</h3>
+                    </button>
+                    <button onclick="ownerSwitchTab('createGMView')">
+                        <h3>Create group meeting</h3>
+                    </button>
+                    <button onclick="ownerSwitchTab('manageGMView')">
+                        <h3>Manage group meetings</h3>
+                    </button>
+                    <button onclick="ownerSwitchTab('pendingView')">
+                        <h3>Pending requests</h3>
+                    </button>
+                    <button onclick="ownerSwitchTab('ownerApptsView')">
+                        <h3>My appointments</h3>
+                    </button>
+                    <div class="notif-wrapper">
+                        <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications(event)">
+                            <h3>Notifications <span class="notif-count" id="notifCount">2</span></h3>
+                        </button>
+                        <div class="notif-panel" id="notifPanel">
+                            <div class="notif-header">Notifications</div>
+                            <div class="notif-list" id="notifList">
+                                <div class="notif-item unread">
+                                    <div class="notif-text">Alice Wang <strong>booked</strong> your 10:15 AM slot on Apr 21</div>
+                                    <div class="notif-time">1 hour ago</div>
+                                </div>
+                                <div class="notif-item unread">
+                                    <div class="notif-text">New meeting request from <strong>Bob Smith</strong></div>
+                                    <div class="notif-time">3 hours ago</div>
+                                </div>
+                                <div class="notif-item">
+                                    <div class="notif-text">Carol Lee submitted availability for <strong>COMP 307 Project Sync</strong></div>
+                                    <div class="notif-time">Yesterday</div>
+                                </div>
+                                <div class="notif-item">
+                                    <div class="notif-text">Alice Wang <strong>cancelled</strong> her booking on Apr 14</div>
+                                    <div class="notif-time">3 days ago</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='owner-homepage.js') }}"></script>
+</body>
+</html>
