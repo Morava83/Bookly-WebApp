@@ -16,6 +16,18 @@
                         7:00 AM and 7:00 PM, and then prepare a Type 1 meeting request to an owner.
                     </p>
 
+                    <div class="search-wrap">
+                        <label class="request-label" for="profSearch">Search for teaching staff</label>
+                        <input type="text" class="request-select" id="profSearch" 
+                            placeholder="Name or email..." autocomplete="off">
+                        <div class="search-dropdown" id="profDropdown"></div>
+                    </div>
+
+                    <div class="search-selected" id="profBanner" style="display:none;">
+                        <span id="profBannerText"></span>
+                        <button type="button" class="search-clear" id="profClear">&times;</button>
+                    </div>
+
                     <div class="toolbar">
                         <button type="button" class="nav-button" id="prevMonthButton" aria-label="Previous month">&lt;</button>
                         <div class="month-title" id="monthTitle">Month Year</div>
@@ -57,11 +69,12 @@
                             <table class="appt-table" id="individualMeetingsTable">
                                 <thead>
                                     <tr>
-                                        <th> Meeting ID </th>
-                                        <th>Owner </th>
+                                        <th>Meeting ID</th>
+                                        <th>Owner</th>
                                         <th>Date</th>
                                         <th>Start Time</th>
                                         <th>End Time</th>
+                                        <th>Zoom Link</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -73,6 +86,7 @@
                                         <td>2026-04-22</td>
                                         <td>10:00</td>
                                         <td>10:15</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/123456789" target="_blank">Join</a></td>
                                         <td><span class="status-badge accepted">Accepted</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -87,6 +101,7 @@
                                         <td>2026-04-25</td>
                                         <td>14:00</td>
                                         <td>14:15</td>
+                                        <td><span class="no-link">Pending</span></td>
                                         <td><span class="status-badge pending">Pending</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -101,6 +116,7 @@
                                         <td>2026-04-18</td>
                                         <td>09:00</td>
                                         <td>09:15</td>
+                                        <td><span class="no-link">—</span></td>
                                         <td><span class="status-badge declined">Declined</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -125,6 +141,7 @@
                                         <th>Start Time</th>
                                         <th>End Time</th>
                                         <th>Recurrence</th>
+                                        <th>Zoom Link</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -137,6 +154,7 @@
                                         <td>13:00</td>
                                         <td>14:00</td>
                                         <td>Weekly × 4</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/987654321" target="_blank">Join</a></td>
                                         <td><span class="status-badge booked">Booked</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -152,11 +170,29 @@
                                         <td>15:00</td>
                                         <td>16:00</td>
                                         <td>One-time</td>
+                                        <td><span class="no-link">—</span></td>
                                         <td><span class="status-badge open">Open</span></td>
                                         <td>
                                             <div class="table-actions">
                                                 <a class="table-action" href="mailto:sarah.chen@mcgill.ca">Email</a>
                                                 <button class="table-action danger">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>COMP 307 Project Sync</td>
+                                        <td>Prof. Vybihal</td>
+                                        <td>2026-04-23</td>
+                                        <td>13:00</td>
+                                        <td>14:00</td>
+                                        <td>Weekly × 4</td>
+                                        <td><span class="no-link">—</span></td>
+                                        <td><span class="status-badge invited">Invited</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <a class="table-action" href="mailto:vybihal@mcgill.ca">Email</a>
+                                                <button class="table-action danger">Cancel</button>
+                                                <button class="table-action vote" onclick="open_vote_view();">Vote</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -171,10 +207,11 @@
                                 <thead>
                                     <tr>
                                         <th>Meeting ID</th>
-                                        <th> Owner </th>
+                                        <th>Owner</th>
                                         <th>Date</th>
                                         <th>Start Time</th>
                                         <th>End Time</th>
+                                        <th>Zoom Link</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -186,6 +223,7 @@
                                         <td>2026-04-21</td>
                                         <td>11:00</td>
                                         <td>11:15</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/111222333" target="_blank">Join</a></td>
                                         <td><span class="status-badge booked">Booked</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -200,6 +238,7 @@
                                         <td>2026-04-24</td>
                                         <td>09:00</td>
                                         <td>09:15</td>
+                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/444555666" target="_blank">Join</a></td>
                                         <td><span class="status-badge booked">Booked</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -214,6 +253,7 @@
                                         <td>2026-04-29</td>
                                         <td>16:00</td>
                                         <td>16:15</td>
+                                        <td><span class="no-link">Pending</span></td>
                                         <td><span class="status-badge pending">Pending</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -228,6 +268,7 @@
                                         <td>2026-05-01</td>
                                         <td>14:00</td>
                                         <td>14:15</td>
+                                        <td><span class="no-link">—</span></td>
                                         <td><span class="status-badge cancelled">Cancelled</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -236,8 +277,33 @@
                                         </td>
                                     </tr>
                                 </tbody>
-
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vote-meeting-tab-view" id="voteMeetingView" style="display:none;">
+                    <h1>Select Your Availability</h1>
+                    <p class="intro" id="voteIntro"></p>
+
+                    <div class="selection-card">
+                        <div class="selection-label">Selected slots</div>
+                        <div class="selection-value" id="voteSelectionText">Check the time slots that work for you.</div>
+                    </div>
+
+                    <div class="slots-card">
+                        <h2 class="slots-card-title">Proposed times</h2>
+                        <p class="slots-note">The meeting organizer will pick the best option based on everyone's votes.</p>
+                        <div id="voteSlotList"></div>
+
+                        <div class="book-area show">
+                            <button type="button" class="book-button" id="submitVoteBtn">Submit availability</button>
+                            <button type="button" class="book-button" id="backToApptsBtn"
+                                style="margin-top:8px; background:#fff; color:#111; border:1px solid #8d8d8d;">
+                                ← Back to appointments
+                            </button>
+                            <div class="booking-note" id="voteSuccessNote"></div>
+                            <div class="error-note" id="voteErrorNote"></div>
                         </div>
                     </div>
                 </div>
@@ -327,6 +393,8 @@
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='homepage.js') }}"></script>
+    <script> initProfSearch();</script>
+
 </body>
 </html>
 

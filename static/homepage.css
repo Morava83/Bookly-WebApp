@@ -387,6 +387,22 @@ h2 {
 }
 
 /*Tables CSS*/
+.table-link {
+    font-size: 13px;
+    font-weight: bold;
+    color: #1a5276;
+    text-decoration: none;
+}
+
+.table-link:hover {
+    text-decoration: underline;
+}
+
+.no-link {
+    font-size: 13px;
+    color: #999;
+}
+
 .meeting-tables {
     margin-bottom: 28px;
 }
@@ -660,6 +676,156 @@ h2 {
     background-color: #f3f3f3;
 }
 
+/*Prof search bar*/
+
+.search-wrap {
+    position: relative;
+    margin-bottom: 18px;
+}
+
+.search-dropdown {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    background-color: #fff;
+    border: 1px solid #9f9f9f;
+    border-top: none;
+    z-index: 100;
+}
+
+.search-dropdown.open {
+    display: block;
+}
+
+.search-dropdown-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #ececec;
+}
+
+.search-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.search-dropdown-item:hover {
+    background-color: #f3f3f3;
+}
+
+.search-dropdown-item .search-name {
+    font-weight: bold;
+}
+
+.search-dropdown-item .search-email {
+    font-size: 13px;
+    color: #666;
+}
+
+.search-dropdown-empty {
+    padding: 10px 14px;
+    color: #999;
+    font-style: italic;
+}
+
+.search-selected {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    border: 1px solid #93c293;
+    background-color: #e8f5e8;
+    color: #245824;
+    font-weight: bold;
+}
+
+.search-clear {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #245824;
+    padding: 0 4px;
+}
+
+.search-clear:hover {
+    color: #111;
+}
+
+/*Invitation timeslot voting*/
+.status-badge.invited {
+    background-color: #e3f0fc;
+    color: #1a5276;
+    border: 1px solid #85c1e9;
+}
+
+.table-action.vote {
+    border-color: #85c1e9;
+    color: #1a5276;
+    background-color: #fff;
+}
+
+.table-action.vote:hover {
+    background-color: #e3f0fc;
+}
+
+/*time vote view css*/
+.vote-slot-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border: 1px solid #d6d6d6;
+    border-bottom: none;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.vote-slot-row:first-child {
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+}
+
+.vote-slot-row:last-child {
+    border-bottom: 1px solid #d6d6d6;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+}
+
+.vote-slot-row:hover {
+    background-color: #f3f3f3;
+}
+
+.vote-slot-row.checked {
+    background-color: #e8f5e8;
+    border-color: #93c293;
+}
+
+.vote-slot-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.vote-slot-label {
+    cursor: pointer;
+    font-size: 14px;
+    flex: 1;
+}
+
+.vote-slot-date {
+    font-weight: bold;
+}
+
+.vote-slot-time {
+    color: #555;
+    margin-left: 8px;
+}
+
 @media (max-width: 860px) {
     .left-panel {
         border-right: none;
@@ -684,6 +850,21 @@ h2 {
     .appt-table thead th:first-child,
     .appt-table tbody td:first-child {
         padding-left: 10px;
+    }
+
+    /* Notification panel overflows on narrow right panels */
+    .notif-panel {
+        width: 300px;
+    }
+
+    /* Vote rows need less padding */
+    .vote-slot-row {
+        padding: 12px 14px;
+    }
+
+    /* Prof banner text can get long */
+    .search-selected {
+        font-size: 13px;
     }
 }
 
@@ -724,6 +905,60 @@ h2 {
     .table-action {
         padding: 5px 8px;
         font-size: 12px;
+    }
+
+    /* Notification panel should go full width of right panel */
+    .notif-panel {
+        width: 100%;
+        right: auto;
+        left: 0;
+    }
+
+    /* Heading is too big on small screens */
+    h2 {
+        font-size: 20px;
+    }
+
+    /* Vote rows tighter */
+    .vote-slot-row {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .vote-slot-label {
+        font-size: 13px;
+    }
+
+    /* Stack date and time on vote rows */
+    .vote-slot-time {
+        display: block;
+        margin-left: 0;
+        margin-top: 2px;
+    }
+
+    /* Search bar input */
+    .request-select,
+    .request-textarea {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    /* Prof banner */
+    .search-selected {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+
+    /* Zoom link column and other table cells */
+    .table-link,
+    .no-link {
+        font-size: 12px;
+    }
+
+    /* Stack table action buttons vertically on phone */
+    .table-actions {
+        flex-direction: column;
+        gap: 4px;
     }
 }
 

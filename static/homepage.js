@@ -1,3 +1,208 @@
+/*Function for opening timeslot selection for group meetings:*/
+function open_vote_view(meetingID, title, ownerName) {
+    document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
+    document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'none';
+    document.getElementsByClassName('vote-meeting-tab-view')[0].style.display = 'block';
+    document.getElementsByClassName('right-panel')[0].style.display = 'none';
+
+    document.getElementById('voteIntro').textContent =
+        'Voting on "' + title + '" by ' + ownerName + '.';
+    document.getElementById('voteSelectionText').textContent =
+        'Check the time slots that work for you.';
+    document.getElementById('voteSuccessNote').classList.remove('show');
+    document.getElementById('voteErrorNote').classList.remove('show');
+
+    // TODO: replace with real fetch from /api/type2/meeting/<meetingID>
+    var dummySlots = [
+        { slotID: 1, date: '2026-04-28', start_time: '13:00', end_time: '14:00' },
+        { slotID: 2, date: '2026-04-28', start_time: '15:00', end_time: '16:00' },
+        { slotID: 3, date: '2026-04-29', start_time: '10:00', end_time: '11:00' },
+        { slotID: 4, date: '2026-04-30', start_time: '14:00', end_time: '15:00' }
+    ];
+
+    var list = document.getElementById('voteSlotList');
+    var selectionText = document.getElementById('voteSelectionText');
+    list.innerHTML = '';
+
+    dummySlots.forEach(function (slot) {
+        var row = document.createElement('div');
+        row.className = 'vote-slot-row';
+
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = slot.slotID;
+        cb.id = 'vote-slot-' + slot.slotID;
+
+        var lbl = document.createElement('label');
+        lbl.className = 'vote-slot-label';
+        lbl.htmlFor = cb.id;
+        lbl.innerHTML =
+            '<span class="vote-slot-date">' + slot.date + '</span>' +
+            '<span class="vote-slot-time">' + slot.start_time + ' – ' + slot.end_time + '</span>';
+
+        cb.addEventListener('change', function () {
+            row.classList.toggle('checked', cb.checked);
+            updateVoteCount();
+        });
+
+        row.addEventListener('click', function (e) {
+            if (e.target !== cb) {
+                cb.checked = !cb.checked;
+                row.classList.toggle('checked', cb.checked);
+                updateVoteCount();
+            }
+        });
+
+        row.appendChild(cb);
+        row.appendChild(lbl);
+        list.appendChild(row);
+    });
+
+    function updateVoteCount() {
+        var count = list.querySelectorAll('input[type=checkbox]:checked').length;
+        if (count === 0) {
+            selectionText.textContent = 'Check the time slots that work for you.';
+        } else {
+            selectionText.textContent = count + ' slot(s) selected.';
+        }
+    }
+
+    document.getElementById('submitVoteBtn').onclick = function () {
+        var checked = list.querySelectorAll('input[type=checkbox]:checked');
+        var ids = [];
+        checked.forEach(function (cb) { ids.push(parseInt(cb.value)); });
+
+        if (ids.length === 0) {
+            document.getElementById('voteErrorNote').textContent = 'Select at least one slot.';
+            document.getElementById('voteErrorNote').classList.add('show');
+            return;
+        }
+
+        // TODO: replace with real fetch to /api/type2/submit_availability
+        document.getElementById('voteErrorNote').classList.remove('show');
+        document.getElementById('voteSuccessNote').textContent =
+            'Submitted ' + ids.length + ' slot(s) successfully.';
+        document.getElementById('voteSuccessNote').classList.add('show');
+    };
+
+    document.getElementById('backToApptsBtn').onclick = function () {
+        document.getElementsByClassName('right-panel')[0].style.display = 'block';
+        view_appointments();
+    };
+}
+
+/* Professor search bar — currently uses dummy data */
+function initProfSearch() {
+    var selectedOwner = null;
+    var searchTimer = null;
+
+    var profSearch = document.getElementById('profSearch');
+    var profDropdown = document.getElementById('profDropdown');
+    var profBanner = document.getElementById('profBanner');
+    var profBannerText = document.getElementById('profBannerText');
+    var profClear = document.getElementById('profClear');
+
+    /* BACKEND TODO: replace this array with a fetch from /api/owners/search?q=... */
+    var dummyOwners = [
+        { userID: 1, name: 'Prof. Vybihal',  email: 'vybihal@mcgill.ca' },
+        { userID: 2, name: 'Prof. Bhatt',    email: 'bhatt@mcgill.ca' },
+        { userID: 3, name: 'Prof. Pientka',  email: 'pientka@mcgill.ca' },
+        { userID: 4, name: 'Sarah Chen',     email: 'sarah.chen@mcgill.ca' }
+    ];
+
+    profSearch.addEventListener('input', function () {
+        var q = profSearch.value.trim();
+        if (q.length < 1) {
+            profDropdown.classList.remove('open');
+            return;
+        }
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () {
+            searchOwners(q);
+        }, 250);
+    });
+
+    profSearch.addEventListener('focus', function () {
+        if (profSearch.value.trim().length >= 1) {
+            searchOwners(profSearch.value.trim());
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!profSearch.contains(e.target) && !profDropdown.contains(e.target)) {
+            profDropdown.classList.remove('open');
+        }
+    });
+
+    profClear.addEventListener('click', function () {
+        selectedOwner = null;
+        profSearch.value = '';
+        profBanner.style.display = 'none';
+        /* BACKEND TODO: clear the slot grid and reset calendar to show no slots */
+    });
+
+    function searchOwners(query) {
+        /*
+         * BACKEND TODO: replace this whole function body with:
+         *
+         * var res = await fetch('/api/owners/search?q=' + encodeURIComponent(query));
+         * var data = await res.json();
+         * var results = data.owners || [];
+         *
+         * (and make the function async)
+         */
+        var q = query.toLowerCase();
+        var results = dummyOwners.filter(function (o) {
+            return o.name.toLowerCase().indexOf(q) !== -1 ||
+                   o.email.toLowerCase().indexOf(q) !== -1;
+        });
+
+        profDropdown.innerHTML = '';
+
+        if (results.length === 0) {
+            profDropdown.innerHTML = '<div class="search-dropdown-empty">No professors found.</div>';
+            profDropdown.classList.add('open');
+            return;
+        }
+
+        results.forEach(function (owner) {
+            var item = document.createElement('div');
+            item.className = 'search-dropdown-item';
+            item.innerHTML =
+                '<div class="search-name">' + owner.name + '</div>' +
+                '<div class="search-email">' + owner.email + '</div>';
+            item.addEventListener('click', function () {
+                selectOwner(owner);
+            });
+            profDropdown.appendChild(item);
+        });
+
+        profDropdown.classList.add('open');
+    }
+
+    function selectOwner(owner) {
+        selectedOwner = owner;
+        profDropdown.classList.remove('open');
+        profSearch.value = '';
+        profBanner.style.display = 'flex';
+        profBannerText.textContent = owner.name + ' (' + owner.email + ')';
+
+        /*
+         * BACKEND TODO: fetch this owner's available slots and render them:
+         *
+         * var res = await fetch('/api/type3/available_slots?owner_id=' + owner.userID);
+         * var data = await res.json();
+         * // render data.slots in the slot grid, filtered by selected calendar date
+         *
+         * Also update the "Select Meeting Slot" button to call:
+         * fetch('/api/type3/book_slot', { method: 'POST', body: { slotID: ... } })
+         */
+    }
+}
+    
+
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 function toggleNotifications(e) {
     e.stopPropagation();
     var panel = document.getElementById('notifPanel');
@@ -14,10 +219,12 @@ document.addEventListener('click', function (e) {
 function view_appointments(){
     document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
     document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'block';
+    document.getElementsByClassName('vote-meeting-tab-view')[0].style.display = 'none';
 }
 function make_appointment(){
     document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'block';
     document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'none';
+    document.getElementsByClassName('vote-meeting-tab-view')[0].style.display = 'none';
 }
 
 /* Helpers */
