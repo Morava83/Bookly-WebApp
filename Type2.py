@@ -20,6 +20,14 @@ def get_db_connection():
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
+def get_user_id(email):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT userID FROM User WHERE email=?", (email,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else None
+
 #Get Owner Record
 def get_owner(id):
     conn = get_db_connection()
@@ -53,5 +61,41 @@ def get_guests(students):
 #Get owner recurring time slots
 
 #--------Schedule Meeting----------
-#User picks set of slots
+
+#======Helper Functions==========
+def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password):
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(username, password)
+            server.send_message(msg)
+            print(f"Email sent to {to_email}")
+    except Exception as e:
+        print(f"Email error: {e}")
+
+# SOCKET NOTIFICATION
+def send_notification(message, user_id):
+    try:
+        from app import socketio
+
+        socketio.emit(
+            "notification",
+            {"message": message},
+            to=str(user_id)
+        )
+
+    except Exception as e:
+        print("Socket error:", e)
+
+
+#TODO Request meeting function
+#TODO Create meeting function
+#TODO Accept meeting function
+#TODO Decline meeting function
 
