@@ -29,6 +29,8 @@ app.config.update({
     "ZOOM_CLIENT_SECRET": os.environ.get("ZOOM_CLIENT_SECRET", ""),
 })
 
+database.CreateTables.create_tables()
+
 # ======== DB helper ========
 def get_db_connection():
     conn = sqlite3.connect(app.config["DB_PATH"])
@@ -259,5 +261,4 @@ app.register_blueprint(type2_blueprint, url_prefix="/api/type2")
 app.register_blueprint(type3_blueprint, url_prefix="/api/type3")
 
 if __name__ == "__main__":
-    database.CreateTables.create_tables()
     socketio.run(app, debug=True)
