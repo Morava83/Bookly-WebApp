@@ -1002,15 +1002,32 @@ h2 {
     margin-top: 10px;
 }
 
+/* ── Invitation URL text: shared base style ── */
 .invite-url-text {
-    flex: 1;
     padding: 8px 12px;
     background-color: #f7f7f7;
     border: 1px solid #dddddd;
     font-family: monospace;
     font-size: 13px;
     word-break: break-all;
+}
+
+/* Right sidebar invitation URL card */
+.invite-url-box .invite-url-text {
+    flex: 1;
     min-width: 180px;
+}
+
+/* Manage Group Meetings table cells */
+.appt-table td .invite-url-text {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-bottom: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 /* ── Finalize vote count ── */

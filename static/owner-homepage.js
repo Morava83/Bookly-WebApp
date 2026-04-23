@@ -27,11 +27,61 @@ document.addEventListener('click', function (e) {
     }
 });
 
+/* ── Current logged-in owner ── */
+
+var currentUserName = document.getElementById('currentUserName');
+var currentUserEmail = document.getElementById('currentUserEmail');
+var currentUserRole = document.getElementById('currentUserRole');
+
+loadCurrentUser();
+
+async function loadCurrentUser() {
+    try {
+        const response = await fetch('/api/me');
+        const data = await response.json();
+
+        if (!response.ok) {
+            currentUserName.textContent = 'Unavailable';
+            currentUserEmail.textContent = 'Unavailable';
+            currentUserRole.textContent = 'Unavailable';
+            return;
+        }
+
+        currentUserName.textContent = data.name || 'Unknown';
+        currentUserEmail.textContent = data.email || 'Unknown';
+        currentUserRole.textContent = formatRoleLabel(data.role);
+    } catch (error) {
+        console.error('Error loading current user:', error);
+        currentUserName.textContent = 'Unavailable';
+        currentUserEmail.textContent = 'Unavailable';
+        currentUserRole.textContent = 'Unavailable';
+    }
+}
+
+function formatRoleLabel(role) {
+    if (!role) return 'Unknown';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
 /* ── Logout ── */
 
 document.getElementById('logoutButton').addEventListener('click', async function () {
-    /* BACKEND TODO: replace with real fetch to /api/logout */
-    window.location.href = '/';
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            console.error('Logout failed');
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+    } finally {
+        window.location.href = '/';
+    }
 });
 
 /* ── Copy invite URL ── */
