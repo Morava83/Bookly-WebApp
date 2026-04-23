@@ -17,8 +17,17 @@ DB_PATH = os.path.join(BASE_DIR, "database", "bookly.db")
 
 # Database connection
 def get_db_connection():
+
+    db_path = DB_PATH
+
+    #attempt to get DB_PATH from Flask app config, but fallback to default if not available 
+    try:
+        db_path = current_app.config.get("DB_PATH", DB_PATH)
+    except RuntimeError:
+        pass
+
     # Opens connection to SQLite database file at DB_PATH
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(db_path)
 
     # returns DB with dictionary format -> row["slotID"]
     conn.row_factory = sqlite3.Row
@@ -193,6 +202,65 @@ def create_office_hours():
 
     finally:
         conn.close() 
+
+
+# owner viewing slots created for their office hours
+@type3_blueprint.route("/owner_slots", methods=["GET"])
+@owner_required
+def owner_slots():
+    owner_id = session["user_id"]
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                ts.slotID,
+                ts.meetingID,
+                ts.start_date,
+                ts.end_date,
+                ts.start_time,
+                ts.end_time,
+                m.status AS meeting_status,
+                b3.booking3ID,
+                su.name AS student_name,
+                su.email AS student_email
+            FROM TimeSlot ts
+            JOIN OfficeHours oh ON oh.meetingID = ts.meetingID
+            JOIN Meeting m ON m.meetingID = ts.meetingID
+            LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
+            LEFT JOIN User su ON su.userID = b3.studentID
+            WHERE oh.ownerID = ?
+            ORDER BY ts.start_date, ts.start_time, ts.slotID
+        """, (owner_id,))
+
+        rows = cur.fetchall()
+
+        slots = []
+        for row in rows:
+            if row["booking3ID"]:
+                status = "Booked"
+            elif row["meeting_status"] in ("open", "booked"):
+                status = "Active"
+            else:
+                status = "Private"
+
+            slots.append({
+                "slotID": row["slotID"],
+                "meetingID": row["meetingID"],
+                "date": row["start_date"],
+                "start_time": row["start_time"],
+                "end_time": row["end_time"],
+                "status": status,
+                "student_name": row["student_name"],
+                "student_email": row["student_email"]
+            })
+
+        return jsonify({"slots": slots}), 200
+
+    finally:
+        conn.close()
 
 
 # Get avaliable slots for students
