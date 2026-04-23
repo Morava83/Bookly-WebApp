@@ -7,6 +7,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, date
 
+# Zoom utils
+from zoom_utils import get_owner_zoom_link
+
 type3_blueprint = Blueprint('Type3', __name__)
 
 BASE_DIR = os.path.dirname(__file__)
@@ -112,7 +115,6 @@ def create_office_hours():
     start_date = data.get("start_date")
     num_weeks = int(data.get("num_weeks", 0))
     weekly_slots = data.get("weekly_slots", [])
-    zoom_link = (data,get("zoom_link") or "").strip() or None
     # e.g. {"weekday": "monday", "start_time": "10:00", "end_time": "10:15"}
 
     if not start_date or num_weeks <= 0 or not weekly_slots:
@@ -126,11 +128,26 @@ def create_office_hours():
     cur = conn.cursor()
 
     try:
-        # insert one row into meeting using start date with status 'open'
+        # Zoom meeting
+        cur.execute("SELECT name FROM User WHERE userID = ?", (owner_id,))
+        owner_row = cur.fetchone()
+
+        zoom_data = get_owner_zoom_link(
+            conn,
+            current_app,
+            owner_id,
+            owner_row["name"]
+        )
+
         cur.execute("""
             INSERT INTO Meeting (date, start_time, end_time, status, zoom_link)
-            VALUES (?, ?, ?, 'open')
-        """, (start_date, weekly_slots[0]["start_time"], weekly_slots[0]["end_time"], zoom_link))
+            VALUES (?, ?, ?, 'open', ?)
+        """, (
+            start_date,
+            weekly_slots[0]["start_time"],
+            weekly_slots[0]["end_time"],
+            zoom_data["zoom_link"],
+        ))
 
         # stores ID of the newly inserted Meeting 
         meeting_id = cur.lastrowid
@@ -197,7 +214,7 @@ def available_slots():
                 ts.end_time,
                 oh.ownerID,
                 u.name AS owner_name,
-                u.email AS owner_email
+                u.email AS owner_email,
                 m.zoom_link
             FROM TimeSlot ts
             JOIN OfficeHours oh ON ts.meetingID = oh.meetingID
@@ -262,7 +279,7 @@ def book_slots():
                 oh.ownerID,
                 u.email AS owner_email,
                 su.email AS student_email,
-                su.name AS student_name  
+                su.name AS student_name,
                 m.zoom_link 
             FROM TimeSlot ts
             JOIN OfficeHours oh ON ts.meetingID = oh.meetingID
@@ -338,10 +355,11 @@ def my_bookings():
                     ts.start_time,
                     ts.end_time,
                     u.name AS owner_name,
-                    u.email AS owner_email
+                    u.email AS owner_email,
                     m.zoom_link
                 FROM Booking3 b3
                 JOIN TimeSlot ts ON ts.slotID = b3.slotID
+                JOIN Meeting m ON m.meetingID = b3.meetingID
                 JOIN User u ON u.userID = b3.ownerID
                 WHERE b3.studentID = ?
                 ORDER BY ts.start_date, ts.start_time
@@ -355,10 +373,11 @@ def my_bookings():
                     ts.start_time,
                     ts.end_time,
                     su.name AS student_name,
-                    su.email AS student_email
+                    su.email AS student_email,
                     m.zoom_link
                 FROM Booking3 b3
                 JOIN TimeSlot ts ON ts.slotID = b3.slotID
+                JOIN Meeting m ON m.meetingID = b3.meetingID
                 JOIN User su ON su.userID = b3.studentID
                 WHERE b3.ownerID = ?
                 ORDER BY ts.start_date, ts.start_time

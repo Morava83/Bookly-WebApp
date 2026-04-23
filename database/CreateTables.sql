@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS Student (
 
 CREATE TABLE IF NOT EXISTS Owner (
     userID INTEGER PRIMARY KEY,
+    zoom_meeting_id TEXT,
+    zoom_link TEXT,
     FOREIGN KEY (userID) REFERENCES User(userID) ON DELETE CASCADE
 );
 

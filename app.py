@@ -24,9 +24,10 @@ app.config.update({
     "SMTP_SERVER": os.environ.get("SMTP_SERVER", "smtp.office365.com"),
     "SMTP_PORT": int(os.environ.get("SMTP_PORT", "587")),
     "DB_PATH": os.environ.get("DB_PATH", "database/bookly.db"),
+    "ZOOM_ACCOUNT_ID": os.environ.get("ZOOM_ACCOUNT_ID", ""),
+    "ZOOM_CLIENT_ID": os.environ.get("ZOOM_CLIENT_ID", ""),
+    "ZOOM_CLIENT_SECRET": os.environ.get("ZOOM_CLIENT_SECRET", ""),
 })
-
-database.CreateTables.create_tables()
 
 # ======== DB helper ========
 def get_db_connection():
