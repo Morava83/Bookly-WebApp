@@ -95,7 +95,7 @@ def send_notification(message, user_id):
 
 
 #TODO Layout availabilities
-#Select availability for student
+#TODO Select availability for student
 #TODO Owner creates meeting function
 
 
