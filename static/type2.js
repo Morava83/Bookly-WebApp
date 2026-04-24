@@ -27,6 +27,9 @@ const table = document.createElement("table");
 table.id = "scheduler";
 document.body.appendChild(table);
 
+//TODO Apply media queries to get dates and times corresponding to those posted by the Owner
+//This would be done in the backend, but the aforementionned fields should by no means be hardcoded
+// -->this is just for demonstration purposes
 // Data
 const dates = ["2026-04-23", "2026-04-24", "2026-04-25"];
 const times = ["09:00", "11:00", "13:00", "15:00"];
