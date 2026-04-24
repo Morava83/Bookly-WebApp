@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bookly - Owner Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='homepage.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
     <div class="page">
@@ -340,44 +341,8 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr id="pending-row-10">
-                                    <td>10</td>
-                                    <td>Alice Wang<br><span class="no-link">alice.wang@mail.mcgill.ca</span></td>
-                                    <td>I need help with the project deliverable for COMP 307.</td>
-                                    <td>2026-04-20</td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="table-action vote" onclick="acceptRequest(10, 'alice.wang@mail.mcgill.ca')">Accept</button>
-                                            <button class="table-action danger" onclick="declineRequest(10, 'alice.wang@mail.mcgill.ca')">Decline</button>
-                                            <a class="table-action" href="mailto:alice.wang@mail.mcgill.ca?subject=Bookly%20-%20Meeting%20request">Email</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr id="pending-row-11">
-                                    <td>11</td>
-                                    <td>Bob Smith<br><span class="no-link">bob.smith@mail.mcgill.ca</span></td>
-                                    <td>Could we discuss my midterm grade?</td>
-                                    <td>2026-04-21</td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="table-action vote" onclick="acceptRequest(11, 'bob.smith@mail.mcgill.ca')">Accept</button>
-                                            <button class="table-action danger" onclick="declineRequest(11, 'bob.smith@mail.mcgill.ca')">Decline</button>
-                                            <a class="table-action" href="mailto:bob.smith@mail.mcgill.ca?subject=Bookly%20-%20Meeting%20request">Email</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr id="pending-row-12">
-                                    <td>12</td>
-                                    <td>Carol Lee<br><span class="no-link">carol.lee@mail.mcgill.ca</span></td>
-                                    <td>I'd like to discuss research opportunities for the summer.</td>
-                                    <td>2026-04-22</td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="table-action vote" onclick="acceptRequest(12, 'carol.lee@mail.mcgill.ca')">Accept</button>
-                                            <button class="table-action danger" onclick="declineRequest(12, 'carol.lee@mail.mcgill.ca')">Decline</button>
-                                            <a class="table-action" href="mailto:carol.lee@mail.mcgill.ca?subject=Bookly%20-%20Meeting%20request">Email</a>
-                                        </div>
-                                    </td>
+                                <tr>
+                                    <td colspan="5" class="appt-table-empty">Loading pending requests ...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -411,19 +376,7 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>10</td>
-                                        <td>Alice Wang</td>
-                                        <td>2026-04-24</td>
-                                        <td>10:00</td>
-                                        <td>10:15</td>
-                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/111222333" target="_blank">Join</a></td>
-                                        <td><span class="status-badge accepted">Accepted</span></td>
-                                        <td>
-                                            <div class="table-actions">
-                                                <a class="table-action" href="mailto:alice.wang@mail.mcgill.ca">Email</a>
-                                                <button class="table-action danger">Cancel</button>
-                                            </div>
-                                        </td>
+                                        <td colspan="5" class="appt-table-empty">Loading individual meetings ...</td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -97,16 +97,12 @@ def weekday_name_to_index(name):
 
 # Generates recurring dates for one weekday accross serveral weeks
 def generate_dates_for_weekday(start_date_str, weekday_index, num_weeks):
-    # Parse ipnut string into python "date" objects
     start_dt = datetime.strptime(start_date_str, "%Y-%m-%d").date()
 
-    # how many days forward to move from the start date
     days_ahead = (weekday_index - start_dt.weekday()) % 7
 
-    # computes the first date of the requested weekday
     first_occurrence = start_dt + timedelta(days=days_ahead)
 
-    # recurring date storage
     dates = []
     for i in range(num_weeks):
         dates.append(first_occurrence + timedelta(weeks=i))
@@ -120,7 +116,6 @@ def generate_dates_for_weekday(start_date_str, weekday_index, num_weeks):
 def create_office_hours():
     data = request.get_json() or {}
 
-    # Pulls expected fields out the JSON
     start_date = data.get("start_date")
     num_weeks = int(data.get("num_weeks", 0))
     weekly_slots = data.get("weekly_slots", [])
@@ -129,10 +124,8 @@ def create_office_hours():
     if not start_date or num_weeks <= 0 or not weekly_slots:
         return jsonify({"error": "Missing required fields"}), 400
     
-    # Takes logged-in owner's user ID from session
     owner_id = session["user_id"]
 
-    # Get database connection
     conn = get_db_connection()
     cur = conn.cursor()
 

@@ -216,6 +216,20 @@ document.addEventListener('click', function (e) {
     }
 });
 
+document.addEventListener("DOMContentLoaded", async function () {
+    if (typeof loadType1Meetings === "function") {
+        await loadType1Meetings();
+    }
+
+    if (typeof loadType2Meetings === "function") {
+        await loadType2Meetings();
+    }
+
+    if (typeof loadType3Bookings === "function") {
+        await loadType3Bookings();
+    }
+});
+
 function view_appointments(){
     document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
     document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'block';

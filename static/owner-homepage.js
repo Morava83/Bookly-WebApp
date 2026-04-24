@@ -632,43 +632,219 @@ function finalizeMeeting(meetingID, slot) {
    TAB 5: Pending Requests — accept / decline
    ═══════════════════════════════════════════ */
 
-function acceptRequest(meetingID, studentEmail) {
-    /*
-     * BACKEND TODO: replace with fetch to /api/type1/accept
-     * body: { meetingID }
-     */
-    var row = document.getElementById('pending-row-' + meetingID);
-    if (row) row.remove();
+async function acceptRequest(meetingID, studentEmail) {
+    try {
+        const response = await fetch('/api/type1/accept', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ meetingID: meetingID })
+        });
 
-    showOwnerMsg('pendingSuccessNote', 'Request ' + meetingID + ' accepted.');
+        const data = await response.json();
 
-    // Open mailto: to notify the student
-    window.open(
-        'mailto:' + studentEmail +
-        '?subject=Bookly%20-%20Meeting%20accepted' +
-        '&body=' + encodeURIComponent('Your meeting request has been accepted.'),
-        '_self'
-    );
+        if (!response.ok) {
+            showOwnerError('pendingErrorNote', data.error || 'Could not accept request.');
+            return;
+        }
+
+        await loadPendingRequests();
+        await loadOwnerType1Meetings();
+
+        showOwnerMsg('pendingSuccessNote', 'Request ' + meetingID + ' accepted.');
+    } catch (error) {
+        console.error('Accept request error:', error);
+        showOwnerError('pendingErrorNote', 'Could not connect to server.');
+    }
 }
 
-function declineRequest(meetingID, studentEmail) {
-    /*
-     * BACKEND TODO: replace with fetch to /api/type1/decline
-     * body: { meetingID }
-     */
-    var row = document.getElementById('pending-row-' + meetingID);
-    if (row) row.remove();
+async function declineRequest(meetingID, studentEmail) {
+    try {
+        const response = await fetch('/api/type1/decline', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ meetingID: meetingID })
+        });
 
-    showOwnerMsg('pendingSuccessNote', 'Request ' + meetingID + ' declined.');
+        const data = await response.json();
 
-    // Open mailto: to notify the student
-    window.open(
-        'mailto:' + studentEmail +
-        '?subject=Bookly%20-%20Meeting%20declined' +
-        '&body=' + encodeURIComponent('Your meeting request has been declined.'),
-        '_self'
-    );
+        if (!response.ok) {
+            showOwnerError('pendingErrorNote', data.error || 'Could not decline request.');
+            return;
+        }
+
+        await loadPendingRequests();
+
+        showOwnerMsg('pendingSuccessNote', 'Request ' + meetingID + ' declined.');
+    } catch (error) {
+        console.error('Decline request error:', error);
+        showOwnerError('pendingErrorNote', 'Could not connect to server.');
+    }
 }
+
+async function loadPendingRequests() {
+    const tbody = document.querySelector('#pendingRequestsTable tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5" class="appt-table-empty">Loading pending requests...</td>
+        </tr>
+    `;
+
+    try {
+        const meResponse = await fetch('/api/me');
+        const me = await meResponse.json();
+
+        if (!meResponse.ok) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="appt-table-empty">Could not load owner info.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        const response = await fetch(`/api/type1/pending/${encodeURIComponent(me.email)}`);
+        const requests = await response.json();
+
+        if (!response.ok) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="appt-table-empty">Could not load pending requests.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        if (!requests || requests.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="appt-table-empty">No pending requests.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = '';
+
+        requests.forEach(function (request) {
+            const row = document.createElement('tr');
+            row.id = `pending-row-${request.meetingID}`;
+
+            row.innerHTML = `
+                <td>${request.meetingID}</td>
+                <td>
+                    ${request.student_email}
+                    <br>
+                    <span class="no-link">${request.student_email}</span>
+                </td>
+                <td>${request.message || ''}</td>
+                <td>${request.date || ''}</td>
+                <td>
+                    <div class="table-actions">
+                        <button class="table-action vote" onclick="acceptRequest(${request.meetingID}, '${request.student_email}')">Accept</button>
+                        <button class="table-action danger" onclick="declineRequest(${request.meetingID}, '${request.student_email}')">Decline</button>
+                        <a class="table-action" href="mailto:${request.student_email}?subject=Bookly%20-%20Meeting%20request">Email</a>
+                    </div>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error('Load pending requests error:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="appt-table-empty">Could not connect to server.</td>
+            </tr>
+        `;
+    }
+}
+
+async function loadOwnerType1Meetings() {
+    const tbody = document.querySelector('#ownerIndividualTable tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="8" class="appt-table-empty">Loading individual meetings...</td>
+        </tr>
+    `;
+
+    try {
+        const response = await fetch('/api/type1/owner_meetings');
+        const data = await response.json();
+
+        if (!response.ok) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="appt-table-empty">Could not load individual meetings.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        const meetings = data.meetings || [];
+
+        if (meetings.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="appt-table-empty">No accepted individual meetings yet.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = '';
+
+        meetings.forEach(function (meeting) {
+            const zoomCell = meeting.zoom_link
+                ? `<a class="table-action primary" href="${meeting.zoom_link}" target="_blank">Join</a>`
+                : `<button class="table-action" disabled style="opacity:0.45; cursor:not-allowed;">Join</button>`;
+
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>${meeting.meetingID}</td>
+                <td>
+                    ${meeting.student_name}
+                    <br>
+                    <span class="no-link">${meeting.student_email}</span>
+                </td>
+                <td>${meeting.date}</td>
+                <td>${meeting.start_time}</td>
+                <td>${meeting.end_time}</td>
+                <td>${zoomCell}</td>
+                <td><span class="status-badge accepted">${meeting.status}</span></td>
+                <td>
+                    <div class="table-actions">
+                        <a class="table-action" href="mailto:${meeting.student_email}">Email</a>
+                    </div>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error('Load owner Type 1 meetings error:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="appt-table-empty">Could not connect to server.</td>
+            </tr>
+        `;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadPendingRequests();
+    loadOwnerType1Meetings();
+});
 
 /* ═══════════════════════════════════════════
    Shared message helpers

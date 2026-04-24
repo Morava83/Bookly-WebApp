@@ -17,7 +17,9 @@ app = Flask(__name__, template_folder="templates")
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key") # Change later
 
-# Dynamic media query / SMTP config
+# Dynamic media query
+# SMTP config
+# Zoom app
 app.config.update({
     "FROM_EMAIL": os.environ.get("FROM_EMAIL", "your_email@mail.mcgill.ca"),
     "EMAIL_PASSWORD": os.environ.get("EMAIL_PASSWORD", "your_app_password"),
@@ -55,6 +57,7 @@ def get_role_from_email(email):
         return "user"
     return None
 
+# Using Werkzeug for password
 def hash_password(password):
     return generate_password_hash(password, method="pbkdf2:sha256", salt_length=16)
 

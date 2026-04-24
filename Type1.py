@@ -57,7 +57,7 @@ def send_notification(message, user_id):
 # DB HELPERS
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
@@ -150,7 +150,7 @@ def request_meeting():
         return jsonify({"error": "Invalid user"}), 400
     
     if not owner_id:
-        return jsonify({"error": "Selected owner is not a registered owner"})
+        return jsonify({"error": "Selected owner is not a registered owner"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -231,6 +231,9 @@ def get_pending(owner_email):
     cursor.execute("""
         SELECT
             m.meetingID,
+            m.date,
+            m.start_time,
+            m.end_time,
             u.email AS student_email,
             r.message,
             m.status
@@ -250,6 +253,9 @@ def get_pending(owner_email):
             "meetingID": row["meetingID"],
             "student_email": row["student_email"],
             "message": row["message"],
+            "date": row["date"],
+            "start_time": row["start_time"],
+            "end_time": row["end_time"],
             "status": row["status"]
         }
         for row in rows
@@ -275,8 +281,8 @@ def accept_meeting():
         FROM RequestMeeting r
         JOIN User u ON r.studentID = u.userID
         JOIN Meeting m on m.meetingID = r.meetingID
-        WHERE r.meetingID = ?
-    """, (meeting_id,))
+        WHERE r.meetingID = ? AND r.ownerID = ?
+    """, (meeting_id, session["user_id"]))
     row = cursor.fetchone()
 
     if not row:
@@ -297,27 +303,8 @@ def accept_meeting():
     conn.commit()
     conn.close()
 
-    # # Get student email
-    # cursor.execute("""
-    #     SELECT r.studentID, u.email
-    #     FROM RequestMeeting r
-    #     JOIN User u ON r.studentID = u.userID
-    #     WHERE r.meetingID = ?
-    # """, (meeting_id,))
-
-    # row = cursor.fetchone()
     student_id = row["studentID"]
     student_email = row["student_email"]
-
-#     send_notification(
-#         f"Meeting accepted for {student_email}",
-#         student_id
-# )
-
-#     conn.commit()
-#     conn.close()
-
-    # student_email = row[0] if row else None
 
     # Notify student
     if student_email:
@@ -361,8 +348,8 @@ def decline_meeting():
         SELECT r.studentID, u.email AS student_email
         FROM RequestMeeting r
         JOIN User u ON r.studentID = u.userID
-        WHERE r.meetingID = ?
-    """, (meeting_id,))
+        WHERE r.meetingID = ? AND r.ownerID = ?
+    """, (meeting_id, session["user_id"]))
     row = cursor.fetchone()
 
     if not row:
@@ -378,15 +365,6 @@ def decline_meeting():
 
     conn.commit()
     conn.close()
-
-    # cursor.execute("""
-    #     SELECT r.studentID, u.email
-    #     FROM RequestMeeting r
-    #     JOIN User u ON r.studentID = u.userID
-    #     WHERE r.meetingID = ?
-    # """, (meeting_id,))
-
-    # row = cursor.fetchone()
 
     student_id = row["studentID"]
     student_email = row["student_email"]
@@ -499,7 +477,6 @@ def remove_meeting():
     finally:
         conn.close()
 
-   #TODO Send email to notify student (with Zoom link)
 
     #TODO Display on user dashboard
 @type1_blueprint.route('/my_meetings', methods=['GET'])
@@ -550,3 +527,56 @@ def my_meetings():
 
 
     #TODO Display on owner dashboard
+
+
+
+@type1_blueprint.route('/owner_meetings', methods=['GET'])
+def owner_meetings():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    if session.get("role") != "owner":
+        return jsonify({"error": "Owner access required"}), 403
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT
+                m.meetingID,
+                m.date,
+                m.start_time,
+                m.end_time,
+                m.status,
+                m.zoom_link,
+                u.name AS student_name,
+                u.email AS student_email
+            FROM RequestMeeting r
+            JOIN Meeting m ON m.meetingID = r.meetingID
+            JOIN User u ON u.userID = r.studentID
+            WHERE r.ownerID = ?
+              AND m.status = 'accepted'
+            ORDER BY m.date, m.start_time
+        """, (session["user_id"],))
+
+        rows = cursor.fetchall()
+
+        return jsonify({
+            "meetings": [
+                {
+                    "meetingID": row["meetingID"],
+                    "student_name": row["student_name"],
+                    "student_email": row["student_email"],
+                    "date": row["date"],
+                    "start_time": row["start_time"],
+                    "end_time": row["end_time"],
+                    "zoom_link": row["zoom_link"],
+                    "status": row["status"]
+                }
+                for row in rows
+            ]
+        }), 200
+
+    finally:
+        conn.close()
