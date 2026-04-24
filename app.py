@@ -193,6 +193,7 @@ def logout_api():
     session.clear()
     return jsonify({"message": "Logged out"}), 200
 
+
 @app.route("/api/me", methods=["GET"])
 @login_required
 def me():
