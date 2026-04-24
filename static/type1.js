@@ -160,10 +160,6 @@ async function cancelType1Meeting(meetingID) {
 }
 
 async function removeType1Meeting(meetingID) {
-    if (!confirm("Remove this cancelled meeting from your list?")) {
-        return;
-    }
-
     try {
         const response = await fetch("/api/type1/remove", {
             method: "POST",
@@ -206,10 +202,10 @@ function renderType1Meetings(meetings) {
     meetings.forEach(function (meeting) {
         const row = document.createElement('tr');
 
-        const zoomCell = meeting.zoom_link
-            ? `<a class="table-link" href="${meeting.zoom_link}" target="_blank" rel="noopener noreferrer">Join</a>`
-            : `<span class="no-link">${meeting.status === 'pending' ? 'Pending' : '—'}</span>`;
-
+        const zoomCell = meeting.status === "accepted" && meeting.zoom_link
+            ? `<a class="table-action primary" href="${meeting.zoom_link}" target="_blank">Join</a>`
+            : `<button class="table-action" disabled style="opacity: 0.45; cursor: not-allowed;">Join</button>`;
+        
         const actionButtons = `
             <a class="table-action" href="mailto:${meeting.owner_email}">Email</a>
             ${
