@@ -94,8 +94,8 @@ def send_notification(message, user_id):
         print("Socket error:", e)
 
 
-#TODO Request meeting function
-#TODO Create meeting function
-#TODO Accept meeting function
-#TODO Decline meeting function
+#TODO Layout availabilities
+#TODO Select availability for student
+#TODO Owner creates meeting function
+
 
