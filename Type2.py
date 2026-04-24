@@ -67,7 +67,7 @@ def goup_meeting():
     date = data.get("date")
     time = data.get("time")
 
-    conn = sqlite3.connect("db.sqlite3")
+    con = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
