@@ -20,6 +20,45 @@ def get_zoom_token(app):
     response.raise_for_status()
     return response.json()["access_token"]
 
+#=============================
+# Type 1 : Individual Meetings
+
+def create_type1_zoom_meeting(app, owner_name, student_email, meeting_date, start_time):
+    access_token = get_zoom_token(app)
+
+    response = requests.post(
+        f"{BASE_URL}/users/me/meetings",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "topic": f"Bookly Individual Meeting - {owner_name} with {student_email}",
+            "type": 2,
+            "start_time": f"{meeting_date}T{start_time}:00",
+            "duration": 15,
+            "settings": {
+                "waiting_room": True,
+                "join_before_host": False,
+                "mute_upon_entry": True,
+            },
+        },
+        timeout=20,
+    )
+
+    response.raise_for_status()
+    data = response.json()
+
+    return {
+        "zoom_meeting_id": str(data["id"]),
+        "zoom_link": data["join_url"],
+        "start_url": data.get("start_url"),
+    }
+
+
+
+#=============================
+# Type 3 : Office Hours
 def create_zoom_meeting_owner(app, owner_name):
     access_token = get_zoom_token(app)
 
@@ -74,3 +113,5 @@ def get_owner_zoom_link(conn, app, owner_id, owner_name):
     """, (zoom_data["zoom_meeting_id"], zoom_data["zoom_link"], owner_id))
 
     return zoom_data
+
+

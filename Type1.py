@@ -5,6 +5,9 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+# Zoom Feature
+from zoom_utils import create_type1_zoom_meeting
+
 
 # Blueprint
 
@@ -95,7 +98,7 @@ def get_owner_id(email):
     return row["userID"] if row else None
 
 # @type1_blueprint.route("/create_meeting", methods=["POST"])
-def create_meeting(student_id, owner_id, message, meeting_date, start_time, end_time):
+def create_meeting(student_id, owner_id, message, meeting_date, start_time, end_time, zoom_link):
     """
     Insert into Meeting + RequestMeeting 
     """
@@ -104,9 +107,9 @@ def create_meeting(student_id, owner_id, message, meeting_date, start_time, end_
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO Meeting (date, start_time, end_time, status)
-        VALUES (?, ?, ?, 'pending')
-    """, (meeting_date, start_time, end_time))
+        INSERT INTO Meeting (date, start_time, end_time, status, zoom_link)
+        VALUES (?, ?, ?, 'pending', ?)
+    """, (meeting_date, start_time, end_time, zoom_link))
 
     #Access the last inserted meeting
     meeting_id = cursor.lastrowid
@@ -149,6 +152,23 @@ def request_meeting():
     if not owner_id:
         return jsonify({"error": "Selected owner is not a registered owner"})
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM User WHERE userID = ?", (owner_id,))
+    owner_row = cursor.fetchone()
+    conn.close()
+
+    zoom_data = create_type1_zoom_meeting(
+        current_app,
+        owner_row["name"],
+        user_email,
+        meeting_date,
+        start_time
+    )
+
+    zoom_link = zoom_data["zoom_link"]
+
+
     # Create meeting request
     meeting_id = create_meeting(
         student_id, 
@@ -156,7 +176,8 @@ def request_meeting():
         message,
         meeting_date,
         start_time,
-        end_time
+        end_time,
+        zoom_link
     )
 
     # # Update message in RequestMeeting (since insert used empty string earlier)
@@ -175,7 +196,13 @@ def request_meeting():
 
     send_email(
         subject="New Meeting Request",
-        body=f"New request from {user_email}:\n\n{message}",
+        body=(
+            f"New individual meeting request from {user_email}.\n\n"
+            f"Date: {meeting_date}\n"
+            f"Time: {start_time} - {end_time}\n"
+            f"Message:\n{message}\n\n"
+            f"Zoom Link: {zoom_link}"
+        ),
         to_email=owner_email,
         from_email=config.get("FROM_EMAIL"),
         smtp_server=config.get("SMTP_SERVER"),
@@ -240,13 +267,14 @@ def accept_meeting():
     if not meeting_id:
         return jsonify({"error": "Missing meetingID"}), 400
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT r.studentID, r.ownerID, u.email AS student_email
+        SELECT r.studentID, r.ownerID, u.email AS student_email, m.zoom_link
         FROM RequestMeeting r
         JOIN User u ON r.studentID = u.userID
+        JOIN Meeting m on m.meetingID = r.meetingID
         WHERE r.meetingID = ?
     """, (meeting_id,))
     row = cursor.fetchone()
@@ -297,7 +325,10 @@ def accept_meeting():
 
         send_email(
             subject="Meeting Accepted",
-            body="Your meeting request has been accepted.",
+            body=(
+                "Your meeting request has been accepted.\n\n"
+                f"Zoom Link: {row['zoom_link'] or 'Not provided'}"
+            ),
             to_email=student_email,
             from_email=config.get("FROM_EMAIL"),
             smtp_server=config.get("SMTP_SERVER"),
@@ -322,7 +353,7 @@ def decline_meeting():
     if not meeting_id:
         return jsonify({"error": "Missing meetingID"}), 400
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     # Checks if there exist meeting requests
