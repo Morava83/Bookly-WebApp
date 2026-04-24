@@ -1,3 +1,4 @@
+var ownerSlots = [];
 /*Function for opening timeslot selection for group meetings:*/
 function open_vote_view(meetingID, title, ownerName) {
     document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
@@ -102,14 +103,6 @@ function initProfSearch() {
     var profBannerText = document.getElementById('profBannerText');
     var profClear = document.getElementById('profClear');
 
-    /* BACKEND TODO: replace this array with a fetch from /api/owners/search?q=... */
-    var dummyOwners = [
-        { userID: 1, name: 'Prof. Vybihal',  email: 'vybihal@mcgill.ca' },
-        { userID: 2, name: 'Prof. Bhatt',    email: 'bhatt@mcgill.ca' },
-        { userID: 3, name: 'Prof. Pientka',  email: 'pientka@mcgill.ca' },
-        { userID: 4, name: 'Sarah Chen',     email: 'sarah.chen@mcgill.ca' }
-    ];
-
     profSearch.addEventListener('input', function () {
         var q = profSearch.value.trim();
         if (q.length < 1) {
@@ -138,24 +131,14 @@ function initProfSearch() {
         selectedOwner = null;
         profSearch.value = '';
         profBanner.style.display = 'none';
-        /* BACKEND TODO: clear the slot grid and reset calendar to show no slots */
+        ownerSlots = [];
+        window.renderSlots();
     });
 
-    function searchOwners(query) {
-        /*
-         * BACKEND TODO: replace this whole function body with:
-         *
-         * var res = await fetch('/api/owners/search?q=' + encodeURIComponent(query));
-         * var data = await res.json();
-         * var results = data.owners || [];
-         *
-         * (and make the function async)
-         */
-        var q = query.toLowerCase();
-        var results = dummyOwners.filter(function (o) {
-            return o.name.toLowerCase().indexOf(q) !== -1 ||
-                   o.email.toLowerCase().indexOf(q) !== -1;
-        });
+    async function searchOwners(query) {
+        var res = await fetch('/api/owners/search?q=' + encodeURIComponent(query));
+        var data = await res.json();
+        var results = data.owners || [];
 
         profDropdown.innerHTML = '';
 
@@ -180,23 +163,20 @@ function initProfSearch() {
         profDropdown.classList.add('open');
     }
 
-    function selectOwner(owner) {
+    async function selectOwner(owner) {
         selectedOwner = owner;
         profDropdown.classList.remove('open');
         profSearch.value = '';
         profBanner.style.display = 'flex';
         profBannerText.textContent = owner.name + ' (' + owner.email + ')';
 
-        /*
-         * BACKEND TODO: fetch this owner's available slots and render them:
-         *
-         * var res = await fetch('/api/type3/available_slots?owner_id=' + owner.userID);
-         * var data = await res.json();
-         * // render data.slots in the slot grid, filtered by selected calendar date
-         *
-         * Also update the "Select Meeting Slot" button to call:
-         * fetch('/api/type3/book_slot', { method: 'POST', body: { slotID: ... } })
-         */
+        // fetch owner's slots
+        var res = await fetch('/api/type3/available_slots?owner_id=' + owner.userID);
+        var data = await res.json();
+        ownerSlots = data.slots || [];
+
+        // render slot grid
+        window.renderSlots();
     }
 }
     
@@ -296,20 +276,6 @@ function calculateEndTime(startTime) {
 
 window.formatDateForApi = formatDateForApi;
 window.calculateEndTime = calculateEndTime;
-
-function buildSlotOptions() {
-    var options = [];
-    var minutes = [0, 15, 30, 45];
-    for (var hour = 7; hour < 19; hour++) {
-        for (var i = 0; i < minutes.length; i++) {
-            options.push({
-                value: padNumber(hour) + ':' + padNumber(minutes[i]),
-                label: formatTime(hour, minutes[i])
-            });
-        }
-    }
-    return options;
-}
 
 /* Reusable calendar factory
     Pass element IDs + optional callbacks */
@@ -419,7 +385,6 @@ function createCalendar(opts) {
 (function () {
     var selectedSlot = null;
     var currentUser = null;
-    var slotOptions = buildSlotOptions();
     var logoutButton = document.getElementById('logoutButton');
 
     var slotsGrid = document.getElementById('slotsGrid');
@@ -633,47 +598,74 @@ function createCalendar(opts) {
         }
     }
 
+    function formatTimeStr(timeStr) {
+        var parts = timeStr.split(':');
+        var h = parseInt(parts[0], 10);
+        var m = parts[1];
+        var suffix = h >= 12 ? 'PM' : 'AM';
+        var displayH = h % 12;
+        if (displayH === 0) displayH = 12;
+        return displayH + ':' + m + ' ' + suffix;
+    }
+
     function renderSlots() {
         var d = cal.getSelectedDate();
         slotsGrid.innerHTML = '';
         clearMessages();
 
-        if (!d) {
-            slotsNote.textContent = 'Select a date from the calendar to view 15-minute booking times.';
-            selectedSlotText.textContent = 'Choose a date and a 15-minute time slot.';
+        if (ownerSlots.length === 0) {
+            slotsNote.textContent = 'Search for a professor above to see their available slots.';
+            selectedSlotText.textContent = 'Choose a professor, then a date and time slot.';
             bookArea.classList.remove('show');
             return;
         }
 
-        slotsNote.textContent = 'Available 15-minute booking times for ' + formatDateOnly(d) + '.';
+        if (!d) {
+            slotsNote.textContent = 'Select a date from the calendar to see available slots.';
+            selectedSlotText.textContent = 'Pick a date from the calendar.';
+            bookArea.classList.remove('show');
+            return;
+        }
 
-        for (var i = 0; i < slotOptions.length; i++) {
+        var dateStr = d.getFullYear() + '-' + padNumber(d.getMonth() + 1) + '-' + padNumber(d.getDate());
+        var daySlots = ownerSlots.filter(function (s) { return s.date === dateStr; });
+
+        if (daySlots.length === 0) {
+            slotsNote.textContent = 'No available slots on ' + formatDateOnly(d) + '.';
+            selectedSlotText.textContent = 'Try another date.';
+            bookArea.classList.remove('show');
+            return;
+        }
+
+        slotsNote.textContent = daySlots.length + ' slot(s) available on ' + formatDateOnly(d) + '.';
+
+        daySlots.forEach(function (slot) {
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'slot-button';
-            btn.textContent = slotOptions[i].label;
-            if (selectedSlot && selectedSlot.value === slotOptions[i].value) {
+            btn.textContent = formatTimeStr(slot.start_time) + ' – ' + formatTimeStr(slot.end_time);
+            if (selectedSlot && selectedSlot.slotID === slot.slotID) {
                 btn.classList.add('selected');
             }
-            (function (slot) {
-                btn.addEventListener('click', function () {
-                    selectedSlot = slot;
-                    renderSlots();
-                    renderAvailability();
-                    syncSharedBookingState();
-                });
-            })(slotOptions[i]);
+            btn.addEventListener('click', function () {
+                selectedSlot = slot;
+                renderSlots();
+                renderAvailability();
+                syncSharedBookingState();
+            });
             slotsGrid.appendChild(btn);
-        }
+        });
 
         if (selectedSlot) {
             selectedSlotText.textContent = formatSelectedSlot();
             bookArea.classList.add('show');
         } else {
-            selectedSlotText.textContent = formatDateOnly(d) + ' selected. Choose a 15-minute time slot.';
+            selectedSlotText.textContent = formatDateOnly(d) + ' — pick a time slot.';
             bookArea.classList.remove('show');
         }
     }
+
+    window.renderSlots = renderSlots;
 
     function renderAvailability() {
         var d = cal.getSelectedDate();
@@ -689,7 +681,8 @@ function createCalendar(opts) {
     }
 
     function formatSelectedSlot() {
-        return formatDateOnly(cal.getSelectedDate()) + ' at ' + selectedSlot.label;
+        return formatDateOnly(cal.getSelectedDate()) + ' at ' +
+            formatTimeStr(selectedSlot.start_time) + ' – ' + formatTimeStr(selectedSlot.end_time);
     }
 
     function clearMessages() {

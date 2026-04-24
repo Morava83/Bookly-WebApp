@@ -245,6 +245,21 @@ def get_owners():
     finally:
         conn.close()
 
+@app.route("/api/owners/search", methods=["GET"])
+@login_required
+def search_owners():
+    q = request.args.get("q", "").strip().lower()
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT u.userID, u.name, u.email FROM User u
+        JOIN Owner o ON o.userID = u.userID
+        WHERE LOWER(u.name) LIKE ? OR LOWER(u.email) LIKE ?
+    """, (f"%{q}%", f"%{q}%"))
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify({"owners": [dict(r) for r in rows]})
+
 # ======== Pages ==========
 @app.route("/")
 def login_page():
