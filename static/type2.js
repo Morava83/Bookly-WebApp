@@ -90,7 +90,7 @@ function attachEvents() {
 
 // Run immediately
 async function loadSchedule() {
-  const res = await fetch("/api/schedule");
+  const res = await fetch("/api/group_meeting");
   const data = await res.json();
 
   dates = data.dates;
