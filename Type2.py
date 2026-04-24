@@ -12,7 +12,7 @@ type2_blueprint = Blueprint('Type2', __name__)
 BASE_DIR = os.path.dirname(__file__)
 DB_PATH = os.path.join(BASE_DIR, "database", "bookly.db")
 
-#--------Media Query----------
+#--------Query----------
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -42,7 +42,22 @@ def get_owner(id):
     conn.close()
     return row if row else None
 
+def get_schedule():
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
+    cursor.execute("SELECT DISTINCT date FROM availability")
+    dates = [row[0] for row in cursor.fetchall()]
+
+    cursor.execute("SELECT DISTINCT time FROM availability")
+    times = [row[0] for row in cursor.fetchall()]
+
+    conn.close()
+
+    return jsonify({
+        "dates": dates,
+        "times": times
+    })
 #Get list of invited users --> assumes students as a list of student ids --> list of integers
 def get_guests(students):
     conn = get_db_connection()

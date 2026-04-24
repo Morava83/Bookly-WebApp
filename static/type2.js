@@ -27,7 +27,7 @@ const table = document.createElement("table");
 table.id = "scheduler";
 document.body.appendChild(table);
 
-//TODO Apply media queries to get dates and times corresponding to those posted by the Owner
+//TODO Apply queries to get dates and times corresponding to those posted by the Owner
 //This would be done in the backend, but the aforementionned fields should by no means be hardcoded
 // -->this is just for demonstration purposes
 // Data
@@ -89,4 +89,14 @@ function attachEvents() {
 }
 
 // Run immediately
-buildTable();
+async function loadSchedule() {
+  const res = await fetch("/api/schedule");
+  const data = await res.json();
+
+  dates = data.dates;
+  times = data.times;
+
+  buildTable();
+}
+//buildTable();
+loadSchedule();
