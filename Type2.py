@@ -42,6 +42,7 @@ def get_owner(id):
     conn.close()
     return row if row else None
 
+# GET schedule
 @type2_blueprint.route('/goup_meeting', methods=['GET'])
 def get_schedule():
     conn = get_db_connection()
@@ -55,11 +56,10 @@ def get_schedule():
 
     conn.close()
 
-    return jsonify({
-        "dates": dates,
-        "times": times
-    })
+    return jsonify({"dates": dates, "times": times})
 
+
+# POST vote
 @type2_blueprint.route('/goup_meeting', methods=['POST'])
 def goup_meeting():
     data = request.get_json()
@@ -67,7 +67,7 @@ def goup_meeting():
     date = data.get("date")
     time = data.get("time")
 
-    con = get_db_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(

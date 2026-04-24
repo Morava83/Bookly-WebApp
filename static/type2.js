@@ -1,45 +1,43 @@
-//----------Table of available meetings --------------
-//The owner will rely on this to make a decision on which slot to select
+// Type 2: Group Meeting Scheduler
 
-// Create basic styles dynamically
+// DOM container (IMPORTANT: must exist in HTML)
+const container = document.getElementById("scheduleContainer");
+
+// State
+let dates = [];
+let times = [];
+const votes = {}; // { "date_time": count }
+
+// Styling
 const style = document.createElement("style");
 style.textContent = `
-  table {
+  #scheduleContainer table {
     border-collapse: collapse;
     font-family: Arial;
-    margin: 20px;
+    margin: 20px auto;
+    width: 90%;
   }
-  td, th {
+
+  #scheduleContainer td,
+  #scheduleContainer th {
     border: 1px solid #ccc;
     padding: 10px;
     text-align: center;
     cursor: pointer;
     min-width: 80px;
   }
-  th {
+
+  #scheduleContainer th {
     background: #f4f4f4;
   }
 `;
 document.head.appendChild(style);
 
-// Create table container
-const table = document.createElement("table");
-table.id = "scheduler";
-document.body.appendChild(table);
-
-//TODO Apply queries to get dates and times corresponding to those posted by the Owner
-//This would be done in the backend, but the aforementionned fields should by no means be hardcoded
-// -->this is just for demonstration purposes
-// Data
-// const dates = ["2026-04-23", "2026-04-24", "2026-04-25"];
-// const times = ["09:00", "11:00", "13:00", "15:00"];
-let dates = [];
-let times = [];
-const votes = {}; // { "date_time": count }
-
 // Build table
 function buildTable() {
-  let html = "<tr><th>Time</th>";
+  if (!container) return;
+
+  let html = "<table><tr><th>Time</th>";
 
   dates.forEach(date => {
     html += `<th>${date}</th>`;
@@ -63,11 +61,14 @@ function buildTable() {
     html += "</tr>";
   });
 
-  table.innerHTML = html;
+  html += "</table>";
+
+  container.innerHTML = html;
   attachEvents();
 }
 
-// Color scaling (heatmap)
+
+// Heatmap color
 function getColor(count) {
   const max = 10;
   const intensity = Math.min(count / max, 1);
@@ -81,36 +82,52 @@ function getColor(count) {
 
 // Click handling
 function attachEvents() {
-  document.querySelectorAll("td[data-key]").forEach(cell => {
-    cell.onclick = () => {
+  document.querySelectorAll("#scheduleContainer td[data-key]").forEach(cell => {
+    cell.onclick = async () => {
       const key = cell.dataset.key;
       votes[key] = (votes[key] || 0) + 1;
 
       const [date, time] = key.split("_");
-      sendVote(date, time);
+
+      await sendVote(date, time);
 
       buildTable();
     };
   });
 }
 
-// Run immediately
-async function loadSchedule() {
-  const res = await fetch("/api/group_meeting");
-  const data = await res.json();
-
-  dates = data.dates;
-  times = data.times;
-
-  buildTable();
-}
-//buildTable();
-loadSchedule();
-
+// Send vote to backend
 async function sendVote(date, time) {
+  try {
     await fetch("/goup_meeting", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, time })
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ date, time })
     });
+  } catch (err) {
+    console.error("Vote failed:", err);
+  }
 }
+
+// Load schedule from backend
+async function loadSchedule() {
+  try {
+    const res = await fetch("/goup_meeting", {
+      method: "GET"
+    });
+
+    const data = await res.json();
+
+    dates = data.dates || [];
+    times = data.times || [];
+
+    buildTable();
+  } catch (err) {
+    console.error("Failed to load schedule:", err);
+  }
+}
+
+// INIT
+loadSchedule();
