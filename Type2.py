@@ -59,6 +59,27 @@ def get_schedule():
         "dates": dates,
         "times": times
     })
+
+@type2_blueprint.route('/goup_meeting', methods=['POST'])
+def goup_meeting():
+    data = request.get_json()
+
+    date = data.get("date")
+    time = data.get("time")
+
+    conn = sqlite3.connect("db.sqlite3")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT OR IGNORE INTO availability (date, time) VALUES (?, ?)",
+        (date, time)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
 #Get list of invited users --> assumes students as a list of student ids --> list of integers
 def get_guests(students):
     conn = get_db_connection()
