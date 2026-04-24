@@ -130,16 +130,21 @@ def create_office_hours():
     cur = conn.cursor()
 
     try:
-        # Zoom meeting
-        cur.execute("SELECT name FROM User WHERE userID = ?", (owner_id,))
-        owner_row = cur.fetchone()
+        zoom_link = None
+        try:
+            # Zoom meeting
+            cur.execute("SELECT name FROM User WHERE userID = ?", (owner_id,))
+            owner_row = cur.fetchone()
 
-        zoom_data = get_owner_zoom_link(
-            conn,
-            current_app,
-            owner_id,
-            owner_row["name"]
-        )
+            zoom_data = get_owner_zoom_link(
+                conn,
+                current_app,
+                owner_id,
+                owner_row["name"]
+            )
+            zoom_link = zoom_data.get("zoom_link")
+        except Exception as e:
+            print("Zoom skipped:", e)
 
         cur.execute("""
             INSERT INTO Meeting (date, start_time, end_time, status, zoom_link)
@@ -148,7 +153,7 @@ def create_office_hours():
             start_date,
             weekly_slots[0]["start_time"],
             weekly_slots[0]["end_time"],
-            zoom_data["zoom_link"],
+            zoom_link,
         ))
 
         # stores ID of the newly inserted Meeting 
@@ -260,12 +265,13 @@ def owner_slots():
 @type3_blueprint.route("/available_slots", methods=["GET"])
 @login_required
 def available_slots():
+    owner_id = request.args.get("owner_id", type=int)
+
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        # Select slot details and owner information
-        cur.execute("""
+        query = """
             SELECT
                 ts.slotID,
                 ts.meetingID,
@@ -284,12 +290,18 @@ def available_slots():
             LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
             WHERE b3.slotID IS NULL
             AND m.status IN ('open', 'booked')
-            ORDER BY ts.start_date, ts.start_time
-        """)
+        """
+        params = []
+
+        if owner_id:
+            query += " AND oh.ownerID = ?"
+            params.append(owner_id)
+
+        query += " ORDER BY ts.start_date, ts.start_time"
+        cur.execute(query, params)
 
         rows = cur.fetchall()
 
-        # returns a JSON response containing a list of available slots
         return jsonify({
             "slots": [
                 {
