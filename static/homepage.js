@@ -220,6 +220,13 @@ function view_appointments(){
     document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
     document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'block';
     document.getElementsByClassName('vote-meeting-tab-view')[0].style.display = 'none';
+
+    if (typeof loadType1Meetings === 'function') {
+        loadType1Meetings();
+    }
+    if (typeof loadType3Meetings === 'function') {
+        loadType3Meetings();
+    }
 }
 function make_appointment(){
     document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'block';
@@ -251,6 +258,31 @@ function formatDateOnly(date) {
 function isSameDate(a, b) {
     return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
+
+function formatDateForApi(dateObj) {
+    var year = dateObj.getFullYear();
+    var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    var day = String(dateObj.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+}
+
+function calculateEndTime(startTime) {
+    var parts = startTime.split(':');
+    var hour = parseInt(parts[0], 10);
+    var minute = parseInt(parts[1], 10);
+
+    minute += 15;
+    if (minute >= 60) {
+        hour += 1;
+        minute -= 60;
+    }
+
+    return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+}
+
+window.formatDateForApi = formatDateForApi;
+window.calculateEndTime = calculateEndTime;
+
 function buildSlotOptions() {
     var options = [];
     var minutes = [0, 15, 30, 45];
@@ -404,16 +436,24 @@ function createCalendar(opts) {
             selectedSlot = null;
             renderSlots();
             renderAvailability();
+            syncSharedBookingState();
         },
         onNavigate: function () {
             selectedSlot = null;
             renderSlots();
             renderAvailability();
+            syncSharedBookingState();
         }
     });
 
+    function syncSharedBookingState() {
+        window.selectedDate = cal.getSelectedDate();
+        window.selectedSlotValue = selectedSlot ? selectedSlot.value : null;
+    }
+
     renderSlots();
     renderAvailability();
+    syncSharedBookingState();
     loadCurrentUser();
     loadOwners();
     setupSocket();
@@ -422,7 +462,7 @@ function createCalendar(opts) {
         try {
             const response = await fetch('/api/logout', {
                 method: 'POST',
-                header: {
+                headers: {
                     'Content-Type': 'application/json'
                 }
             });
@@ -453,59 +493,60 @@ function createCalendar(opts) {
         showSuccess('Selected slot: ' + formatSelectedSlot());
     });
 
-    sendRequestButton.addEventListener('click', async function () {
-        clearMessages();
+    // Handled in type1.js
+    // sendRequestButton.addEventListener('click', async function () {
+    //     clearMessages();
 
-        if (!cal.getSelectedDate() || !selectedSlot) {
-            showError('Please choose a date and a 15-minute time slot first.');
-            return;
-        }
+    //     if (!cal.getSelectedDate() || !selectedSlot) {
+    //         showError('Please choose a date and a 15-minute time slot first.');
+    //         return;
+    //     }
 
-        if (!currentUser || !currentUser.email) {
-            showError('You must be logged in.');
-            return;
-        }
+    //     if (!currentUser || !currentUser.email) {
+    //         showError('You must be logged in.');
+    //         return;
+    //     }
 
-        if (!ownerSelect.value) {
-            showError('Please choose an owner.');
-            return;
-        }
+    //     if (!ownerSelect.value) {
+    //         showError('Please choose an owner.');
+    //         return;
+    //     }
 
-        if (!meetingMessage.value.trim()) {
-            showError('Please enter a request message.');
-            return;
-        }
+    //     if (!meetingMessage.value.trim()) {
+    //         showError('Please enter a request message.');
+    //         return;
+    //     }
 
-        try {
-            const response = await fetch('/api/type1/request_meeting', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    student_email: currentUser.email,
-                    owner_email: ownerSelect.value,
-                    message: meetingMessage.value.trim()
-                })
-            });
+    //     try {
+    //         const response = await fetch('/api/type1/request_meeting', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json'
+    //             },
+    //             body: JSON.stringify({
+    //                 student_email: currentUser.email,
+    //                 owner_email: ownerSelect.value,
+    //                 message: meetingMessage.value.trim()
+    //             })
+    //         });
 
-            const data = await response.json();
+    //         const data = await response.json();
 
-            if (!response.ok) {
-                showError(data.error || 'Could not create meeting request.');
-                return;
-            }
+    //         if (!response.ok) {
+    //             showError(data.error || 'Could not create meeting request.');
+    //             return;
+    //         }
 
-            showSuccess(
-                'Successfully requested a meeting for ' +
-                formatSelectedSlot() +
-                '. Request ID: ' + data.meetingID
-            );
-        } catch (error) {
-            console.error('Error:', error);
-            showError('Could not connect to the server.');
-        }
-    });
+    //         showSuccess(
+    //             'Successfully requested a meeting for ' +
+    //             formatSelectedSlot() +
+    //             '. Request ID: ' + data.meetingID
+    //         );
+    //     } catch (error) {
+    //         console.error('Error:', error);
+    //         showError('Could not connect to the server.');
+    //     }
+    // });
 
     async function loadCurrentUser() {
         try {
@@ -526,11 +567,14 @@ function createCalendar(opts) {
                 role: data.role
             };
 
+            window.currentUser = currentUser;
+
             currentUserName.textContent = currentUser.name || 'Unknown';
             currentUserEmail.textContent = currentUser.email || 'Unknown';
             currentUserRole.textContent = currentUser.role || 'Unknown';
         } catch (error) {
             console.error('Error loading current user:', error);
+            window.currentUser = null;
             currentUserName.textContent = 'Unavailable';
             currentUserEmail.textContent = 'Unavailable';
             currentUserRole.textContent = 'Unavailable';
@@ -602,6 +646,7 @@ function createCalendar(opts) {
                     selectedSlot = slot;
                     renderSlots();
                     renderAvailability();
+                    syncSharedBookingState();
                 });
             })(slotOptions[i]);
             slotsGrid.appendChild(btn);

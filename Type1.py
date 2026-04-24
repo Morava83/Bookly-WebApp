@@ -1,4 +1,4 @@
-from flask import Blueprint, request, current_app, jsonify
+from flask import Blueprint, request, current_app, jsonify, session
 import os
 import sqlite3
 import smtplib
@@ -377,9 +377,145 @@ def decline_meeting():
 
     return jsonify({"success": True}), 200
 
-    #TODO Send email to notify student (with Zoom link)
+# Cancel meeting
+@type1_blueprint.route('/cancel', methods=['POST'])
+def cancel_meeting():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    data = request.get_json() or {}
+    meeting_id = data.get("meetingID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT r.studentID, m.status
+            FROM RequestMeeting r
+            JOIN Meeting m ON m.meetingID = r.meetingID
+            WHERE r.meetingID = ?
+        """, (meeting_id,))
+
+        row = cursor.fetchone()
+
+        if not row:
+            return jsonify({"error": "Meeting request not found"}), 404
+
+        if row["studentID"] != session["user_id"]:
+            return jsonify({"error": "You can only cancel your own meeting requests"}), 403
+
+        if row["status"] != "pending":
+            return jsonify({"error": "Only pending meetings can be cancelled"}), 400
+
+        cursor.execute("""
+            UPDATE Meeting
+            SET status = 'cancelled'
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        conn.commit()
+        return jsonify({"success": True}), 200
+
+    finally:
+        conn.close()
+   
+# Remove meeting when cancelled 
+@type1_blueprint.route('/remove', methods=['POST'])
+def remove_meeting():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    data = request.get_json() or {}
+    meeting_id = data.get("meetingID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT r.studentID, m.status
+            FROM RequestMeeting r
+            JOIN Meeting m ON m.meetingID = r.meetingID
+            WHERE r.meetingID = ?
+        """, (meeting_id,))
+
+        row = cursor.fetchone()
+
+        if not row:
+            return jsonify({"error": "Meeting request not found"}), 404
+
+        if row["studentID"] != session["user_id"]:
+            return jsonify({"error": "You can only remove your own meeting requests"}), 403
+
+        if row["status"] != "cancelled":
+            return jsonify({"error": "Only cancelled meetings can be removed"}), 400
+
+        cursor.execute("""
+            DELETE FROM Meeting
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        conn.commit()
+        return jsonify({"success": True}), 200
+
+    finally:
+        conn.close()
+
+   #TODO Send email to notify student (with Zoom link)
 
     #TODO Display on user dashboard
+@type1_blueprint.route('/my_meetings', methods=['GET'])
+def my_meetings():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
     
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT
+                m.meetingID,
+                m.date,
+                m.start_time,
+                m.end_time,
+                m.status,
+                m.zoom_link,
+                u.name AS owner_name,
+                u.email AS owner_email
+            FROM RequestMeeting r
+            JOIN Meeting m ON m.meetingID = r.meetingID
+            JOIN User u ON u.userID = r.ownerID
+            WHERE r.studentID = ?
+            ORDER BY m.date, m.start_time
+        """, (session["user_id"],))
+
+        rows = cursor.fetchall()
+
+        return jsonify({
+            "meetings": [
+                {
+                    "meetingID": row["meetingID"],
+                    "owner_name": row["owner_name"],
+                    "owner_email": row["owner_email"],
+                    "date": row["date"],
+                    "start_time": row["start_time"],
+                    "end_time": row["end_time"],
+                    "zoom_link": row["zoom_link"],
+                    "status": row["status"]
+                }
+                for row in rows
+            ]
+        }), 200
+    finally:
+        conn.close()
+
 
     #TODO Display on owner dashboard
