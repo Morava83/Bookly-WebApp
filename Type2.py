@@ -60,12 +60,40 @@ def get_schedule():
 
 
 # POST vote
-@type2_blueprint.route('/goup_meeting', methods=['POST'])
-def goup_meeting():
+@type2_blueprint.route('/group_meeting', methods=['POST'])
+def create_group_meeting():
     data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No JSON received"}), 400
+
+    title = data.get("title")
+    description = data.get("description")
+    slots = data.get("slots")
+    invitees = data.get("invitees")
+
+    if not title or not slots:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    # TODO: save meeting properly
+
+    return jsonify({
+        "status": "ok",
+        "invite_url": "http://localhost:5000/invite/123"
+    })
+
+@type2_blueprint.route('/group_meeting/vote', methods=['POST'])
+def vote():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No JSON received"}), 400
 
     date = data.get("date")
     time = data.get("time")
+
+    if not date or not time:
+        return jsonify({"error": "Missing date/time"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
