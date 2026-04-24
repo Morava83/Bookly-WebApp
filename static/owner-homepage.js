@@ -9,7 +9,12 @@ function ownerSwitchTab(viewId) {
     for (var i = 0; i < views.length; i++) {
         views[i].style.display = 'none';
     }
+
     document.getElementById(viewId).style.display = 'block';
+
+    if (viewId === 'mySlotsView') {
+        loadOwnerSlots();
+    }
 }
 
 /* ── Notifications (same as student) ── */
@@ -94,6 +99,105 @@ function copyInviteUrl(btn) {
         setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
     });
 }
+
+
+loadOwnerSlots();
+
+function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatStatusBadge(status) {
+    var normalized = (status || '').toLowerCase();
+
+    if (normalized === 'booked') {
+        return '<span class="status-badge booked">Booked</span>';
+    }
+    if (normalized === 'private') {
+        return '<span class="status-badge private">Private</span>';
+    }
+    return '<span class="status-badge open">Active</span>';
+}
+
+function renderOwnerSlots(slots) {
+    var tbody = document.querySelector('#ownerSlotsTable tbody');
+    if (!tbody) return;
+
+    if (!slots || slots.length === 0) {
+        tbody.innerHTML =
+            '<tr><td colspan="7" class="appt-table-empty">No office-hours slots yet.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = slots.map(function (slot) {
+        var bookedByHtml = '<span class="no-link">—</span>';
+        if (slot.student_name && slot.student_email) {
+            bookedByHtml =
+                escapeHtml(slot.student_name) +
+                ' <a class="table-link" href="mailto:' + encodeURIComponent(slot.student_email) + '">(email)</a>';
+        }
+
+        var actionsHtml = '';
+
+        if (slot.status === 'Booked') {
+            actionsHtml =
+                '<div class="table-actions">' +
+                    '<button class="table-action danger" onclick="deleteSlot(this, \'' + escapeHtml(slot.student_email || '') + '\')">Delete</button>' +
+                '</div>';
+        } else if (slot.status === 'Private') {
+            actionsHtml =
+                '<div class="table-actions">' +
+                    '<button class="table-action vote" onclick="toggleSlotStatus(this)">Activate</button>' +
+                    '<button class="table-action danger" onclick="deleteSlot(this)">Delete</button>' +
+                '</div>';
+        } else {
+            actionsHtml =
+                '<div class="table-actions">' +
+                    '<button class="table-action" onclick="toggleSlotStatus(this)">Deactivate</button>' +
+                    '<button class="table-action danger" onclick="deleteSlot(this)">Delete</button>' +
+                '</div>';
+        }
+
+        return (
+            '<tr>' +
+                '<td>' + escapeHtml(slot.slotID) + '</td>' +
+                '<td>' + escapeHtml(slot.date) + '</td>' +
+                '<td>' + escapeHtml(slot.start_time) + '</td>' +
+                '<td>' + escapeHtml(slot.end_time) + '</td>' +
+                '<td>' + formatStatusBadge(slot.status) + '</td>' +
+                '<td>' + bookedByHtml + '</td>' +
+                '<td>' + actionsHtml + '</td>' +
+            '</tr>'
+        );
+    }).join('');
+}
+
+async function loadOwnerSlots() {
+    try {
+        const response = await fetch('/api/type3/owner_slots');
+        const data = await response.json();
+
+        if (!response.ok) {
+            showOwnerError('slotsError', data.error || 'Could not load slots.');
+            return;
+        }
+
+        hideMsg('slotsError');
+        renderOwnerSlots(data.slots || []);
+    } catch (error) {
+        console.error('Error loading owner slots:', error);
+        showOwnerError('slotsError', 'Could not load slots.');
+    }
+}
+
+
+
 
 /* ═══════════════════════════════════════════
    TAB 1: My Slots — activate / deactivate / delete
@@ -223,19 +327,11 @@ function addOHSlotEntry() {
     container.appendChild(entry);
 }
 
-function createOfficeHours() {
-    /*
-     * BACKEND TODO: replace with fetch to /api/type3/create_office_hours
-     * body: {
-     *   start_date: document.getElementById('ohStartDate').value,
-     *   num_weeks: parseInt(document.getElementById('ohWeeks').value),
-     *   weekly_slots: [ { weekday, start_time, end_time }, ... ]
-     * }
-     */
+async function createOfficeHours() {
     var startDate = document.getElementById('ohStartDate').value;
-    var weeks = document.getElementById('ohWeeks').value;
+    var weeks = parseInt(document.getElementById('ohWeeks').value, 10);
 
-    if (!startDate || !weeks || parseInt(weeks) <= 0) {
+    if (!startDate || !weeks || weeks <= 0) {
         showOwnerError('ohErrorNote', 'Please fill in start date and number of weeks.');
         return;
     }
@@ -246,13 +342,61 @@ function createOfficeHours() {
         return;
     }
 
-    // Dummy: count how many slots would be created
-    var count = entries.length * parseInt(weeks);
-    hideMsg('ohErrorNote');
-    showOwnerMsg('ohSuccessNote',
-        'Created ' + count + ' slots (dummy). Starting ' + startDate +
-        ' for ' + weeks + ' weeks. Go to "My Slots" to activate them.'
-    );
+    var weeklySlots = [];
+    for (var i = 0; i < entries.length; i++) {
+        var entry = entries[i];
+        var day = entry.querySelector('.oh-day').value;
+        var start = entry.querySelector('.oh-start').value;
+        var end = entry.querySelector('.oh-end').value;
+
+        if (!day || !start || !end) {
+            showOwnerError('ohErrorNote', 'Each slot must include a day, start time, and end time.');
+            return;
+        }
+
+        if (start >= end) {
+            showOwnerError('ohErrorNote', 'Each slot must end after it starts.');
+            return;
+        }
+
+        weeklySlots.push({
+            weekday: day.toLowerCase(),
+            start_time: start,
+            end_time: end
+        });
+    }
+
+    try {
+        const response = await fetch('/api/type3/create_office_hours', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                start_date: startDate,
+                num_weeks: weeks,
+                weekly_slots: weeklySlots
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showOwnerError('ohErrorNote', data.error || 'Could not create office hours.');
+            return;
+        }
+
+        hideMsg('ohErrorNote');
+        showOwnerMsg(
+            'ohSuccessNote',
+            'Created ' + data.slots_created + ' slot(s). Go to "My Slots" to manage them.'
+        );
+
+        await loadOwnerSlots();
+    } catch (error) {
+        console.error('Error creating office hours:', error);
+        showOwnerError('ohErrorNote', 'Could not create office hours.');
+    }
 }
 
 /* ═══════════════════════════════════════════
