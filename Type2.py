@@ -42,7 +42,7 @@ def get_owner(id):
     conn.close()
     return row if row else None
 
-@type2_blueprint.route('/goup_meeting', methods=['POST'])
+@type2_blueprint.route('/goup_meeting', methods=['GET'])
 def get_schedule():
     conn = get_db_connection()
     cursor = conn.cursor()

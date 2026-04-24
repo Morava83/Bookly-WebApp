@@ -31,8 +31,10 @@ document.body.appendChild(table);
 //This would be done in the backend, but the aforementionned fields should by no means be hardcoded
 // -->this is just for demonstration purposes
 // Data
-const dates = ["2026-04-23", "2026-04-24", "2026-04-25"];
-const times = ["09:00", "11:00", "13:00", "15:00"];
+// const dates = ["2026-04-23", "2026-04-24", "2026-04-25"];
+// const times = ["09:00", "11:00", "13:00", "15:00"];
+let dates = [];
+let times = [];
 const votes = {}; // { "date_time": count }
 
 // Build table
@@ -83,6 +85,10 @@ function attachEvents() {
     cell.onclick = () => {
       const key = cell.dataset.key;
       votes[key] = (votes[key] || 0) + 1;
+
+      const [date, time] = key.split("_");
+      sendVote(date, time);
+
       buildTable();
     };
   });
@@ -101,10 +107,10 @@ async function loadSchedule() {
 //buildTable();
 loadSchedule();
 
-await fetch("/goup_meeting", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ date, time })
-});
+async function sendVote(date, time) {
+    await fetch("/goup_meeting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, time })
+    });
+}
