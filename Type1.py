@@ -418,7 +418,7 @@ def cancel_meeting():
             return jsonify({"error": "You can only cancel your own meeting requests"}), 403
 
         if row["status"] == "declined" or row["status"] == "cancelled":
-            return jsonify({"error": "Your meeting was already declined."}), 400
+            return jsonify({"error": f"Your meeting was already {row['status']}."}), 400
 
         cursor.execute("""
             UPDATE Meeting
