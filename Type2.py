@@ -91,7 +91,7 @@ def create_group_meeting():
     slots = data.get("slots")
     invitees = data.get("invitees")
 
-    if not title or not slots:
+    if not title or not slots or not description or not invitees:
         return jsonify({"error": "Missing required fields"}), 400
 
     # TODO: save meeting properly
@@ -101,6 +101,7 @@ def create_group_meeting():
         "invite_url": "http://localhost:5000/invite/123"
     })
 
+#Student chooses most convenient dates & time slots out of those made available by the TA
 @type2_blueprint.route('/group_meeting/vote', methods=['POST'])
 def vote():
     data = request.get_json()
@@ -108,18 +109,26 @@ def vote():
     if not data:
         return jsonify({"error": "No JSON received"}), 400
 
+    title = data.get("title")
+    description = data.get("description")
     date = data.get("date")
-    time = data.get("time")
+    start_time = data.get("start_time")
+    end_time = data.get("end_time")
+    invitees = data.get("invitees")
 
-    if not date or not time:
+    #TODO Simple Meeting
+
+    #TODO Recurring Meeting
+
+    if not date or not start_time or not end_time:
         return jsonify({"error": "Missing date/time"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT OR IGNORE INTO availability (date, time) VALUES (?, ?)",
-        (date, time)
+        "INSERT OR IGNORE INTO availability (title, description, date, start_time, end_time, invitees) VALUES (?, ?)",
+        (title, description, date, start_time, end_time, invitees)
     )
 
     conn.commit()
