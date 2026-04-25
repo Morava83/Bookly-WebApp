@@ -1,4 +1,4 @@
-from flask import Blueprint, request, current_app, jsonify
+from flask import Blueprint, request, current_app, jsonify, session
 import os
 import sqlite3
 import smtplib
@@ -45,13 +45,32 @@ def get_owner(id):
 # GET schedule
 @type2_blueprint.route('/goup_meeting', methods=['GET'])
 def get_schedule():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    meeting_id = request.args.get("meetingID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT DISTINCT date FROM availability")
+    cursor.execute("""
+                   SELECT DISTINCT date 
+                   FROM availability a 
+                   JOIN GroupMeeting gm 
+                   ON gm.meetingID = a.meetingID 
+                   WHERE gm.meetingID = ?
+                   """,
+                   (meeting_id,))
     dates = [row[0] for row in cursor.fetchall()]
 
-    cursor.execute("SELECT DISTINCT time FROM availability")
+    cursor.execute("""SELECT DISTINCT start_time 
+                   FROM availability a 
+                   JOIN GroupMeeting gm 
+                   ON gm.meetingID = a.meetingID WHERE gm.meetingID = ?
+                   """, (meeting_id,))
     times = [row[0] for row in cursor.fetchall()]
 
     conn.close()
