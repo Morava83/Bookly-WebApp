@@ -103,6 +103,8 @@ function initProfSearch() {
     var profBannerText = document.getElementById('profBannerText');
     var profClear = document.getElementById('profClear');
 
+    window.getSelectedOwner = function () { return selectedOwner; };
+
     profSearch.addEventListener('input', function () {
         var q = profSearch.value.trim();
         if (q.length < 1) {
@@ -461,16 +463,47 @@ function createCalendar(opts) {
     });
 
 
-    bookButton.addEventListener('click', function () {
-        clearMessages();
+    bookButton.addEventListener('click', async function () {
+    clearMessages();
 
-        if (!cal.getSelectedDate() || !selectedSlot) {
-            showError('Please choose a date and a 15-minute time slot first.');
+    if (!cal.getSelectedDate() || !selectedSlot) {
+        showError('Please choose a date and a time slot first.');
+        return;
+    }
+
+    try {
+        var res = await fetch('/api/type3/book_slot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slotID: selectedSlot.slotID })
+        });
+        var data = await res.json();
+
+        if (!res.ok) {
+            showError(data.error || 'Could not book the slot.');
             return;
         }
 
-        showSuccess('Selected slot: ' + formatSelectedSlot());
-    });
+        showSuccess('Booked slot: ' + formatSelectedSlot());
+
+        // Refresh slots so the booked one disappears
+        var owner = window.getSelectedOwner();
+        if (owner) {
+            var slotsRes = await fetch('/api/type3/available_slots?owner_id=' + owner.userID);
+            var slotsData = await slotsRes.json();
+            ownerSlots = slotsData.slots || [];
+            selectedSlot = null;
+            renderSlots();
+
+            window.location.href = 'mailto:' + owner.email +
+                '?subject=' + encodeURIComponent('Bookly - New office hour booking') +
+                '&body=' + encodeURIComponent('Hello,\n\nI have made a new office hour booking. You can find it on your dashboard.\n\nKind regards,');
+        }
+    } catch (err) {
+        console.error('Booking error:', err);
+        showError('Could not connect to the server.');
+    }
+});
 
     // Handled in type1.js
     // sendRequestButton.addEventListener('click', async function () {
