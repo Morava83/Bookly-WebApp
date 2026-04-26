@@ -172,6 +172,19 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
     except Exception as e:
         print(f"Email error: {e}")
 
+# Converts weekday name to weekday number
+def weekday_name_to_index(name):
+    mapping = {
+        "monday": 0,
+        "tuesday": 1,
+        "wednesday": 2,
+        "thursday": 3,
+        "friday": 4,
+        "saturday": 5,
+        "sunday": 6,
+    }
+    return mapping.get((name or "").strip().lower())
+
 # SOCKET NOTIFICATION
 def send_notification(message, user_id):
     try:
