@@ -39,90 +39,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>1</td>
-                                    <td>2026-04-21</td>
-                                    <td>10:00</td>
-                                    <td>10:15</td>
-                                    <td><span class="status-badge open">Active</span></td>
-                                    <td><span class="no-link">—</span></td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="table-action" onclick="toggleSlotStatus(this)">Deactivate</button>
-                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>2026-04-21</td>
-                                    <td>10:15</td>
-                                    <td>10:30</td>
-                                    <td><span class="status-badge booked">Booked</span></td>
-                                    <td>
-                                        Alice Wang
-                                        <a class="table-link" href="mailto:alice.wang@mail.mcgill.ca">(email)</a>
-                                    </td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="table-action danger" onclick="deleteSlot(this, 'alice.wang@mail.mcgill.ca')">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>3</td>
-                                    <td>2026-04-22</td>
-                                    <td>14:00</td>
-                                    <td>14:15</td>
-                                    <td><span class="status-badge private">Private</span></td>
-                                    <td><span class="no-link">—</span></td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="table-action vote" onclick="toggleSlotStatus(this)">Activate</button>
-                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>4</td>
-                                    <td>2026-04-22</td>
-                                    <td>14:15</td>
-                                    <td>14:30</td>
-                                    <td><span class="status-badge private">Private</span></td>
-                                    <td><span class="no-link">—</span></td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="table-action vote" onclick="toggleSlotStatus(this)">Activate</button>
-                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>5</td>
-                                    <td>2026-04-28</td>
-                                    <td>10:00</td>
-                                    <td>10:15</td>
-                                    <td><span class="status-badge open">Active</span></td>
-                                    <td><span class="no-link">—</span></td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="table-action" onclick="toggleSlotStatus(this)">Deactivate</button>
-                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>6</td>
-                                    <td>2026-04-28</td>
-                                    <td>10:15</td>
-                                    <td>10:30</td>
-                                    <td><span class="status-badge open">Active</span></td>
-                                    <td><span class="no-link">—</span></td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="table-action" onclick="toggleSlotStatus(this)">Deactivate</button>
-                                            <button class="table-action danger" onclick="deleteSlot(this)">Delete</button>
-                                        </div>
-                                    </td>
+                                    <td colspan="8" class="appt-table-empty">Loading time slots...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -446,20 +363,9 @@
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="ownerOHTableBody">
                                     <tr>
-                                        <td>2</td>
-                                        <td>Alice Wang</td>
-                                        <td>2026-04-21</td>
-                                        <td>10:15</td>
-                                        <td>10:30</td>
-                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/444555666" target="_blank">Join</a></td>
-                                        <td>
-                                            <div class="table-actions">
-                                                <a class="table-action" href="mailto:alice.wang@mail.mcgill.ca">Email</a>
-                                                <button class="table-action danger">Cancel</button>
-                                            </div>
-                                        </td>
+                                        <td colspan="7" class="appt-table-empty">Loading...</td>
                                     </tr>
                                 </tbody>
                             </table>

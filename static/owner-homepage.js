@@ -2,6 +2,57 @@
    Owner Homepage JS — all dummy data for now
    ═══════════════════════════════════════════ */
 
+async function loadOwnerAppointments() {
+    // Load Type 3 (office hours) bookings
+    var ohBody = document.getElementById('ownerOHTableBody');
+    try {
+        var res = await fetch('/api/type3/my_bookings');
+        var data = await res.json();
+        ohBody.innerHTML = '';
+
+        if (!data.bookings || data.bookings.length === 0) {
+            ohBody.innerHTML = '<tr><td colspan="7" class="appt-table-empty">No office hours bookings.</td></tr>';
+        } else {
+            data.bookings.forEach(function (b) {
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td>' + b.slotID + '</td>' +
+                    '<td>' + (b.student_name || '') + '</td>' +
+                    '<td>' + b.start_date + '</td>' +
+                    '<td>' + b.start_time + '</td>' +
+                    '<td>' + b.end_time + '</td>' +
+                    '<td>' + (b.zoom_link ? '<a class="table-link" href="' + b.zoom_link + '" target="_blank">Join</a>' : '<span class="no-link">—</span>') + '</td>' +
+                    '<td><div class="table-actions">' +
+                        '<a class="table-action" href="mailto:' + (b.student_email || '') + '">Email</a>' +
+                        '<button class="table-action danger" onclick="cancelOHBooking(' + b.booking3ID + ', \'' + (b.student_email || '') + '\')">Cancel</button>' +
+                    '</div></td>';
+                ohBody.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        ohBody.innerHTML = '<tr><td colspan="7" class="appt-table-empty">Error loading bookings.</td></tr>';
+    }
+
+    // TODO: load Type 1 and Type 2 appointments similarly
+}
+
+async function cancelOHBooking(bookingID, studentEmail) {
+    if (!confirm('Cancel this booking?')) return;
+
+    var res = await fetch('/api/type3/cancel_booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ booking3ID: bookingID })
+    });
+
+    if (res.ok) {
+        loadOwnerAppointments();
+        window.location.href = 'mailto:' + studentEmail +
+            '?subject=' + encodeURIComponent('Bookly - Booking cancelled') +
+            '&body=' + encodeURIComponent('Your office hours booking has been cancelled.');
+    }
+}
+
 /* ── Tab switching ── */
 
 function ownerSwitchTab(viewId) {
@@ -14,6 +65,9 @@ function ownerSwitchTab(viewId) {
 
     if (viewId === 'mySlotsView') {
         loadOwnerSlots();
+    }
+    if (viewId === 'ownerApptsView') {
+        loadOwnerAppointments();
     }
 }
 
