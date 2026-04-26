@@ -220,6 +220,11 @@
                                         <label class="request-label">End Time</label>
                                         <input type="time" class="request-select gm-end" value="15:00">
                                     </div>
+                                    <div>
+                                        <label class="request-label">Day of Week</label>
+                                        <input type="number" name="day" min="0" max="6" step="1" required
+                                            oninput="this.value = this.value.replace(/[^0-6]/g, '')">
+                                    </div>
                                 </div>
                             </div>
                         </div>
