@@ -491,7 +491,7 @@ function createCalendar(opts) {
         var owner = window.getSelectedOwner();
         if (owner) {
 
-            showSuccess('Booked slot: ' + formatSelectedSlot());
+            showSuccess('Booked slot: ' + formatSelectedSlot() + '. Wait for the popup window  to send a notification email.');
 
             window.location.href = 'mailto:' + owner.email +
                 '?subject=' + encodeURIComponent('Bookly - New office hour booking') +
