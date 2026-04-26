@@ -484,16 +484,14 @@ function createCalendar(opts) {
             return;
         }
 
-        showSuccess('Booked slot: ' + formatSelectedSlot());
+        var bookedID = selectedSlot.slotID;
+        ownerSlots = ownerSlots.filter(function (s) { return s.slotID !== bookedID; });
 
         // Refresh slots so the booked one disappears
         var owner = window.getSelectedOwner();
         if (owner) {
-            var slotsRes = await fetch('/api/type3/available_slots?owner_id=' + owner.userID);
-            var slotsData = await slotsRes.json();
-            ownerSlots = slotsData.slots || [];
-            selectedSlot = null;
-            renderSlots();
+
+            showSuccess('Booked slot: ' + formatSelectedSlot());
 
             window.location.href = 'mailto:' + owner.email +
                 '?subject=' + encodeURIComponent('Bookly - New office hour booking') +
@@ -503,7 +501,7 @@ function createCalendar(opts) {
         console.error('Booking error:', err);
         showError('Could not connect to the server.');
     }
-});
+    });
 
     // Handled in type1.js
     // sendRequestButton.addEventListener('click', async function () {
