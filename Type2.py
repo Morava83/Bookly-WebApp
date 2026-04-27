@@ -175,6 +175,40 @@ def create_group_meeting():
         "invite_url": invite_url
     })
 
+#To be put in STUDENT VIEW Dashboard where all Type2 meetings should be display
+@type2_blueprint.route('/group_meeting/student_view', methods=['POST'])
+def get_group_meetings():
+    data = request.get_json()
+    meeting_id = data.get("meetingID")
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+    
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT gm.title, gm.startDate, gm.endDate, a.start_time, a.end_time, m.status, m.zoom_link
+        FROM GroupMeeting gm JOIN Meeting m
+        ON gm.meetingID = m.meetingID
+        JOIN Availability a
+        ON a.meetingID = gm.meetingID
+        WHERE gm.meetingID = ?
+    """, (meeting_id,))
+
+    meetings = cursor.fetchall()
+    results = [
+        {"Title": r[0], "Start Date": r[1], "End Date": r[2], "Start Time": r[3], "Status": r[4], "Zoom Link": r[5]}
+        for r in rows
+    ]
+    conn.close()
+
+    return results
+
+
+
 @type2_blueprint.route('/group_meeting/finalize', methods=['POST'])
 def finalize_meeting():
     data = request.get_json()
