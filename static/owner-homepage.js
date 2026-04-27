@@ -514,115 +514,115 @@ function addGMSlotEntry() {
     container.appendChild(entry);
 }
 
-async function createGroupMeeting() {
-    var title = document.getElementById('gmTitle').value.trim();
-    var description = document.getElementById('gmDesc').value.trim();
+// async function createGroupMeeting() {
+//     var title = document.getElementById('gmTitle').value.trim();
+//     var description = document.getElementById('gmDesc').value.trim();
 
-    var startDate = document.getElementById('gmStartDate').value;
-    var endDate = document.getElementById('gmEndDate').value;
+//     var startDate = document.getElementById('gmStartDate').value;
+//     var endDate = document.getElementById('gmEndDate').value;
 
-    if (!title) {
-        showOwnerError('gmErrorNote', 'Please enter a meeting title.');
-        return;
-    }
+//     if (!title) {
+//         showOwnerError('gmErrorNote', 'Please enter a meeting title.');
+//         return;
+//     }
 
-    if (!startDate || !endDate) {
-        showOwnerError('gmErrorNote', 'Please select start and end dates.');
-        return;
-    }
+//     if (!startDate || !endDate) {
+//         showOwnerError('gmErrorNote', 'Please select start and end dates.');
+//         return;
+//     }
 
-    var entries = document.querySelectorAll('.gm-slot-entry');
-    if (entries.length === 0) {
-        showOwnerError('gmErrorNote', 'Add at least one time option.');
-        return;
-    }
+//     var entries = document.querySelectorAll('.gm-slot-entry');
+//     if (entries.length === 0) {
+//         showOwnerError('gmErrorNote', 'Add at least one time option.');
+//         return;
+//     }
 
-    var slots = [];
+//     var slots = [];
 
-    entries.forEach(function (entry) {
-        var start_date = entry.querySelector('.gm-start-date').value;
-        var end_date = entry.querySelector('.gm-end-date').value;
-        var day = entry.querySelector('.gm-day').value;
-        var start = entry.querySelector('.gm-start').value;
-        var end = entry.querySelector('.gm-end').value;
+//     entries.forEach(function (entry) {
+//         var start_date = entry.querySelector('.gm-start-date').value;
+//         var end_date = entry.querySelector('.gm-end-date').value;
+//         var day = entry.querySelector('.gm-day').value;
+//         var start = entry.querySelector('.gm-start').value;
+//         var end = entry.querySelector('.gm-end').value;
 
-        if (!start_date || !end_date || !start || !end) {
-            return;
-        }
+//         if (!start_date || !end_date || !start || !end) {
+//             return;
+//         }
 
-        slots.push({
-            day: day,
-            start_date: start_date,
-            end_date: end_date,
-            start_time: start,
-            end_time: end
-        });
-    });
+//         slots.push({
+//             day: day,
+//             start_date: start_date,
+//             end_date: end_date,
+//             start_time: start,
+//             end_time: end
+//         });
+//     });
 
-    if (slots.length === 0) {
-        showOwnerError('gmErrorNote', 'Please fill all slot fields.');
-        return;
-    }
+//     if (slots.length === 0) {
+//         showOwnerError('gmErrorNote', 'Please fill all slot fields.');
+//         return;
+//     }
 
-    var inviteText = document.getElementById('gmInvitees').value.trim();
-    var invitees = inviteText
-        ? inviteText.split('\n').filter(e => e.trim())
-        : [];
+//     var inviteText = document.getElementById('gmInvitees').value.trim();
+//     var invitees = inviteText
+//         ? inviteText.split('\n').filter(e => e.trim())
+//         : [];
 
-    try {
-        const response = await fetch('/group_meeting', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                title,
-                description,
-                start_date: startDate,
-                end_date: endDate,
-                slots,
-                invitees
-            })
-        });
+//     try {
+//         const response = await fetch('/group_meeting', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json'
+//             },
+//             body: JSON.stringify({
+//                 title,
+//                 description,
+//                 start_date: startDate,
+//                 end_date: endDate,
+//                 slots,
+//                 invitees
+//             })
+//         });
 
-        const data = await response.json();
+//         const data = await response.json();
 
-        if (!response.ok) {
-            showOwnerError('gmErrorNote', data.error || 'Failed to create meeting.');
-            return;
-        }
+//         if (!response.ok) {
+//             showOwnerError('gmErrorNote', data.error || 'Failed to create meeting.');
+//             return;
+//         }
 
-        var inviteUrl = data.invite_url;
+//         var inviteUrl = data.invite_url;
 
-        if (!inviteUrl) {
-            showOwnerError('gmErrorNote', 'Meeting created but no invite URL returned.');
-            return;
-        }
+//         if (!inviteUrl) {
+//             showOwnerError('gmErrorNote', 'Meeting created but no invite URL returned.');
+//             return;
+//         }
 
-        showOwnerMsg('gmSuccessNote',
-            'Meeting "' + title + '" created. Invite URL: ' + inviteUrl
-        );
+//         showOwnerMsg('gmSuccessNote',
+//             'Meeting "' + title + '" created. Invite URL: ' + inviteUrl
+//         );
 
-        if (invitees.length > 0) {
-            window.open(
-                'mailto:' + invitees.join(',') +
-                '?subject=' + encodeURIComponent('Bookly – Please vote: ' + title) +
-                '&body=' + encodeURIComponent('Vote here: ' + inviteUrl),
-                '_self'
-            );
-        }
+//         if (invitees.length > 0) {
+//             window.open(
+//                 'mailto:' + invitees.join(',') +
+//                 '?subject=' + encodeURIComponent('Bookly – Please vote: ' + title) +
+//                 '&body=' + encodeURIComponent('Vote here: ' + inviteUrl),
+//                 '_self'
+//             );
+//         }
 
-    } catch (error) {
-        console.error(error);
-        showOwnerError('gmErrorNote', 'Server error.');
-    }
-}
+//     } catch (error) {
+//         console.error(error);
+//         showOwnerError('gmErrorNote', 'Server error.');
+//     }
+// }
 
 /* ═══════════════════════════════════════════
    TAB 4: Manage Group Meetings — finalize
    ═══════════════════════════════════════════ */
 
-function openFinalizeView(meetingID, title) {
+async function openFinalizeView(meetingID, title) {
     ownerSwitchTab('finalizeGMView');
 
     document.getElementById('finalizeIntro').textContent =
@@ -635,17 +635,20 @@ function openFinalizeView(meetingID, title) {
      * BACKEND TODO: replace dummySlots with fetch from /api/type2/meeting/<meetingID>
      * Response includes slots[] with count per slot
      */
-    var dummySlots = [
-        { slotID: 1, date: '2026-04-28', start_time: '13:00', end_time: '14:00', count: 3 },
-        { slotID: 2, date: '2026-04-28', start_time: '15:00', end_time: '16:00', count: 1 },
-        { slotID: 3, date: '2026-04-29', start_time: '10:00', end_time: '11:00', count: 2 },
-        { slotID: 4, date: '2026-04-30', start_time: '14:00', end_time: '15:00', count: 3 }
-    ];
+    // var dummySlots = [
+    //     { slotID: 1, date: '2026-04-28', start_time: '13:00', end_time: '14:00', count: 3 },
+    //     { slotID: 2, date: '2026-04-28', start_time: '15:00', end_time: '16:00', count: 1 },
+    //     { slotID: 3, date: '2026-04-29', start_time: '10:00', end_time: '11:00', count: 2 },
+    //     { slotID: 4, date: '2026-04-30', start_time: '14:00', end_time: '15:00', count: 3 }
+    // ];
+    const res = await fetch(`/group_meeting?meetingID=${meetingID}`);
+    const data = await res.json();
+    const slots = data.availabilities || [];
 
     var list = document.getElementById('finalizeSlotList');
     list.innerHTML = '';
 
-    dummySlots.forEach(function (slot) {
+    slots.forEach(function (slot) {
         var row = document.createElement('div');
         row.className = 'vote-slot-row';
 
