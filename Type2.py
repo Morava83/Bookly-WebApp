@@ -238,39 +238,26 @@ def submit_vote():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # get owner from GroupMeeting
-    cursor.execute("""
-        SELECT ownerID
-        FROM GroupMeeting
-        WHERE meetingID = ?
-    """, (meeting_id,))
-    row = cursor.fetchone()
-
-    if not row:
-        conn.close()
-        return jsonify({"error": "Meeting not found"}), 404
-
-    owner_id = row["ownerID"]
-
     try:
         cursor.execute("""
-            INSERT INTO Booking2 (
-                studentID, ownerID, meetingID, availabilityID
+            INSERT INTO Vote (
+                studentID, availabilityID
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?)
         """, (
             student_id,
-            owner_id,
-            meeting_id,
             availability_id
         ))
 
+        #OPTION 1: Keep track of counter with counter attribute
         # increment vote count (optional but useful)
-        cursor.execute("""
-            UPDATE Availability
-            SET count = count + 1
-            WHERE availabilityID = ?
-        """, (availability_id,))
+        # cursor.execute("""
+        #     UPDATE Availability
+        #     SET count = count + 1
+        #     WHERE availabilityID = ?
+        # """, (availability_id,))
+
+        # Count number of votes via query using COUNT aggregation
 
         conn.commit()
 
@@ -282,6 +269,29 @@ def submit_vote():
     conn.close()
 
     return jsonify({"status": "ok"})
+
+@type2_blueprint.route('/group_meeting/vote_counts', methods=['GET'])
+def get_all_vote_counts():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT a.availabilityID, COUNT(v.studentID) AS vote_count
+        FROM Availability a
+        LEFT JOIN Vote v
+        ON a.availabilityID = v.availabilityID
+        GROUP BY a.availabilityID;
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    result = [
+        {"availabilityID": r[0], "vote_count": r[1]}
+        for r in rows
+    ]
+
+    return jsonify(result)
 
 #Get list of invited users --> assumes students as a list of student ids --> list of integers
 def get_guests(students):

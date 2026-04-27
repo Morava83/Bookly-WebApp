@@ -62,10 +62,18 @@ CREATE TABLE IF NOT EXISTS Availability (
     day TEXT NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
-    count INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (meetingID) REFERENCES GroupMeeting(meetingID) ON DELETE CASCADE
 ); --Assuming all group meetings are recurring with start and end date handling the base case. Removed number of recurrences
 --as this is also handled by date interval in availability
+
+-- =======Type 2: Vote ==============
+CREATE TABLE IF NOT EXISTS Vote (
+    availabilityID INTEGER NOT NULL,
+    studentID INTEGER NOT NULL,
+    PRIMARY KEY (availabilityID, studentID),
+    FOREIGN KEY (availabilityID) REFERENCES Availability(availabilityID) ON DELETE CASCADE,
+    FOREIGN KEY (studentID) REFERENCES Student(studentID) ON DELETE CASCADE
+); -- Used to count number of votes for an availability
 
 -- ======== Type 3 : Office Hours ========
 CREATE TABLE IF NOT EXISTS OfficeHours (
