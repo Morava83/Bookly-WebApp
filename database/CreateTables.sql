@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS Meeting (
     date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'accepted', 'declined', 'open', 'booked', 'cancelled')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'accepted', 'declined', 'open', 'closed', 'booked', 'cancelled')),
     zoom_link TEXT
 );
 
@@ -49,9 +49,8 @@ CREATE TABLE IF NOT EXISTS GroupMeeting (
     ownerID INTEGER NOT NULL,
     title VARCHAR(100),
     description TEXT,
-    isRecurring INTEGER NOT NULL DEFAULT 0 CHECK (isRecurring IN (0, 1)),
-    recurrenceType VARCHAR(10) CHECK (recurrenceType IN ('daily', 'weekly', 'monthly') OR recurrenceType IS NULL),
-    numOfRecurrences INTEGER,
+    startDate DATE NOT NULL,
+    endDate DATE NOT NULL,
     FOREIGN KEY (meetingID) REFERENCES Meeting(meetingID) ON DELETE CASCADE,
     FOREIGN KEY (ownerID) REFERENCES Owner(userID) ON DELETE CASCADE
 );
@@ -60,12 +59,13 @@ CREATE TABLE IF NOT EXISTS GroupMeeting (
 CREATE TABLE IF NOT EXISTS Availability (
     availabilityID INTEGER PRIMARY KEY AUTOINCREMENT,
     meetingID INTEGER NOT NULL,
-    date DATE NOT NULL,
+    day INTEGER NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     count INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (meetingID) REFERENCES GroupMeeting(meetingID) ON DELETE CASCADE
-);
+); --Assuming all group meetings are recurring with start and end date handling the base case. Removed number of recurrences
+--as this is also handled by date interval in availability
 
 -- ======== Type 3 : Office Hours ========
 CREATE TABLE IF NOT EXISTS OfficeHours (
