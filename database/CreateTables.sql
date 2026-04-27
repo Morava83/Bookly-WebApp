@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS GroupMeeting (
 CREATE TABLE IF NOT EXISTS Availability (
     availabilityID INTEGER PRIMARY KEY AUTOINCREMENT,
     meetingID INTEGER NOT NULL,
-    day INTEGER NOT NULL,
+    day TEXT NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     count INTEGER NOT NULL DEFAULT 0,
