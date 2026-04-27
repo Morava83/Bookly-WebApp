@@ -57,7 +57,7 @@ def get_schedule():
     cursor = conn.cursor()
 
     cursor.execute("""
-                   SELECT DISTINCT gm.startDate, gm.endDate, a.start_time, a.end_time, a.day, a.count
+                   SELECT DISTINCT gm.startDate, gm.endDate, a.start_time, a.end_time, a.day
                    FROM availability a 
                    JOIN GroupMeeting gm 
                    ON gm.meetingID = a.meetingID 
@@ -76,7 +76,6 @@ def get_schedule():
             "start_time": row["start_time"],
             "end_time": row["end_time"],
             "day": row["day"],
-            "count": row["count"]
         })
     return jsonify({
         "meetingID": meeting_id,
@@ -190,22 +189,43 @@ def get_group_meetings():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT gm.title, gm.startDate, gm.endDate, a.start_time, a.end_time, m.status, m.zoom_link
-        FROM GroupMeeting gm JOIN Meeting m
-        ON gm.meetingID = m.meetingID
+        SELECT 
+        a.availabilityID,
+        gm.title,
+        gm.startDate,
+        gm.endDate,
+        a.start_time,
+        a.end_time,
+        m.status,
+        m.zoom_link,
+        COUNT(v.studentID) AS vote_count
+        FROM GroupMeeting gm
+        JOIN Meeting m 
+            ON gm.meetingID = m.meetingID
         JOIN Availability a
-        ON a.meetingID = gm.meetingID
+            ON a.meetingID = gm.meetingID
+        LEFT JOIN Vote v
+            ON v.availabilityID = a.availabilityID
         WHERE gm.meetingID = ?
+        GROUP BY 
+            a.availabilityID,
+            gm.title,
+            gm.startDate,
+            gm.endDate,
+            a.start_time,
+            a.end_time,
+            m.status,
+            m.zoom_link
     """, (meeting_id,))
 
     meetings = cursor.fetchall()
     results = [
-        {"Title": r[0], "Start Date": r[1], "End Date": r[2], "Start Time": r[3], "Status": r[4], "Zoom Link": r[5]}
-        for r in rows
+        {"Availability": m[0], "Title": m[1], "Start Date": m[2], "End Date": m[3], "Start Time": m[4], "End Time": m[5], "Status": m[6], "Zoom Link": m[7], "Count": m[8]}
+        for m in meetings
     ]
     conn.close()
 
-    return results
+    return jsonify(results)
 
 
 
