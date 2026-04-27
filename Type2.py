@@ -28,7 +28,7 @@ def get_user_id(email):
     conn.close()
     return row[0] if row else None
 
-#Get Owner Record by id
+#Get Owner Record
 def get_owner(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -57,24 +57,25 @@ def get_schedule():
     cursor = conn.cursor()
 
     cursor.execute("""
-                   SELECT DISTINCT startDate, endDate, start_time, end_time, day
+                   SELECT DISTINCT date 
                    FROM availability a 
                    JOIN GroupMeeting gm 
                    ON gm.meetingID = a.meetingID 
                    WHERE gm.meetingID = ?
                    """,
                    (meeting_id,))
-    availabilities = cursor.fetchall()
+    dates = [row[0] for row in cursor.fetchall()]
+
+    cursor.execute("""SELECT DISTINCT start_time 
+                   FROM availability a 
+                   JOIN GroupMeeting gm 
+                   ON gm.meetingID = a.meetingID WHERE gm.meetingID = ?
+                   """, (meeting_id,))
+    times = [row[0] for row in cursor.fetchall()]
 
     conn.close()
 
-    for row in availabilities:
-        sdate = row[0]
-        edate = row[1]
-        stime = row[2]
-        etime = row[3]
-        day = row[4]
-    return jsonify({"start_date": sdate, "end_date":edate, "start_time": stime "end_time": etime, "day": day})
+    return jsonify({"dates": dates, "times": times})
 
 
 # POST vote
@@ -100,7 +101,6 @@ def create_group_meeting():
         "invite_url": "http://localhost:5000/invite/123"
     })
 
-#----------FORM TO DATABASE------------
 #Student chooses most convenient dates & time slots out of those made available by the TA
 @type2_blueprint.route('/group_meeting/vote', methods=['POST'])
 def vote():
@@ -116,7 +116,9 @@ def vote():
     end_time = data.get("end_time")
     invitees = data.get("invitees")
 
-    #N.B.: Recurring Meeting and recurring meetings combined
+    #TODO Simple Meeting
+
+    #TODO Recurring Meeting
 
     if not date or not start_time or not end_time:
         return jsonify({"error": "Missing date/time"}), 400
@@ -154,8 +156,7 @@ def get_guests(students):
 #--------Schedule Meeting----------
 
 #======Helper Functions==========
-#TODO Add Zoom Link to notification email
-def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password, zoom):
+def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password):
     msg = MIMEMultipart()
     msg['From'] = from_email
     msg['To'] = to_email
@@ -167,7 +168,7 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
             server.starttls()
             server.login(username, password)
             server.send_message(msg)
-            print(f"Email sent to {to_email}\nZoom Link: {zoom}")
+            print(f"Email sent to {to_email}")
     except Exception as e:
         print(f"Email error: {e}")
 
