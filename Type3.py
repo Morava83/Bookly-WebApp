@@ -498,6 +498,62 @@ def cancel_booking():
     finally:
         conn.close()
 
+# Delete a booking slot
+@type3_blueprint.route("/delete_slot", methods=["POST"])
+@owner_required
+def delete_slot():
+    data = request.get_json() or {}
+    slot_id = data.get("slotID")
+
+    if not slot_id:
+        return jsonify({"error": "Missing slotID"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                ts.slotID,
+                ts.meetingID,
+                ts.start_date,
+                ts.start_time,
+                ts.end_time,
+                oh.ownerID,
+                ou.name AS owner_name,
+                b3.booking3ID,
+                b3.studentID,
+                su.name AS student_name,
+                su.email AS student_email
+            FROM TimeSlot ts
+            JOIN OfficeHours oh ON oh.meetingID = ts.meetingID
+            JOIN User ou ON ou.userID = oh.ownerID
+            LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
+            LEFT JOIN User su ON su.userID = b3.studentID
+            WHERE ts.slotID = ? AND oh.ownerID = ?
+        """, (slot_id, session["user_id"]))
+        
+        row = cur.fetchone()
+
+        if not row:
+            return jsonify({"error": "Slot not found"}), 404
+
+        if row["booking3ID"]:
+            cur.execute("DELETE FROM Booking3 WHERE booking3ID = ?", (row["booking3ID"],))
+
+        cur.execute("DELETE FROM TimeSlot WHERE slotID = ?", (slot_id,))
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "deleted_slot_id": row["slotID"],
+            "deleted_booking_id": row["booking3ID"],
+        }), 200
+
+    finally:
+        conn.close()
+
 
 #Email is sent to owner
 

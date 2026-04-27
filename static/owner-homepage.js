@@ -278,28 +278,45 @@ function toggleSlotStatus(btn) {
     }
 }
 
-function deleteSlot(btn, notifyEmail) {
+async function deleteSlot(btn, notifyEmail) {
     /*
      * BACKEND TODO: replace with fetch to /api/type3/delete_slot
      * body: { slotID: ... }
      * If response includes notify_email, open mailto:
      */
+    var row = btn.closest('tr');
+    var slotID = Number(row.children[0].textContent.trim());
+    
     if (!confirm('Delete this slot?')) return;
 
-    var row = btn.closest('tr');
-    row.remove();
+    try {
+        var res = await fetch('/api/type3/delete_slot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slotID: slotID })
+        });
 
-    if (notifyEmail) {
-        // Open mailto: to notify the student whose booking was cancelled
-        window.open(
-            'mailto:' + notifyEmail +
-            '?subject=Bookly%20-%20Slot%20cancelled' +
-            '&body=' + encodeURIComponent('Your booked slot has been cancelled by the owner.'),
-            '_self'
-        );
-        showOwnerMsg('slotsMsg', 'Slot deleted. A mailto: window was opened to notify the student.');
-    } else {
-        showOwnerMsg('slotsMsg', 'Slot deleted.');
+        if (!res.ok) {
+            showOwnerError('slotsError', 'Could not delete slot.');
+            return;
+        }
+
+        hideMsg('slotsError');
+        loadOwnerSlots();
+
+        showOwnerMsg('slotsMsg', 'Slot deleted successfully.');
+
+        // ONLY IF the booking was booked by a student, THEN it opens mailto: to notify the student whose booking was cancelled
+        if (notifyEmail) {
+            showOwnerMsg('slotsMsg', 'A mailto: window was opened to notify the student.');
+
+            window.location.href = 'mailto:' + notifyEmail +
+                '?subject=' + encodeURIComponent('Bookly - Slot cancelled') +
+                '&body=' + encodeURIComponent('Your booked slot has been cancelled by the owner.');
+        }
+
+    } catch (error) {
+        showOwnerError('slotsError', 'Could not delete slot.');
     }
 }
 
