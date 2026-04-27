@@ -509,49 +509,143 @@ function addGMSlotEntry() {
     container.appendChild(entry);
 }
 
-async function createGroupMeeting() {
-    var title = document.getElementById('gmTitle').value.trim();
-    var description = document.getElementById('gmDesc').value.trim();
+// async function createGroupMeeting() {
+//     var title = document.getElementById('gmTitle').value.trim();
+//     var description = document.getElementById('gmDesc').value.trim();
 
-    var startDate = document.getElementById('gmStartDate').value;
-    var endDate = document.getElementById('gmEndDate').value;
+//     var startDate = document.getElementById('gmStartDate').value;
+//     var endDate = document.getElementById('gmEndDate').value;
+
+//     if (!title) {
+//         showOwnerError('gmErrorNote', 'Please enter a meeting title.');
+//         return;
+//     }
+
+//     if (!startDate || !endDate) {
+//         showOwnerError('gmErrorNote', 'Please select start and end dates.');
+//         return;
+//     }
+
+//     var entries = document.querySelectorAll('.gm-slot-entry');
+//     if (entries.length === 0) {
+//         showOwnerError('gmErrorNote', 'Add at least one time option.');
+//         return;
+//     }
+
+//     var slots = [];
+
+//     entries.forEach(function (entry) {
+//         var start_date = entry.querySelector('.gm-start-date').value;
+//         var end_date = entry.querySelector('.gm-end-date').value;
+//         var day = entry.querySelector('.gm-day').value;
+//         var start = entry.querySelector('.gm-start').value;
+//         var end = entry.querySelector('.gm-end').value;
+
+//         if (!start_date || !end_date || !start || !end) {
+//             return;
+//         }
+
+//         slots.push({
+//             day: day,
+//             start_date: start_date,
+//             end_date: end_date,
+//             start_time: start,
+//             end_time: end
+//         });
+//     });
+
+//     if (slots.length === 0) {
+//         showOwnerError('gmErrorNote', 'Please fill all slot fields.');
+//         return;
+//     }
+
+//     var inviteText = document.getElementById('gmInvitees').value.trim();
+//     var invitees = inviteText
+//         ? inviteText.split('\n').filter(e => e.trim())
+//         : [];
+
+//     try {
+//         const response = await fetch('/group_meeting', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json'
+//             },
+//             body: JSON.stringify({
+//                 title,
+//                 description,
+//                 start_date: startDate,
+//                 end_date: endDate,
+//                 slots,
+//                 invitees
+//             })
+//         });
+
+//         const data = await response.json();
+
+//         if (!response.ok) {
+//             showOwnerError('gmErrorNote', data.error || 'Failed to create meeting.');
+//             return;
+//         }
+
+//         var inviteUrl = data.invite_url;
+
+//         if (!inviteUrl) {
+//             showOwnerError('gmErrorNote', 'Meeting created but no invite URL returned.');
+//             return;
+//         }
+
+//         showOwnerMsg('gmSuccessNote',
+//             'Meeting "' + title + '" created. Invite URL: ' + inviteUrl
+//         );
+
+//         if (invitees.length > 0) {
+//             window.open(
+//                 'mailto:' + invitees.join(',') +
+//                 '?subject=' + encodeURIComponent('Bookly – Please vote: ' + title) +
+//                 '&body=' + encodeURIComponent('Vote here: ' + inviteUrl),
+//                 '_self'
+//             );
+//         }
+
+//     } catch (error) {
+//         console.error(error);
+//         showOwnerError('gmErrorNote', 'Server error.');
+//     }
+// }
+
+async function createGroupMeeting() {
+    const title = document.getElementById('gmTitle').value.trim();
+    const description = document.getElementById('gmDesc').value.trim();
 
     if (!title) {
         showOwnerError('gmErrorNote', 'Please enter a meeting title.');
         return;
     }
 
-    if (!startDate || !endDate) {
-        showOwnerError('gmErrorNote', 'Please select start and end dates.');
-        return;
-    }
-
-    var entries = document.querySelectorAll('.gm-slot-entry');
+    const entries = document.querySelectorAll('.gm-slot-entry');
     if (entries.length === 0) {
         showOwnerError('gmErrorNote', 'Add at least one time option.');
         return;
     }
 
-    var slots = [];
+    let slots = [];
 
-    entries.forEach(function (entry) {
-        var start_date = entry.querySelector('.gm-start-date').value;
-        var end_date = entry.querySelector('.gm-end-date').value;
-        var day = entry.querySelector('.gm-day').value;
-        var start = entry.querySelector('.gm-start').value;
-        var end = entry.querySelector('.gm-end').value;
+    entries.forEach(entry => {
+        const start_date = entry.querySelector('.gm-start-date').value;
+        const end_date = entry.querySelector('.gm-end-date').value;
+        const day = entry.querySelector('.gm-day').value;
+        const start_time = entry.querySelector('.gm-start').value;
+        const end_time = entry.querySelector('.gm-end').value;
 
-        if (!start_date || !end_date || !start || !end) {
-            return;
+        if (start_date && end_date && start_time && end_time) {
+            slots.push({
+                day,
+                start_date,
+                end_date,
+                start_time,
+                end_time
+            });
         }
-
-        slots.push({
-            day: day,
-            start_date: start_date,
-            end_date: end_date,
-            start_time: start,
-            end_time: end
-        });
     });
 
     if (slots.length === 0) {
@@ -559,9 +653,16 @@ async function createGroupMeeting() {
         return;
     }
 
-    var inviteText = document.getElementById('gmInvitees').value.trim();
-    var invitees = inviteText
-        ? inviteText.split('\n').filter(e => e.trim())
+    // derive meeting range from slots (fix for backend requirement)
+    const startDate = slots.reduce((min, s) =>
+        s.start_date < min ? s.start_date : min, slots[0].start_date);
+
+    const endDate = slots.reduce((max, s) =>
+        s.end_date > max ? s.end_date : max, slots[0].end_date);
+
+    const inviteText = document.getElementById('gmInvitees').value.trim();
+    const invitees = inviteText
+        ? inviteText.split('\n').map(e => e.trim()).filter(Boolean)
         : [];
 
     try {
@@ -587,15 +688,16 @@ async function createGroupMeeting() {
             return;
         }
 
-        var inviteUrl = data.invite_url;
+        const inviteUrl = data.invite_url;
 
         if (!inviteUrl) {
             showOwnerError('gmErrorNote', 'Meeting created but no invite URL returned.');
             return;
         }
 
-        showOwnerMsg('gmSuccessNote',
-            'Meeting "' + title + '" created. Invite URL: ' + inviteUrl
+        showOwnerMsg(
+            'gmSuccessNote',
+            `Meeting "${title}" created. Invite URL: ${inviteUrl}`
         );
 
         if (invitees.length > 0) {

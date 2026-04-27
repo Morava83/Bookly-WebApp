@@ -95,8 +95,12 @@ def create_group_meeting():
     description = data.get("description")
     slots = data.get("slots")
     invitees = data.get("invitees")
+    
+    #Debugging
+    # print("RECEIVED DATA:", data)
+    # print("SLOTS:", slots)
 
-    if not title or not slots or not description:
+    if not title or not slots:
         return jsonify({"error": "Missing required fields"}), 400
 
     if "user_id" not in session:
@@ -121,8 +125,14 @@ def create_group_meeting():
         
         # 2. Create GroupMeeting record
 
-        start_date = min(slot["start_date"] for slot in slots)
-        end_date = max(slot["end_date"] for slot in slots)
+        start_dates = [s.get("start_date") for s in slots if s.get("start_date")]
+        end_dates = [s.get("end_date") for s in slots if s.get("end_date")]
+
+        if not start_dates or not end_dates:
+            return jsonify({"error": "Invalid slot data"}), 400
+
+        start_date = min(start_dates)
+        end_date = max(end_dates)
         
         cursor.execute("""
             INSERT INTO GroupMeeting (
@@ -144,9 +154,9 @@ def create_group_meeting():
         for slot in slots:
             cursor.execute("""
                 INSERT INTO Availability (
-                    meetingID, day, start_time, end_time, count
+                    meetingID, day, start_time, end_time
                 )
-                VALUES (?, ?, ?, ?, 0)
+                VALUES (?, ?, ?, ?)
             """, (
                 meeting_id,
                 slot["day"],  # TODO: map real weekday if needed
@@ -317,17 +327,11 @@ def decide_meeting():
     finally:
         conn.close()
 
-    return jsonify({"message": "Meeting decided successfully"})
-
-    #TODO Optionally delete all closed availability
-
-    conn.commit()
-    conn.closed()
-
     #Send email to Owner once meeting is booked
     #send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password, zoom)
+    #TODO Optionally delete all closed availability
 
-    return jsonify({"status": "ok"})
+    return jsonify({"message": "Meeting decided successfully"})
 
 #----------FORM TO DATABASE------------
 #Student chooses most convenient dates & time slots out of those made available by the TA
