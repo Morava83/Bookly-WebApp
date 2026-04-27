@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS TimeSlot (
     end_date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 0 CHECK (is_active IN (0, 1)),
     FOREIGN KEY (meetingID) REFERENCES OfficeHours(meetingID) ON DELETE CASCADE
 );
 

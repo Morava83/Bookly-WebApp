@@ -109,6 +109,33 @@ def generate_dates_for_weekday(start_date_str, weekday_index, num_weeks):
     return dates
 
 
+SLOT_PRIVATE = 0
+SLOT_ACTIVE = 1
+
+def slot_status_from_row(row):
+    if row["booking3ID"]:
+        return "Booked"
+    return "Active" if row["is_active"] == SLOT_ACTIVE else "Private"
+
+
+
+def serialize_owner_slot(row):
+    return {
+        "slotID": row["slotID"],
+        "meetingID": row["meetingID"],
+        "date": row["start_date"],
+        "start_time": row["start_time"],
+        "end_time": row["end_time"],
+        "status": slot_status_from_row(row),
+        "student_name": row["student_name"],
+        "student_email": row["student_email"]
+    }
+
+
+
+
+
+
 #---------Create Meeting---------
 # owner creates recurring office hours
 @type3_blueprint.route("/create_office_hours", methods=["POST"])
@@ -148,7 +175,7 @@ def create_office_hours():
 
         cur.execute("""
             INSERT INTO Meeting (date, start_time, end_time, status, zoom_link)
-            VALUES (?, ?, ?, 'open', ?)
+            VALUES (?, ?, ?, 'pending', ?)
         """, (
             start_date,
             weekly_slots[0]["start_time"],
@@ -179,14 +206,15 @@ def create_office_hours():
             for d in dates:
                 # Inserts one TimeSlot row for each recurring date
                 cur.execute("""
-                    INSERT INTO TimeSlot (meetingID, start_date, end_date, start_time, end_time)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO TimeSlot (meetingID, start_date, end_date, start_time, end_time, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 """, (
                     meeting_id,
                     d.isoformat(),
                     d.isoformat(),
                     slot["start_time"],
-                    slot["end_time"]
+                    slot["end_time"],
+                    SLOT_PRIVATE
                 ))
                 inserted_slots += 1
         
@@ -217,16 +245,14 @@ def owner_slots():
                 ts.slotID,
                 ts.meetingID,
                 ts.start_date,
-                ts.end_date,
                 ts.start_time,
                 ts.end_time,
-                m.status AS meeting_status,
+                ts.is_active,
                 b3.booking3ID,
                 su.name AS student_name,
                 su.email AS student_email
             FROM TimeSlot ts
             JOIN OfficeHours oh ON oh.meetingID = ts.meetingID
-            JOIN Meeting m ON m.meetingID = ts.meetingID
             LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
             LEFT JOIN User su ON su.userID = b3.studentID
             WHERE oh.ownerID = ?
@@ -235,30 +261,101 @@ def owner_slots():
 
         rows = cur.fetchall()
 
-        slots = []
-        for row in rows:
-            if row["booking3ID"]:
-                status = "Booked"
-            elif row["meeting_status"] in ("open", "booked"):
-                status = "Active"
-            else:
-                status = "Private"
-
-            slots.append({
-                "slotID": row["slotID"],
-                "meetingID": row["meetingID"],
-                "date": row["start_date"],
-                "start_time": row["start_time"],
-                "end_time": row["end_time"],
-                "status": status,
-                "student_name": row["student_name"],
-                "student_email": row["student_email"]
-            })
-
-        return jsonify({"slots": slots}), 200
+        return jsonify({
+            "slots": [serialize_owner_slot(row) for row in rows]
+        }), 200
 
     finally:
         conn.close()
+
+
+
+@type3_blueprint.route("/set_slot_status", methods=["POST"])
+@owner_required
+def set_slot_status():
+    data = request.get_json() or {}
+    slot_id = data.get("slotID")
+    is_active = data.get("is_active")
+
+    if slot_id is None or is_active is None:
+        return jsonify({"error": "Missing slotID or is_active"}), 400
+
+    owner_id = session["user_id"]
+    new_value = SLOT_ACTIVE if is_active else SLOT_PRIVATE
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                ts.slotID,
+                b3.booking3ID
+            FROM TimeSlot ts
+            JOIN OfficeHours oh ON oh.meetingID = ts.meetingID
+            LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
+            WHERE ts.slotID = ?
+              AND oh.ownerID = ?
+        """, (slot_id, owner_id))
+
+        row = cur.fetchone()
+
+        if not row:
+            return jsonify({"error": "Slot not found"}), 404
+
+        if row["booking3ID"]:
+            return jsonify({"error": "Booked slots cannot be activated or deactivated"}), 409
+
+        cur.execute("""
+            UPDATE TimeSlot
+            SET is_active = ?
+            WHERE slotID = ?
+        """, (new_value, slot_id))
+
+        conn.commit()
+        return jsonify({"success": True}), 200
+
+    finally:
+        conn.close()
+
+
+
+
+@type3_blueprint.route("/set_all_slot_status", methods=["POST"])
+@owner_required
+def set_all_slot_status():
+    data = request.get_json() or {}
+    is_active = data.get("is_active")
+
+    if is_active is None:
+        return jsonify({"error": "Missing is_active"}), 400
+
+    owner_id = session["user_id"]
+    new_value = SLOT_ACTIVE if is_active else SLOT_PRIVATE
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            UPDATE TimeSlot
+            SET is_active = ?
+            WHERE slotID IN (
+                SELECT ts.slotID
+                FROM TimeSlot ts
+                JOIN OfficeHours oh ON oh.meetingID = ts.meetingID
+                LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
+                WHERE oh.ownerID = ?
+                  AND b3.booking3ID IS NULL
+            )
+        """, (new_value, owner_id))
+
+        conn.commit()
+        return jsonify({"success": True}), 200
+
+    finally:
+        conn.close()
+
 
 
 # Get avaliable slots for students
@@ -289,7 +386,7 @@ def available_slots():
             JOIN User u ON u.userID = oh.ownerID
             LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
             WHERE b3.slotID IS NULL
-            AND m.status IN ('open', 'booked')
+              AND ts.is_active = 1
         """
         params = []
 
@@ -298,8 +395,8 @@ def available_slots():
             params.append(owner_id)
 
         query += " ORDER BY ts.start_date, ts.start_time"
-        cur.execute(query, params)
 
+        cur.execute(query, params)
         rows = cur.fetchall()
 
         return jsonify({
@@ -353,7 +450,7 @@ def book_slots():
                 u.email AS owner_email,
                 su.email AS student_email,
                 su.name AS student_name,
-                m.zoom_link 
+                m.zoom_link
             FROM TimeSlot ts
             JOIN OfficeHours oh ON ts.meetingID = oh.meetingID
             JOIN Meeting m ON m.meetingID = ts.meetingID
@@ -361,8 +458,9 @@ def book_slots():
             JOIN User su ON su.userID = ?
             LEFT JOIN Booking3 b3 ON b3.slotID = ts.slotID
             WHERE ts.slotID = ?
-              AND b3.slotID IS NULL
-        """, (student_id, slot_id,))
+            AND b3.slotID IS NULL
+            AND ts.is_active = 1
+        """, (student_id, slot_id))
 
         row = cur.fetchone()
 
@@ -373,12 +471,6 @@ def book_slots():
             INSERT INTO Booking3 (studentID, ownerID, meetingID, slotID)
             VALUES (?, ?, ?, ?)
         """, (student_id, row["ownerID"], row["meetingID"], row["slotID"]))
-
-        cur.execute("""
-            UPDATE Meeting
-            SET status = 'booked'
-            WHERE meetingID = ?
-        """, (row["meetingID"],))
 
         conn.commit()
 
