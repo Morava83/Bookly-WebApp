@@ -42,7 +42,7 @@ def get_owner(id):
     conn.close()
     return row if row else None
 
-# GET schedule
+# GET schedule: CORRECT IMPLEMENTATION
 @type2_blueprint.route('/goup_meeting', methods=['GET'])
 def get_schedule():
     if "user_id" not in session:
@@ -57,24 +57,31 @@ def get_schedule():
     cursor = conn.cursor()
 
     cursor.execute("""
-                   SELECT DISTINCT startDate, endDate, start_time, end_time, day
+                   SELECT DISTINCT gm.startDate, gm.endDate, a.start_time, a.end_time, a.day, a.count
                    FROM availability a 
                    JOIN GroupMeeting gm 
                    ON gm.meetingID = a.meetingID 
                    WHERE gm.meetingID = ?
                    """,
                    (meeting_id,))
-    availabilities = cursor.fetchall()
-
+    rows = cursor.fetchall()
+    
     conn.close()
 
-    for row in availabilities:
-        sdate = row[0]
-        edate = row[1]
-        stime = row[2]
-        etime = row[3]
-        day = row[4]
-    return jsonify({"start_date": sdate, "end_date":edate, "start_time": stime, "end_time": etime, "day": day})
+    availabilities = []
+    for row in rows:
+        availabilities.append({
+            "start_date": row["startDate"],
+            "end_date": row["endDate"],
+            "start_time": row["start_time"],
+            "end_time": row["end_time"],
+            "day": row["day"],
+            "count": row["count"]
+        })
+    return jsonify({
+        "meetingID": meeting_id,
+        "availabilities": availabilities
+    })
 
 
 # POST vote
@@ -90,14 +97,83 @@ def create_group_meeting():
     slots = data.get("slots")
     invitees = data.get("invitees")
 
-    if not title or not slots or not description or not invitees:
+    if not title or not slots or not description:
         return jsonify({"error": "Missing required fields"}), 400
 
-    # TODO: save meeting properly
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    owner_id = session["user_id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # ─────────────────────────────
+        # 1. Create base Meeting record
+        # ─────────────────────────────
+        cursor.execute("""
+            INSERT INTO Meeting (date, start_time, end_time, status)
+            VALUES (?, ?, ?, 'open')
+        """, (
+            slots[0]["date"],          # temporary: first slot date
+            slots[0]["start_time"],
+            slots[0]["end_time"]
+        ))
+
+        meeting_id = cursor.lastrowid
+
+        # ─────────────────────────────
+        # 2. Create GroupMeeting record
+        # ─────────────────────────────
+        cursor.execute("""
+            INSERT INTO GroupMeeting (
+                meetingID, ownerID, title, description, startDate, endDate
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            meeting_id,
+            owner_id,
+            title,
+            description,
+            slots[0]["date"],   # startDate (simplified)
+            slots[-1]["date"]   # endDate (simplified)
+        ))
+
+        # ─────────────────────────────
+        # 3. Insert availability slots
+        # ─────────────────────────────
+        for slot in slots:
+            cursor.execute("""
+                INSERT INTO Availability (
+                    meetingID, day, start_time, end_time, count
+                )
+                VALUES (?, ?, ?, ?, 0)
+            """, (
+                meeting_id,
+                0,  # TODO: map real weekday if needed
+                slot["start_time"],
+                slot["end_time"]
+            ))
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+    conn.close()
+
+    # ─────────────────────────────
+    # 4. Return meeting ID to frontend
+    # ─────────────────────────────
+    invite_url = f"/group/{meeting_id}"
 
     return jsonify({
         "status": "ok",
-        "invite_url": "http://localhost:5000/invite/123"
+        "meetingID": meeting_id,
+        "invite_url": invite_url
     })
 
 #----------FORM TO DATABASE------------
