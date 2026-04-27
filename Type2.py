@@ -74,7 +74,7 @@ def get_schedule():
         stime = row[2]
         etime = row[3]
         day = row[4]
-    return jsonify({"start_date": sdate, "end_date":edate, "start_time": stime "end_time": etime, "day": day})
+    return jsonify({"start_date": sdate, "end_date":edate, "start_time": stime, "end_time": etime, "day": day})
 
 
 # POST vote
