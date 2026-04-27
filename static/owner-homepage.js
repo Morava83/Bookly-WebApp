@@ -308,7 +308,7 @@ async function deleteSlot(btn, notifyEmail) {
 
         // ONLY IF the booking was booked by a student, THEN it opens mailto: to notify the student whose booking was cancelled
         if (notifyEmail) {
-            showOwnerMsg('slotsMsg', 'A mailto: window was opened to notify the student.');
+            showOwnerMsg('slotsMsg', 'Slot deleted successfully. A mailto: window was opened to notify the student.');
 
             window.location.href = 'mailto:' + notifyEmail +
                 '?subject=' + encodeURIComponent('Bookly - Slot cancelled') +
