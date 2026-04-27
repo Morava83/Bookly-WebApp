@@ -10,12 +10,18 @@ from email.mime.multipart import MIMEMultipart
 type2_blueprint = Blueprint('Type2', __name__)
 
 BASE_DIR = os.path.dirname(__file__)
-DB_PATH = os.path.join(BASE_DIR, "database", "bookly.db")
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, "database", "bookly.db")
+
+def get_db_path():
+    try:
+        return current_app.config.get("DB_PATH") or os.environ.get("DB_PATH", DEFAULT_DB_PATH)
+    except RuntimeError:
+        return os.environ.get("DB_PATH", DEFAULT_DB_PATH)
 
 #--------Query----------
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

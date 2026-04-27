@@ -14,7 +14,13 @@ from zoom_utils import create_type1_zoom_meeting
 type1_blueprint = Blueprint('type1', __name__)
 
 BASE_DIR = os.path.dirname(__file__)
-DB_PATH = os.path.join(BASE_DIR, "database", "bookly.db")
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, "database", "bookly.db")
+
+def get_db_path():
+    try:
+        return current_app.config.get("DB_PATH") or os.environ.get("DB_PATH", DEFAULT_DB_PATH)
+    except RuntimeError:
+        return os.environ.get("DB_PATH", DEFAULT_DB_PATH)
 
 
 # EMAIL FUNCTION
@@ -57,7 +63,7 @@ def send_notification(message, user_id):
 # DB HELPERS
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH, timeout=10)
+    conn = sqlite3.connect(get_db_path(), timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
@@ -181,7 +187,7 @@ def request_meeting():
     )
 
     # # Update message in RequestMeeting (since insert used empty string earlier)
-    # conn = sqlite3.connect(DB_PATH)
+    # conn = sqlite3.connect(DB_PATH) // Use get_db_connection() instead of direct sqlite3 connection
     # cursor = conn.cursor()
     # cursor.execute("""
     #     UPDATE RequestMeeting
