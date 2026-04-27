@@ -43,7 +43,7 @@ def get_owner(id):
     return row if row else None
 
 # GET schedule: CORRECT IMPLEMENTATION
-@type2_blueprint.route('/goup_meeting', methods=['GET'])
+@type2_blueprint.route('/group_meeting', methods=['GET'])
 def get_schedule():
     if "user_id" not in session:
         return jsonify({"error": "Login required"}), 401
@@ -109,23 +109,22 @@ def create_group_meeting():
     cursor = conn.cursor()
 
     try:
-        # ─────────────────────────────
+        
         # 1. Create base Meeting record
-        # ─────────────────────────────
+        
         cursor.execute("""
-            INSERT INTO Meeting (date, start_time, end_time, status)
-            VALUES (?, ?, ?, 'open')
-        """, (
-            slots[0]["date"],          # temporary: first slot date
-            slots[0]["start_time"],
-            slots[0]["end_time"]
-        ))
+        INSERT INTO Meeting (date, start_time, end_time, status)
+        VALUES (NULL, NULL, NULL, 'open')
+    """)
 
         meeting_id = cursor.lastrowid
 
-        # ─────────────────────────────
+        
         # 2. Create GroupMeeting record
-        # ─────────────────────────────
+
+        start_date = min(slot["start_date"] for slot in slots)
+        end_date = max(slot["end_date"] for slot in slots)
+        
         cursor.execute("""
             INSERT INTO GroupMeeting (
                 meetingID, ownerID, title, description, startDate, endDate
@@ -136,13 +135,13 @@ def create_group_meeting():
             owner_id,
             title,
             description,
-            slots[0]["date"],   # startDate (simplified)
-            slots[-1]["date"]   # endDate (simplified)
+            start_date,
+            end_date
         ))
 
-        # ─────────────────────────────
+        
         # 3. Insert availability slots
-        # ─────────────────────────────
+        
         for slot in slots:
             cursor.execute("""
                 INSERT INTO Availability (
@@ -151,7 +150,7 @@ def create_group_meeting():
                 VALUES (?, ?, ?, ?, 0)
             """, (
                 meeting_id,
-                0,  # TODO: map real weekday if needed
+                slot["day"],  # TODO: map real weekday if needed
                 slot["start_time"],
                 slot["end_time"]
             ))
@@ -165,9 +164,9 @@ def create_group_meeting():
 
     conn.close()
 
-    # ─────────────────────────────
+   
     # 4. Return meeting ID to frontend
-    # ─────────────────────────────
+   
     invite_url = f"/group/{meeting_id}"
 
     return jsonify({
@@ -176,36 +175,110 @@ def create_group_meeting():
         "invite_url": invite_url
     })
 
-#----------FORM TO DATABASE------------
-#Student chooses most convenient dates & time slots out of those made available by the TA
-@type2_blueprint.route('/group_meeting/vote', methods=['POST'])
-def vote():
+@type2_blueprint.route('/group_meeting/finalize', methods=['POST'])
+def finalize_meeting():
     data = request.get_json()
 
-    if not data:
-        return jsonify({"error": "No JSON received"}), 400
-
-    title = data.get("title")
-    description = data.get("description")
-    date = data.get("date")
-    start_time = data.get("start_time")
-    end_time = data.get("end_time")
-    invitees = data.get("invitees")
-
-    #N.B.: Recurring Meeting and recurring meetings combined
-
-    if not date or not start_time or not end_time:
-        return jsonify({"error": "Missing date/time"}), 400
+    meeting_id = data.get("meetingID")
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+    
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT OR IGNORE INTO availability (title, description, date, start_time, end_time, invitees) VALUES (?, ?)",
-        (title, description, date, start_time, end_time, invitees)
+        "SELECT ownerID FROM GroupMeeting WHERE meetingID = ?",
+        (meeting_id,)
     )
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({"error": "Meeting not found"}), 404
+
+    owner_id = row["ownerID"]
+
+    # AUTH CHECK
+    if session["user_id"] != owner_id:
+        conn.close()
+        return jsonify({"error": "Unauthorized"}), 403
+
+    # proceed with updating Meeting table
+    cursor.execute("""
+        UPDATE Meeting
+        SET date = ?, start_time = ?, end_time = ?, status = 'final'
+        WHERE meetingID = ?
+    """, (data["date"], data["start_time"], data["end_time"], meeting_id))
 
     conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
+#----------FORM TO DATABASE------------
+#Student chooses most convenient dates & time slots out of those made available by the TA
+@type2_blueprint.route('/group_meeting/vote', methods=['POST'])
+def submit_vote():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No JSON received"}), 400
+
+    meeting_id = data.get("meetingID")
+    availability_id = data.get("availabilityID")
+
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    student_id = session["user_id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # get owner from GroupMeeting
+    cursor.execute("""
+        SELECT ownerID
+        FROM GroupMeeting
+        WHERE meetingID = ?
+    """, (meeting_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({"error": "Meeting not found"}), 404
+
+    owner_id = row["ownerID"]
+
+    try:
+        cursor.execute("""
+            INSERT INTO Booking2 (
+                studentID, ownerID, meetingID, availabilityID
+            )
+            VALUES (?, ?, ?, ?)
+        """, (
+            student_id,
+            owner_id,
+            meeting_id,
+            availability_id
+        ))
+
+        # increment vote count (optional but useful)
+        cursor.execute("""
+            UPDATE Availability
+            SET count = count + 1
+            WHERE availabilityID = ?
+        """, (availability_id,))
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
     conn.close()
 
     return jsonify({"status": "ok"})
@@ -214,16 +287,22 @@ def vote():
 def get_guests(students):
     conn = get_db_connection()
     cursor = conn.cursor()
+    results = []
+
     for student in students:
         cursor.execute("""
-                       SELECT *
-                       FROM User u
-                       JOIN Student s ON u.userId = s.userId
-                       WHERE u.userId = ?
-                       """, (student,))
-    row = cursor.fetchone()
+            SELECT *
+            FROM User u
+            JOIN Student s ON u.userId = s.userId
+            WHERE u.userId = ?
+        """, (student,))
+
+        row = cursor.fetchone()
+        if row:
+            results.append(row)
+
     conn.close()
-    return row if row else None
+    return results
 
 #Get owner recurring time slots
 
