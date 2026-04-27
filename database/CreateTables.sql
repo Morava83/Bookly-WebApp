@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS Availability (
     day TEXT NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('open', 'closed', 'booked')),
     FOREIGN KEY (meetingID) REFERENCES GroupMeeting(meetingID) ON DELETE CASCADE
 ); --Assuming all group meetings are recurring with start and end date handling the base case. Removed number of recurrences
 --as this is also handled by date interval in availability
