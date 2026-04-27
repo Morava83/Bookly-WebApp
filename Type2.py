@@ -175,6 +175,40 @@ def create_group_meeting():
         "invite_url": invite_url
     })
 
+#To be put in STUDENT VIEW Dashboard where all Type2 meetings should be display
+@type2_blueprint.route('/group_meeting/student_view', methods=['POST'])
+def get_group_meetings():
+    data = request.get_json()
+    meeting_id = data.get("meetingID")
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+    
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT gm.title, gm.startDate, gm.endDate, a.start_time, a.end_time, m.status, m.zoom_link
+        FROM GroupMeeting gm JOIN Meeting m
+        ON gm.meetingID = m.meetingID
+        JOIN Availability a
+        ON a.meetingID = gm.meetingID
+        WHERE gm.meetingID = ?
+    """, (meeting_id,))
+
+    meetings = cursor.fetchall()
+    results = [
+        {"Title": r[0], "Start Date": r[1], "End Date": r[2], "Start Time": r[3], "Status": r[4], "Zoom Link": r[5]}
+        for r in rows
+    ]
+    conn.close()
+
+    return results
+
+
+
 @type2_blueprint.route('/group_meeting/finalize', methods=['POST'])
 def finalize_meeting():
     data = request.get_json()
@@ -209,12 +243,69 @@ def finalize_meeting():
     # proceed with updating Meeting table
     cursor.execute("""
         UPDATE Meeting
-        SET date = ?, start_time = ?, end_time = ?, status = 'final'
+        SET date = ?, start_time = ?, end_time = ?, status = 'open'
         WHERE meetingID = ?
     """, (data["date"], data["start_time"], data["end_time"], meeting_id))
 
     conn.commit()
     conn.close()
+
+    return jsonify({"status": "ok"})
+
+#Function that changes status from open to booked or closed
+#Using form with radio button or checkbox
+@type2_blueprint.route('/group_meeting/decide', methods=['POST'])
+def decide_meeting():
+    data = request.get_json()
+
+    meeting_id = data.get("meetingID")
+    availability_id = data.get("availabilityID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+    if not availability_id:
+        return jsonify({"error": "Missing availabilityID"}), 400
+    
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Mark selected availability as booked
+        cursor.execute("""
+            UPDATE Availability
+            SET status = 'booked'
+            WHERE availabilityID = ?
+        """, (availability_id,))
+
+        # 2. Close all OTHER availabilities for the SAME meeting
+        cursor.execute("""
+            UPDATE Availability
+            SET status = 'closed'
+            WHERE meetingID = ?
+              AND availabilityID != ?
+        """, (meeting_id, availability_id))
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        conn.close()
+
+    return jsonify({"message": "Meeting decided successfully"})
+
+    #TODO Optionally delete all closed availability
+
+    conn.commit()
+    conn.closed()
+
+    #Send email to Owner once meeting is booked
+    #send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password, zoom)
 
     return jsonify({"status": "ok"})
 
@@ -319,7 +410,6 @@ def get_guests(students):
 #--------Schedule Meeting----------
 
 #======Helper Functions==========
-#TODO Add Zoom Link to notification email
 def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password, zoom):
     msg = MIMEMultipart()
     msg['From'] = from_email
@@ -335,6 +425,7 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
             print(f"Email sent to {to_email}\nZoom Link: {zoom}")
     except Exception as e:
         print(f"Email error: {e}")
+#TODO Check how where to call send_email which should send email to owner that meeting is booked
 
 # Converts weekday name to weekday number
 def weekday_name_to_index(name):
@@ -348,24 +439,4 @@ def weekday_name_to_index(name):
         "sunday": 6,
     }
     return mapping.get((name or "").strip().lower())
-
-# SOCKET NOTIFICATION
-def send_notification(message, user_id):
-    try:
-        from app import socketio
-
-        socketio.emit(
-            "notification",
-            {"message": message},
-            to=str(user_id)
-        )
-
-    except Exception as e:
-        print("Socket error:", e)
-
-
-#TODO Layout availabilities
-#TODO Select availability for student
-#TODO Owner creates meeting function
-
 
