@@ -319,11 +319,6 @@ async function toggleSlotStatus(btn) {
 }
 
 async function deleteSlot(btn, notifyEmail) {
-    /*
-     * BACKEND TODO: replace with fetch to /api/type3/delete_slot
-     * body: { slotID: ... }
-     * If response includes notify_email, open mailto:
-     */
     var row = btn.closest('tr');
     var slotID = Number(row.children[0].textContent.trim());
     

@@ -72,7 +72,13 @@ function renderType3Meetings(bookings) {
             <td>
                 <div class="table-actions">
                     ${ownerEmail ? `<a class="table-action" href="mailto:${ownerEmail}">Email</a>` : ''}
-                    <button class="table-action danger" type="button" data-booking-id="${booking.booking3ID}">Cancel</button>
+                    <button
+                        class="table-action danger"
+                        type="button"
+                        data-booking-id="${booking.booking3ID}"
+                        data-owner-email="${booking.owner_email || ''}">
+                        Cancel
+                    </button>
                 </div>
             </td>
         `;
@@ -87,12 +93,15 @@ function bindType3CancelButtons() {
     buttons.forEach(function (button) {
         button.addEventListener('click', async function () {
             const booking3ID = this.getAttribute('data-booking-id');
-            await cancelType3Booking(booking3ID);
+            const ownerEmail = this.getAttribute('data-owner-email');
+            await cancelType3Booking(booking3ID, ownerEmail);
         });
     });
 }
 
-async function cancelType3Booking(booking3ID) {
+async function cancelType3Booking(booking3ID, ownerEmail) {
+    if (!confirm('Cancel this office hour booking?')) return;
+    
     try {
         const response = await fetch('/api/type3/cancel_booking', {
             method: 'POST',
@@ -110,6 +119,14 @@ async function cancelType3Booking(booking3ID) {
         }
 
         await loadType3Meetings();
+
+        // send email to notify owner
+        if (ownerEmail) {
+            window.location.href = 'mailto:' + ownerEmail +
+                '?subject=' + encodeURIComponent('Bookly - Office Hour Booking Cancelled by Student') +
+                '&body=' + encodeURIComponent('Hello,\n\nOne of your office hour bookings has been cancelled by a student. Please check the updates in your dashboard.\n\nBest,\nBookly Team');
+        }
+
     } catch (error) {
         console.error('Type3 cancel error:', error);
         alert('Could not cancel office hours booking.');
