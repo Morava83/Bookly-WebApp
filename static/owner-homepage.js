@@ -501,20 +501,19 @@ function addGMSlotEntry() {
 }
 
 async function createGroupMeeting() {
-    /*
-     * BACKEND TODO: replace with fetch to /api/type2/create
-     * body: {
-     *   title: document.getElementById('gmTitle').value,
-     *   description: document.getElementById('gmDesc').value,
-     *   slots: [ { date, start_time, end_time }, ... ],
-     *   invitees: [ "email1", "email2", ... ]
-     * }
-     * Response will include invite_token and invite_url
-     */
-
     var title = document.getElementById('gmTitle').value.trim();
+    var description = document.getElementById('gmDesc').value.trim();
+
+    var startDate = document.getElementById('gmStartDate').value;
+    var endDate = document.getElementById('gmEndDate').value;
+
     if (!title) {
         showOwnerError('gmErrorNote', 'Please enter a meeting title.');
+        return;
+    }
+
+    if (!startDate || !endDate) {
+        showOwnerError('gmErrorNote', 'Please select start and end dates.');
         return;
     }
 
@@ -524,19 +523,23 @@ async function createGroupMeeting() {
         return;
     }
 
-        var slots = [];
+    var slots = [];
 
     entries.forEach(function (entry) {
-        var date = entry.querySelector('.gm-date').value;
+        var start_date = entry.querySelector('.gm-start-date').value;
+        var end_date = entry.querySelector('.gm-end-date').value;
+        var day = entry.querySelector('.gm-day').value;
         var start = entry.querySelector('.gm-start').value;
         var end = entry.querySelector('.gm-end').value;
 
-        if (!date || !start || !end) {
+        if (!start_date || !end_date || !start || !end) {
             return;
         }
 
         slots.push({
-            date: date,
+            day: day,
+            start_date: start_date,
+            end_date: end_date,
             start_time: start,
             end_time: end
         });
@@ -547,78 +550,58 @@ async function createGroupMeeting() {
         return;
     }
 
-
     var inviteText = document.getElementById('gmInvitees').value.trim();
-    var invitees = inviteText ? inviteText.split('\n').filter(function (e) { return e.trim(); }) : [];
-
-    var dummyUrl = window.location.origin + '/book/new_' + Date.now();
-
-    hideMsg('gmErrorNote');
-    // var msg = 'Group meeting "' + title + '" created (dummy). Invite URL: ' + dummyUrl;
-    // if (invitees.length > 0) {
-    //     msg += '\nSend invite to ' + invitees.length + ' user(s).';
-    // }
-    // showOwnerMsg('gmSuccessNote', msg);
+    var invitees = inviteText
+        ? inviteText.split('\n').filter(e => e.trim())
+        : [];
 
     try {
-        const response = await fetch('/goup_meeting', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            title: title,
-            description: document.getElementById('gmDesc').value,
-            slots: slots,
-            invitees: invitees
-        })
-    });
+        const response = await fetch('/group_meeting', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title,
+                description,
+                start_date: startDate,
+                end_date: endDate,
+                slots,
+                invitees
+            })
+        });
 
-    const data = await response.json();
+        const data = await response.json();
 
-    if (!response.ok) {
-        showOwnerError('gmErrorNote', data.error || 'Failed to create meeting.');
-        return;
-    }
+        if (!response.ok) {
+            showOwnerError('gmErrorNote', data.error || 'Failed to create meeting.');
+            return;
+        }
 
-    hideMsg('gmErrorNote');
+        var inviteUrl = data.invite_url;
 
-    // Use backend-generated invite URL if available
-    //var inviteUrl = data.invite_url || (window.location.origin + '/book/' + data.token);
-    var inviteUrl = data.invite_url || null;
+        if (!inviteUrl) {
+            showOwnerError('gmErrorNote', 'Meeting created but no invite URL returned.');
+            return;
+        }
 
-    if (!inviteUrl) {
-        showOwnerError('gmErrorNote', 'Meeting created but no invite URL returned.');
-        return;
-    }
-
-    var msg = 'Meeting "' + title + '" created. Invite URL: ' + inviteUrl;
-    showOwnerMsg('gmSuccessNote', msg);
-
-    //email invite
-    if (invitees.length > 0) {
-        window.open(
-            'mailto:' + invitees.join(',') +
-            '?subject=' + encodeURIComponent('Bookly – Please vote: ' + title) +
-            '&body=' + encodeURIComponent('Vote here: ' + inviteUrl),
-            '_self'
+        showOwnerMsg('gmSuccessNote',
+            'Meeting "' + title + '" created. Invite URL: ' + inviteUrl
         );
-    }
+
+        if (invitees.length > 0) {
+            window.open(
+                'mailto:' + invitees.join(',') +
+                '?subject=' + encodeURIComponent('Bookly – Please vote: ' + title) +
+                '&body=' + encodeURIComponent('Vote here: ' + inviteUrl),
+                '_self'
+            );
+        }
 
     } catch (error) {
-    console.error(error);
-    showOwnerError('gmErrorNote', 'Server error.');
+        console.error(error);
+        showOwnerError('gmErrorNote', 'Server error.');
     }
-
-    // Open mailto: with invite link if there are invitees
-    // if (invitees.length > 0) {
-    //     window.open(
-    //         'mailto:' + invitees.join(',') +
-    //         '?subject=' + encodeURIComponent('Bookly – Please vote: ' + title) +
-    //         '&body=' + encodeURIComponent('Vote on your availability here: ' + dummyUrl),
-    //         '_self'
-    //     );
-    // }
 }
 
 /* ═══════════════════════════════════════════
