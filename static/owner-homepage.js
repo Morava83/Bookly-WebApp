@@ -1,6 +1,23 @@
-/* ═══════════════════════════════════════════
-   Owner Homepage JS — all dummy data for now
-   ═══════════════════════════════════════════ */
+
+//helper function
+async function postJson(url, payload) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    let data = {};
+    try {
+        data = await response.json();
+    } catch (error) {
+        data = {};
+    }
+
+    return { response, data };
+}
 
 async function loadOwnerAppointments() {
     // Load Type 3 (office hours) bookings
@@ -219,7 +236,7 @@ function renderOwnerSlots(slots) {
         }
 
         return (
-            '<tr>' +
+            '<tr data-slot-id="' + escapeHtml(slot.slotID) + '">' +
                 '<td>' + escapeHtml(slot.slotID) + '</td>' +
                 '<td>' + escapeHtml(slot.date) + '</td>' +
                 '<td>' + escapeHtml(slot.start_time) + '</td>' +
@@ -231,6 +248,28 @@ function renderOwnerSlots(slots) {
         );
     }).join('');
 }
+
+
+async function updateOwnerSlotVisibility(url, payload, successMessage, fallbackErrorMessage) {
+    try {
+        const result = await postJson(url, payload);
+
+        if (!result.response.ok) {
+            showOwnerError('slotsError', result.data.error || fallbackErrorMessage);
+            return false;
+        }
+
+        hideMsg('slotsError');
+        showOwnerMsg('slotsMsg', successMessage);
+        await loadOwnerSlots();
+        return true;
+    } catch (error) {
+        console.error('Slot visibility update error:', error);
+        showOwnerError('slotsError', fallbackErrorMessage);
+        return false;
+    }
+}
+
 
 async function loadOwnerSlots() {
     try {
@@ -257,94 +296,86 @@ async function loadOwnerSlots() {
    TAB 1: My Slots — activate / deactivate / delete
    ═══════════════════════════════════════════ */
 
-function toggleSlotStatus(btn) {
-    /*
-     * BACKEND TODO: replace with fetch to /api/type3/activate_slot
-     * body: { slotID: ..., is_active: true/false }
-     */
+async function toggleSlotStatus(btn) {
     var row = btn.closest('tr');
-    var badge = row.querySelector('.status-badge');
+    var slotId = row ? row.getAttribute('data-slot-id') : null;
 
-    if (badge.textContent.trim() === 'Active') {
-        badge.textContent = 'Private';
-        badge.className = 'status-badge private';
-        btn.textContent = 'Activate';
-        btn.className = 'table-action vote';
-    } else if (badge.textContent.trim() === 'Private') {
-        badge.textContent = 'Active';
-        badge.className = 'status-badge open';
-        btn.textContent = 'Deactivate';
-        btn.className = 'table-action';
+    if (!slotId) {
+        showOwnerError('slotsError', 'Could not identify slot.');
+        return;
     }
+
+    var isActivating = btn.textContent.trim() === 'Activate';
+
+    await updateOwnerSlotVisibility(
+        '/api/type3/set_slot_status',
+        {
+            slotID: parseInt(slotId, 10),
+            is_active: isActivating
+        },
+        isActivating ? 'Slot activated.' : 'Slot deactivated.',
+        'Could not update slot status.'
+    );
 }
 
-function deleteSlot(btn, notifyEmail) {
+async function deleteSlot(btn, notifyEmail) {
     /*
      * BACKEND TODO: replace with fetch to /api/type3/delete_slot
      * body: { slotID: ... }
      * If response includes notify_email, open mailto:
      */
+    var row = btn.closest('tr');
+    var slotID = Number(row.children[0].textContent.trim());
+    
     if (!confirm('Delete this slot?')) return;
 
-    var row = btn.closest('tr');
-    row.remove();
+    try {
+        var res = await fetch('/api/type3/delete_slot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slotID: slotID })
+        });
 
-    if (notifyEmail) {
-        // Open mailto: to notify the student whose booking was cancelled
-        window.open(
-            'mailto:' + notifyEmail +
-            '?subject=Bookly%20-%20Slot%20cancelled' +
-            '&body=' + encodeURIComponent('Your booked slot has been cancelled by the owner.'),
-            '_self'
-        );
-        showOwnerMsg('slotsMsg', 'Slot deleted. A mailto: window was opened to notify the student.');
-    } else {
-        showOwnerMsg('slotsMsg', 'Slot deleted.');
+        if (!res.ok) {
+            showOwnerError('slotsError', 'Could not delete slot.');
+            return;
+        }
+
+        hideMsg('slotsError');
+        loadOwnerSlots();
+
+        showOwnerMsg('slotsMsg', 'Slot deleted successfully.');
+
+        // ONLY IF the booking was booked by a student, THEN it opens mailto: to notify the student whose booking was cancelled
+        if (notifyEmail) {
+            showOwnerMsg('slotsMsg', 'Slot deleted successfully. A mailto: window was opened to notify the student.');
+
+            window.location.href = 'mailto:' + notifyEmail +
+                '?subject=' + encodeURIComponent('Bookly - Slot cancelled') +
+                '&body=' + encodeURIComponent('Your booked slot has been cancelled by the owner.');
+        }
+
+    } catch (error) {
+        showOwnerError('slotsError', 'Could not delete slot.');
     }
 }
 
-function activateAllSlots() {
-    /*
-     * BACKEND TODO: replace with fetch to /api/type3/activate_all
-     * for each meetingID owned by this user
-     */
-    var badges = document.querySelectorAll('#ownerSlotsTable .status-badge');
-    badges.forEach(function (b) {
-        if (b.textContent.trim() === 'Private') {
-            b.textContent = 'Active';
-            b.className = 'status-badge open';
-        }
-    });
-    // Update buttons
-    var btns = document.querySelectorAll('#ownerSlotsTable .table-action.vote');
-    btns.forEach(function (btn) {
-        if (btn.textContent.trim() === 'Activate') {
-            btn.textContent = 'Deactivate';
-            btn.className = 'table-action';
-        }
-    });
-    showOwnerMsg('slotsMsg', 'All slots activated.');
+async function activateAllSlots() {
+    await updateOwnerSlotVisibility(
+        '/api/type3/set_all_slot_status',
+        { is_active: true },
+        'All slots activated.',
+        'Could not activate all slots.'
+    );
 }
 
-function deactivateAllSlots() {
-    /*
-     * BACKEND TODO: replace with fetch to /api/type3/activate_all { is_active: false }
-     */
-    var rows = document.querySelectorAll('#ownerSlotsTable tbody tr');
-    rows.forEach(function (row) {
-        var badge = row.querySelector('.status-badge');
-        if (badge && badge.textContent.trim() === 'Active') {
-            badge.textContent = 'Private';
-            badge.className = 'status-badge private';
-        }
-        // Find the toggle button (not the Delete button)
-        var toggleBtn = row.querySelector('.table-action:not(.danger):not(.vote)');
-        if (toggleBtn && toggleBtn.textContent.trim() === 'Deactivate') {
-            toggleBtn.textContent = 'Activate';
-            toggleBtn.className = 'table-action vote';
-        }
-    });
-    showOwnerMsg('slotsMsg', 'All slots deactivated.');
+async function deactivateAllSlots() {
+    await updateOwnerSlotVisibility(
+        '/api/type3/set_all_slot_status',
+        { is_active: false },
+        'All slots deactivated.',
+        'Could not deactivate all slots.'
+    );
 }
 
 /* ═══════════════════════════════════════════
