@@ -148,7 +148,7 @@ def create_office_hours():
 
         cur.execute("""
             INSERT INTO Meeting (date, start_time, end_time, status, zoom_link)
-            VALUES (?, ?, ?, 'open', ?)
+            VALUES (?, ?, ?, 'pending', ?)
         """, (
             start_date,
             weekly_slots[0]["start_time"],
