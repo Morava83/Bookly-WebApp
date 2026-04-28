@@ -5,7 +5,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from zoom_utils import create_type2_zoom_meeting
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # -------Type 2: Group Meeting-------------
 
@@ -593,6 +593,64 @@ def decide_meeting():
         )
         booked_count = cursor.rowcount
 
+        recurring_instance_ids = []
+        if num_recurrences and num_recurrences > 1:
+            base_date = datetime.strptime(selected_slot["date"], "%Y-%m-%d").date()
+            for week_offset in range(1, num_recurrences):
+                next_date = (base_date + timedelta(days=7 * week_offset)).strftime("%Y-%m-%d")
+                cursor.execute(
+                    """
+                    INSERT INTO Meeting (date, start_time, end_time, status, zoom_link)
+                    VALUES (?, ?, ?, 'booked', ?)
+                    """,
+                    (next_date, selected_slot["start_time"], selected_slot["end_time"], zoom_link),
+                )
+                recurring_meeting_id = cursor.lastrowid
+                recurring_instance_ids.append(recurring_meeting_id)
+
+                cursor.execute(
+                    """
+                    INSERT INTO GroupMeeting (
+                        meetingID, ownerID, title, description, startDate, endDate,
+                        isRecurring, recurrenceType, numOfRecurrences
+                    )
+                    SELECT ?, ownerID, title, description, ?, ?, isRecurring, recurrenceType, numOfRecurrences
+                    FROM GroupMeeting
+                    WHERE meetingID = ?
+                    """,
+                    (recurring_meeting_id, next_date, next_date, meeting_id),
+                )
+
+                cursor.execute(
+                    """
+                    INSERT INTO Availability (meetingID, date, start_time, end_time, status)
+                    VALUES (?, ?, ?, ?, 'booked')
+                    """,
+                    (recurring_meeting_id, next_date, selected_slot["start_time"], selected_slot["end_time"]),
+                )
+                recurring_availability_id = cursor.lastrowid
+
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO GroupInvite (meetingID, studentID, status)
+                    SELECT ?, studentID, status
+                    FROM GroupInvite
+                    WHERE meetingID = ?
+                    """,
+                    (recurring_meeting_id, meeting_id),
+                )
+
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO Booking2 (studentID, ownerID, meetingID, availabilityID)
+                    SELECT DISTINCT v.studentID, ?, ?, ?
+                    FROM Vote v
+                    WHERE v.availabilityID = ?
+                    """,
+                    (session["user_id"], recurring_meeting_id, recurring_availability_id, availability_id),
+                )
+                booked_count += cursor.rowcount
+
         cursor.execute("SELECT email FROM User WHERE userID = ?", (session["user_id"],))
         owner_email_row = cursor.fetchone()
         owner_email = owner_email_row["email"] if owner_email_row else None
@@ -604,7 +662,8 @@ def decide_meeting():
                 f"Time: {selected_slot['start_time']} - {selected_slot['end_time']}\n"
                 f"Recurrence: {recurrence_text}\n"
                 f"Booked student count: {booked_count}\n"
-                f"Zoom Link: {zoom_link or 'Not provided'}"
+                f"Zoom Link: {zoom_link or 'Not provided'}\n"
+                f"Additional weekly instances created: {len(recurring_instance_ids)}"
             )
             send_email(
                 subject="Group Meeting Finalized",
@@ -629,6 +688,7 @@ def decide_meeting():
                 "recurrenceType": meeting_row["recurrenceType"],
                 "numOfRecurrences": num_recurrences,
                 "booked_count": booked_count,
+                "recurring_instance_ids": recurring_instance_ids,
             }
         ), 200
     except Exception as e:
