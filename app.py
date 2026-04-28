@@ -26,9 +26,9 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key") # Change later
 # SMTP config
 # Zoom app
 app.config.update({
-    "FROM_EMAIL": os.environ.get("FROM_EMAIL", "your_email@mail.mcgill.ca"),
-    "EMAIL_PASSWORD": os.environ.get("EMAIL_PASSWORD", "your_app_password"),
-    "SMTP_SERVER": os.environ.get("SMTP_SERVER", "smtp.office365.com"),
+    "FROM_EMAIL": os.environ.get("FROM_EMAIL", "bookly.app.comp307@gmail.com"),
+    "EMAIL_PASSWORD": os.environ.get("EMAIL_PASSWORD", "wpdz cbcx bpam fbfu"),
+    "SMTP_SERVER": os.environ.get("SMTP_SERVER", "smtp.gmail.com"),
     "SMTP_PORT": int(os.environ.get("SMTP_PORT", "587")),
     "DB_PATH": os.environ.get("DB_PATH", "database/bookly.db"),
     "ZOOM_ACCOUNT_ID": os.environ.get("ZOOM_ACCOUNT_ID", ""),
