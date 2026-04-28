@@ -1,90 +1,6 @@
 var ownerSlots = [];
-/*Function for opening timeslot selection for group meetings:*/
-function open_vote_view(meetingID, title, ownerName) {
-    document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
-    document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'none';
-    document.getElementsByClassName('vote-meeting-tab-view')[0].style.display = 'block';
-    document.getElementsByClassName('right-panel')[0].style.display = 'none';
 
-    document.getElementById('voteIntro').textContent =
-        'Voting on "' + title + '" by ' + ownerName + '.';
-    document.getElementById('voteSelectionText').textContent =
-        'Check the time slots that work for you.';
-    document.getElementById('voteSuccessNote').classList.remove('show');
-    document.getElementById('voteErrorNote').classList.remove('show');    
-
-    var list = document.getElementById('voteSlotList');
-    var selectionText = document.getElementById('voteSelectionText');
-    list.innerHTML = '';
-
-    dummySlots.forEach(function (slot) {
-        var row = document.createElement('div');
-        row.className = 'vote-slot-row';
-
-        var cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.value = slot.slotID;
-        cb.id = 'vote-slot-' + slot.slotID;
-
-        var lbl = document.createElement('label');
-        lbl.className = 'vote-slot-label';
-        lbl.htmlFor = cb.id;
-        lbl.innerHTML =
-            '<span class="vote-slot-date">' + slot.date + '</span>' +
-            '<span class="vote-slot-time">' + slot.start_time + ' – ' + slot.end_time + '</span>';
-
-        cb.addEventListener('change', function () {
-            row.classList.toggle('checked', cb.checked);
-            updateVoteCount();
-        });
-
-        row.addEventListener('click', function (e) {
-            if (e.target !== cb) {
-                cb.checked = !cb.checked;
-                row.classList.toggle('checked', cb.checked);
-                updateVoteCount();
-            }
-        });
-
-        row.appendChild(cb);
-        row.appendChild(lbl);
-        list.appendChild(row);
-    });
-
-    function updateVoteCount() {
-        var count = list.querySelectorAll('input[type=checkbox]:checked').length;
-        if (count === 0) {
-            selectionText.textContent = 'Check the time slots that work for you.';
-        } else {
-            selectionText.textContent = count + ' slot(s) selected.';
-        }
-    }
-
-    document.getElementById('submitVoteBtn').onclick = function () {
-        var checked = list.querySelectorAll('input[type=checkbox]:checked');
-        var ids = [];
-        checked.forEach(function (cb) { ids.push(parseInt(cb.value)); });
-
-        if (ids.length === 0) {
-            document.getElementById('voteErrorNote').textContent = 'Select at least one slot.';
-            document.getElementById('voteErrorNote').classList.add('show');
-            return;
-        }
-
-        // TODO: replace with real fetch to /api/type2/submit_availability
-        document.getElementById('voteErrorNote').classList.remove('show');
-        document.getElementById('voteSuccessNote').textContent =
-            'Submitted ' + ids.length + ' slot(s) successfully.';
-        document.getElementById('voteSuccessNote').classList.add('show');
-    };
-
-    document.getElementById('backToApptsBtn').onclick = function () {
-        document.getElementsByClassName('right-panel')[0].style.display = 'block';
-        view_appointments();
-    };
-}
-
-/* Professor search bar — currently uses dummy data */
+/* Professor search bar — Searches owners from the backend */
 function initProfSearch() {
     var selectedOwner = null;
     var searchTimer = null;
@@ -94,6 +10,10 @@ function initProfSearch() {
     var profBanner = document.getElementById('profBanner');
     var profBannerText = document.getElementById('profBannerText');
     var profClear = document.getElementById('profClear');
+
+    if (!profSearch || !profDropdown || !profBanner || !profBannerText || !profClear) {
+        return;
+    }
 
     window.getSelectedOwner = function () { return selectedOwner; };
 
@@ -333,25 +253,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 });
 
-/* ======== Invitational Link ========= */
-document.addEventListener('DOMContentLoaded', async function () {
-    if (window.BOOKLY_INVITE_OWNER_ID) {
-        if (typeof make_appointment === 'function') {
-            make_appointment();
-        }
-
-        if (typeof loadAvailableSlots === 'function') {
-            await loadAvailableSlots();
-        }
-
-        const intro = document.getElementById('availabilityIntro');
-        if (intro) {
-            intro.textContent = 'You are viewing activated office-hour slots for this owner.';
-        }
-    }
-});
-
-
 async function view_appointments() {
     const makeView = document.querySelector('.make-appointment-tab-view');
     const appointmentView = document.querySelector('.view-appointment-tab-view');
@@ -546,9 +447,7 @@ function createCalendar(opts) {
     }
 
     return {
-        render: renderCalendar,
-        getSelectedDate: function () { return selectedDate; },
-        clearSelection: function () { selectedDate = null; renderCalendar(); }
+        getSelectedDate: function () { return selectedDate; }
     };
 }
 
@@ -566,11 +465,9 @@ function createCalendar(opts) {
     var availabilitySlotText = document.getElementById('availabilitySlotText');
     var bookArea = document.getElementById('bookArea');
     var bookButton = document.getElementById('bookButton');
-    var sendRequestButton = document.getElementById('sendRequestButton');
     var bookingNote = document.getElementById('bookingNote');
     var errorNote = document.getElementById('errorNote');
     var ownerSelect = document.getElementById('ownerSelect');
-    var meetingMessage = document.getElementById('meetingMessage');
 
     var currentUserName = document.getElementById('currentUserName');
     var currentUserEmail = document.getElementById('currentUserEmail');
@@ -654,16 +551,6 @@ function createCalendar(opts) {
         }
 
         var bookedID = selectedSlot.slotID;
-        ownerSlots = ownerSlots.filter(function (s) { return s.slotID !== bookedID; });
-
-        // Refresh slots so the booked one disappears
-        var bookedSlotText = formatSelectedSlot();
-        selectedSlot = null;
-        renderSlots();
-        renderAvailability();
-        syncSharedBookingState();
-
-        var bookedID = selectedSlot.slotID;
         var bookedSlotText = formatSelectedSlot();
 
         ownerSlots = ownerSlots.filter(function (s) {
@@ -686,6 +573,7 @@ function createCalendar(opts) {
         } else {
             showSuccess('Booked slot: ' + bookedSlotText + '.');
         }
+
     } catch (err) {
         console.error('Booking error:', err);
         showError('Could not connect to the server.');
@@ -761,16 +649,6 @@ function createCalendar(opts) {
         } catch (error) {
             console.error('Socket setup error:', error);
         }
-    }
-
-    function formatTimeStr(timeStr) {
-        var parts = timeStr.split(':');
-        var h = parseInt(parts[0], 10);
-        var m = parts[1];
-        var suffix = h >= 12 ? 'PM' : 'AM';
-        var displayH = h % 12;
-        if (displayH === 0) displayH = 12;
-        return displayH + ':' + m + ' ' + suffix;
     }
 
     function renderSlots() {
