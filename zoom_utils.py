@@ -1,5 +1,6 @@
 import requests
 from requests.auth import HTTPBasicAuth
+from datetime import datetime
 
 TOKEN_URL = "https://zoom.us/oauth/token"
 BASE_URL = "https://api.zoom.us/v2"
@@ -23,8 +24,18 @@ def get_zoom_token(app):
 #=============================
 # Type 1 : Individual Meetings
 
-def create_type1_zoom_meeting(app, owner_name, student_email, meeting_date, start_time):
+def create_type1_zoom_meeting(app, owner_name, student_email, meeting_date, start_time, end_time):
     access_token = get_zoom_token(app)
+
+    # Convert "2026-04-28" + "14:00" into datetime objects
+    start_dt = datetime.strptime(f"{meeting_date} {start_time}", "%Y-%m-%d %H:%M")
+    end_dt = datetime.strptime(f"{meeting_date} {end_time}", "%Y-%m-%d %H:%M")
+
+    # Calculate duration in minutes
+    duration_minutes = int((end_dt - start_dt).total_seconds() / 60)
+
+    if duration_minutes <= 0:
+        raise ValueError("End time must be after start time.")
 
     response = requests.post(
         f"{BASE_URL}/users/me/meetings",
@@ -36,7 +47,7 @@ def create_type1_zoom_meeting(app, owner_name, student_email, meeting_date, star
             "topic": f"Bookly Individual Meeting - {owner_name} with {student_email}",
             "type": 2,
             "start_time": f"{meeting_date}T{start_time}:00",
-            "duration": 15,
+            "duration": duration_minutes,
             "settings": {
                 "waiting_room": True,
                 "join_before_host": False,
@@ -54,7 +65,6 @@ def create_type1_zoom_meeting(app, owner_name, student_email, meeting_date, star
         "zoom_link": data["join_url"],
         "start_url": data.get("start_url"),
     }
-
 
 
 #=============================

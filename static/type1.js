@@ -1,9 +1,9 @@
 async function sendType1MeetingRequest() {
     const ownerSelect = document.getElementById('ownerSelect');
     const meetingMessage = document.getElementById('meetingMessage');
-    const bookingNote = document.getElementById('bookingNote');
-    const errorNote = document.getElementById('errorNote');
-
+    const bookingNote = document.getElementById('type1RequestSuccessNote');
+    const errorNote = document.getElementById('type1RequestErrorNote');
+    
     if (!ownerSelect || !meetingMessage) {
         console.error('Type1 form elements not found.');
         return;
@@ -42,17 +42,37 @@ async function sendType1MeetingRequest() {
         return;
     }
 
-    if (!window.selectedDate || !window.selectedSlotValue) {
+    const meetingDateInput = document.getElementById('type1MeetingDate');
+    const startTimeInput = document.getElementById('type1StartTime');
+    const endTimeInput = document.getElementById('type1EndTime');
+
+    if (!meetingDateInput || !startTimeInput || !endTimeInput) {
         if (errorNote) {
-            errorNote.textContent = 'Please select a date and time slot first.';
+            errorNote.textContent = 'Date/time form fields are missing.';
             errorNote.classList.add('show');
         }
         return;
     }
 
-    const meetingDate = formatDateForApi(window.selectedDate);
-    const startTime = window.selectedSlotValue;
-    const endTime = calculateEndTime(startTime);
+    const meetingDate = meetingDateInput.value;
+    const startTime = startTimeInput.value;
+    const endTime = endTimeInput.value;
+
+    if (!meetingDate || !startTime || !endTime) {
+        if (errorNote) {
+            errorNote.textContent = 'Please choose a date, start time, and end time.';
+            errorNote.classList.add('show');
+        }
+        return;
+    }
+
+    if (endTime <= startTime) {
+        if (errorNote) {
+            errorNote.textContent = 'End time must be after start time.';
+            errorNote.classList.add('show');
+        }
+        return;
+    }
 
     try {
         const response = await fetch('/api/type1/request_meeting', {
@@ -73,19 +93,27 @@ async function sendType1MeetingRequest() {
         const data = await response.json();
 
         if (!response.ok) {
-            if (errorNote) {
-                errorNote.textContent = data.error || 'Could not send meeting request.';
-                errorNote.classList.add('show');
-            }
-            return;
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to send meeting request');
         }
 
         if (bookingNote) {
-            bookingNote.textContent = `Meeting request sent successfully. Meeting ID: ${data.meetingID}`;
+            bookingNote.textContent = 'Meeting request sent successfully! The owner has been notified.';
             bookingNote.classList.add('show');
         }
 
+        if (errorNote) {
+            errorNote.textContent = '';
+            errorNote.classList.remove('show');
+        }
+
+        ownerSelect.value = '';
         meetingMessage.value = '';
+        meetingDateInput.value = '';
+        startTimeInput.value = '';
+        endTimeInput.value = '';
+
+
         await loadType1Meetings();
     } catch (error) {
         console.error('Type1 request error:', error);

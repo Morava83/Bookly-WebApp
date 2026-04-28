@@ -859,7 +859,7 @@ async function loadPendingRequests() {
 
     tbody.innerHTML = `
         <tr>
-            <td colspan="5" class="appt-table-empty">Loading pending requests...</td>
+            <td colspan="7" class="appt-table-empty">Loading pending requests...</td>
         </tr>
     `;
 
@@ -870,7 +870,7 @@ async function loadPendingRequests() {
         if (!meResponse.ok) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="appt-table-empty">Could not load owner info.</td>
+                    <td colspan="7" class="appt-table-empty">Could not load owner info.</td>
                 </tr>
             `;
             return;
@@ -882,7 +882,7 @@ async function loadPendingRequests() {
         if (!response.ok) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="appt-table-empty">Could not load pending requests.</td>
+                    <td colspan="7" class="appt-table-empty">Could not load pending requests.</td>
                 </tr>
             `;
             return;
@@ -891,7 +891,7 @@ async function loadPendingRequests() {
         if (!requests || requests.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="appt-table-empty">No pending requests.</td>
+                    <td colspan="7" class="appt-table-empty">No pending requests.</td>
                 </tr>
             `;
             return;
@@ -912,6 +912,9 @@ async function loadPendingRequests() {
                 </td>
                 <td>${request.message || ''}</td>
                 <td>${request.date || ''}</td>
+                <td>${request.start_time || ''}</td>
+                <td>${request.end_time || ''}</td>
+
                 <td>
                     <div class="table-actions">
                         <button class="table-action vote" onclick="acceptRequest(${request.meetingID}, '${request.student_email}')">Accept</button>
@@ -928,7 +931,7 @@ async function loadPendingRequests() {
         console.error('Load pending requests error:', error);
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="appt-table-empty">Could not connect to server.</td>
+                <td colspan="7" class="appt-table-empty">Could not connect to server.</td>
             </tr>
         `;
     }

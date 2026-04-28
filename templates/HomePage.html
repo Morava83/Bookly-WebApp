@@ -239,6 +239,28 @@
                         <option value="">Choose an owner</option>
                     </select>
 
+                    <label class="request-label" for="type1MeetingDate">Meeting date</label>
+                    <input
+                        type="date"
+                        id="type1MeetingDate"
+                        class="request-select"
+                    >
+
+                    <label class="request-label" for="type1StartTime">Start time</label>
+                    <input
+                        type="time"
+                        id="type1StartTime"
+                        class="request-select"
+                    >
+
+                    <label class="request-label" for="type1EndTime">End time</label>
+                    <input
+                        type="time"
+                        id="type1EndTime"
+                        class="request-select"
+                    >
+
+
                     <label class="request-label" for="meetingMessage">Request message</label>
                     <textarea
                         id="meetingMessage"
@@ -247,6 +269,10 @@
                     ></textarea>
 
                     <button type="button" class="send-button" id="sendRequestButton">Send Meeting Request</button>
+
+                    <div class="booking-note" id="type1RequestSuccessNote"></div>
+                    <div class="error-note" id="type1RequestErrorNote"></div>
+
                 </div>
             </section>
         </div>

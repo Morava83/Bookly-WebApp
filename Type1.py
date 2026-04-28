@@ -4,6 +4,7 @@ import sqlite3
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 
 # Zoom Feature
 from zoom_utils import create_type1_zoom_meeting
@@ -147,6 +148,16 @@ def request_meeting():
 
     if not user_email or not owner_email or not message or not meeting_date or not start_time or not end_time:
         return jsonify({"error": "Missing required fields"}), 400
+    
+    try:
+        start_dt = datetime.strptime(f"{meeting_date} {start_time}", "%Y-%m-%d %H:%M")
+        end_dt = datetime.strptime(f"{meeting_date} {end_time}", "%Y-%m-%d %H:%M")
+
+        if end_dt <= start_dt:
+            return jsonify({"error": "End time must be after start time"}), 400
+
+    except ValueError:
+        return jsonify({"error": "Invalid date or time format"}), 400
 
 
     student_id = get_student_id(user_email)
@@ -169,7 +180,8 @@ def request_meeting():
         owner_row["name"],
         user_email,
         meeting_date,
-        start_time
+        start_time,
+        end_time
     )
 
     zoom_link = zoom_data["zoom_link"]
