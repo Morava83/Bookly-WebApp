@@ -1,5 +1,7 @@
+// =========================
+// Shared helpers
+// =========================
 
-//helper function
 async function postJson(url, payload) {
     const response = await fetch(url, {
         method: 'POST',
@@ -33,232 +35,11 @@ async function readJsonResponse(response) {
     }
 }
 
-async function loadOwnerAppointments() {
-    // Load Type 3 (office hours) bookings
-    var ohBody = document.getElementById('ownerOHTableBody');
-    try {
-        var res = await fetch('/api/type3/my_bookings');
-        var data = await res.json();
-        ohBody.innerHTML = '';
-
-        if (!data.bookings || data.bookings.length === 0) {
-            ohBody.innerHTML = '<tr><td colspan="7" class="appt-table-empty">No office hours bookings.</td></tr>';
-        } else {
-            data.bookings.forEach(function (b) {
-                var tr = document.createElement('tr');
-                tr.innerHTML =
-                    '<td>' + b.slotID + '</td>' +
-                    '<td>' + (b.student_name || '') + '</td>' +
-                    '<td>' + b.start_date + '</td>' +
-                    '<td>' + b.start_time + '</td>' +
-                    '<td>' + b.end_time + '</td>' +
-                    '<td>' + (b.zoom_link ? '<a class="table-link" href="' + b.zoom_link + '" target="_blank">Join</a>' : '<span class="no-link">—</span>') + '</td>' +
-                    '<td><div class="table-actions">' +
-                        '<a class="table-action" href="mailto:' + (b.student_email || '') + '">Email</a>' +
-                        '<button class="table-action danger" onclick="cancelOHBooking(' + b.booking3ID + ', \'' + (b.student_email || '') + '\')">Cancel</button>' +
-                    '</div></td>';
-                ohBody.appendChild(tr);
-            });
-        }
-    } catch (err) {
-        ohBody.innerHTML = '<tr><td colspan="7" class="appt-table-empty">Error loading bookings.</td></tr>';
-    }
-
-    // TODO: load Type 1 and Type 2 appointments similarly
-}
-
-async function cancelOHBooking(bookingID, studentEmail) {
-    if (!confirm('Cancel this booking?')) return;
-
-    var res = await fetch('/api/type3/cancel_booking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ booking3ID: bookingID })
-    });
-
-    if (res.ok) {
-        loadOwnerAppointments();
-        window.location.href = 'mailto:' + studentEmail +
-            '?subject=' + encodeURIComponent('Bookly - Booking cancelled') +
-            '&body=' + encodeURIComponent('Your office hours booking has been cancelled.');
-    }
-}
-
-/* ── Tab switching ── */
-
-function ownerSwitchTab(tabId) {
-    const views = document.querySelectorAll('.owner-tab-view');
-
-    views.forEach(function (view) {
-        view.style.display = 'none';
-    });
-function ownerSwitchTab(tabId) {
-    const views = document.querySelectorAll('.owner-tab-view');
-
-    views.forEach(function (view) {
-        view.style.display = 'none';
-    });
-
-    const selectedView = document.getElementById(tabId);
-    if (selectedView) {
-        selectedView.style.display = 'block';
-    }
-    const selectedView = document.getElementById(tabId);
-    if (selectedView) {
-        selectedView.style.display = 'block';
-    }
-
-    if (tabId === 'manageGMView') {
-        if (typeof loadOwnerGroupMeetings === 'function') {
-            loadOwnerGroupMeetings();
-        }
-    }
-
-    if (tabId === 'pendingView') {
-        if (typeof loadPendingRequests === 'function') {
-            loadPendingRequests();
-        }
-    }
-
-    if (tabId === 'ownerApptsView') {
-        if (typeof loadOwnerAppointments === 'function') {
-            loadOwnerAppointments();
-        }
-
-        if (typeof loadOwnerType1Meetings === 'function') {
-            loadOwnerType1Meetings();
-        }
-
-        if (typeof loadOwnerGroupBookings === 'function') {
-            loadOwnerGroupBookings();
-        }
-
-        if (typeof loadOwnerOHBookings === 'function') {
-            loadOwnerOHBookings();
-        }
-    }
-}
-
-    if (tabId === 'manageGMView') {
-        if (typeof loadOwnerGroupMeetings === 'function') {
-            loadOwnerGroupMeetings();
-        }
-    }
-
-    if (tabId === 'pendingView') {
-        if (typeof loadPendingRequests === 'function') {
-            loadPendingRequests();
-        }
-    }
-
-    if (tabId === 'ownerApptsView') {
-        if (typeof loadOwnerAppointments === 'function') {
-            loadOwnerAppointments();
-        }
-
-        if (typeof loadOwnerType1Meetings === 'function') {
-            loadOwnerType1Meetings();
-        }
-
-        if (typeof loadOwnerGroupBookings === 'function') {
-            loadOwnerGroupBookings();
-        }
-
-        if (typeof loadOwnerOHBookings === 'function') {
-            loadOwnerOHBookings();
-        }
-    }
-}
-
-
-/* ── Notifications (same as student) ── */
-
-function toggleNotifications(e) {
-    e.stopPropagation();
-    var panel = document.getElementById('notifPanel');
-    panel.classList.toggle('open');
-}
-
-document.addEventListener('click', function (e) {
-    var panel = document.getElementById('notifPanel');
-    if (!panel.contains(e.target)) {
-        panel.classList.remove('open');
-    }
-});
-
-/* ── Current logged-in owner ── */
-
-var currentUserName = document.getElementById('currentUserName');
-var currentUserEmail = document.getElementById('currentUserEmail');
-var currentUserRole = document.getElementById('currentUserRole');
-
-loadCurrentUser();
-
-async function loadCurrentUser() {
-    try {
-        const response = await fetch('/api/me');
-        const data = await response.json();
-
-        if (!response.ok) {
-            currentUserName.textContent = 'Unavailable';
-            currentUserEmail.textContent = 'Unavailable';
-            currentUserRole.textContent = 'Unavailable';
-            return;
-        }
-
-        currentUserName.textContent = data.name || 'Unknown';
-        currentUserEmail.textContent = data.email || 'Unknown';
-        currentUserRole.textContent = formatRoleLabel(data.role);
-    } catch (error) {
-        console.error('Error loading current user:', error);
-        currentUserName.textContent = 'Unavailable';
-        currentUserEmail.textContent = 'Unavailable';
-        currentUserRole.textContent = 'Unavailable';
-    }
-}
-
-function formatRoleLabel(role) {
-    if (!role) return 'Unknown';
-    return role.charAt(0).toUpperCase() + role.slice(1);
-}
-
-/* ── Logout ── */
-
-document.getElementById('logoutButton').addEventListener('click', async function () {
-    try {
-        const response = await fetch('/api/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            console.error('Logout failed');
-        }
-    } catch (error) {
-        console.error('Logout error:', error);
-    } finally {
-        window.location.href = '/';
-    }
-});
-
-/* ── Copy invite URL ── */
-
-function copyInviteUrl(btn) {
-    var textEl = btn.previousElementSibling || btn.parentElement.querySelector('.invite-url-text');
-    var url = window.location.origin + textEl.textContent.trim();
-    navigator.clipboard.writeText(url).then(function () {
-        btn.textContent = 'Copied!';
-        setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
-    });
-}
-
-
-loadOwnerSlots();
-
 function escapeHtml(value) {
-    if (value === null || value === undefined) return '';
+    if (value === null || value === undefined) {
+        return '';
+    }
+
     return String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -276,29 +57,229 @@ function escapeForJs(value) {
         .replaceAll('\r', ' ');
 }
 
-function escapeForJs(value) {
-    return String(value ?? '')
-        .replaceAll('\\', '\\\\')
-        .replaceAll("'", "\\'")
-        .replaceAll('"', '\\"')
-        .replaceAll('\n', ' ')
-        .replaceAll('\r', ' ');
+function showOwnerMsg(id, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.textContent = text;
+    el.classList.add('show');
+}
+
+function showOwnerError(id, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.textContent = text;
+    el.classList.add('show');
+}
+
+function hideMsg(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.textContent = '';
+    el.classList.remove('show');
+}
+
+function formatRoleLabel(role) {
+    if (!role) return 'Unknown';
+    return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 function formatStatusBadge(status) {
-    var normalized = (status || '').toLowerCase();
+    const normalized = String(status || '').toLowerCase();
 
     if (normalized === 'booked') {
         return '<span class="status-badge booked">Booked</span>';
     }
+
     if (normalized === 'private') {
         return '<span class="status-badge private">Private</span>';
     }
+
+    if (normalized === 'cancelled') {
+        return '<span class="status-badge cancelled">Cancelled</span>';
+    }
+
+    if (normalized === 'accepted') {
+        return '<span class="status-badge accepted">Accepted</span>';
+    }
+
+    if (normalized === 'pending') {
+        return '<span class="status-badge pending">Pending</span>';
+    }
+
     return '<span class="status-badge open">Active</span>';
 }
 
+
+// =========================
+// Current logged-in owner
+// =========================
+
+async function loadCurrentUser() {
+    const currentUserName = document.getElementById('currentUserName');
+    const currentUserEmail = document.getElementById('currentUserEmail');
+    const currentUserRole = document.getElementById('currentUserRole');
+
+    try {
+        const response = await fetch('/api/me');
+        const data = await response.json();
+
+        if (!response.ok) {
+            if (currentUserName) currentUserName.textContent = 'Unavailable';
+            if (currentUserEmail) currentUserEmail.textContent = 'Unavailable';
+            if (currentUserRole) currentUserRole.textContent = 'Unavailable';
+            return;
+        }
+
+        if (currentUserName) currentUserName.textContent = data.name || 'Unknown';
+        if (currentUserEmail) currentUserEmail.textContent = data.email || 'Unknown';
+        if (currentUserRole) currentUserRole.textContent = formatRoleLabel(data.role);
+
+    } catch (error) {
+        console.error('Error loading current user:', error);
+
+        if (currentUserName) currentUserName.textContent = 'Unavailable';
+        if (currentUserEmail) currentUserEmail.textContent = 'Unavailable';
+        if (currentUserRole) currentUserRole.textContent = 'Unavailable';
+    }
+}
+
+
+// =========================
+// Tab switching
+// =========================
+
+function ownerSwitchTab(tabId) {
+    const views = document.querySelectorAll('.owner-tab-view');
+
+    views.forEach(function (view) {
+        view.style.display = 'none';
+    });
+
+    const selectedView = document.getElementById(tabId);
+    if (selectedView) {
+        selectedView.style.display = 'block';
+    }
+
+    if (tabId === 'mySlotsView') {
+        if (typeof loadOwnerSlots === 'function') {
+            loadOwnerSlots();
+        }
+    }
+
+    if (tabId === 'manageGMView') {
+        if (typeof loadOwnerGroupMeetings === 'function') {
+            loadOwnerGroupMeetings();
+        }
+    }
+
+    if (tabId === 'pendingView') {
+        if (typeof loadPendingRequests === 'function') {
+            loadPendingRequests();
+        }
+    }
+
+    if (tabId === 'ownerApptsView') {
+        if (typeof loadOwnerAppointments === 'function') {
+            loadOwnerAppointments();
+        }
+
+        if (typeof loadOwnerType1Meetings === 'function') {
+            loadOwnerType1Meetings();
+        }
+
+        if (typeof loadOwnerGroupBookings === 'function') {
+            loadOwnerGroupBookings();
+        }
+    }
+}
+
+
+// =========================
+// Notifications
+// =========================
+
+function toggleNotifications(e) {
+    e.stopPropagation();
+
+    const panel = document.getElementById('notifPanel');
+    if (panel) {
+        panel.classList.toggle('open');
+    }
+}
+
+document.addEventListener('click', function (e) {
+    const panel = document.getElementById('notifPanel');
+
+    if (panel && !panel.contains(e.target)) {
+        panel.classList.remove('open');
+    }
+});
+
+
+// =========================
+// Logout
+// =========================
+
+document.addEventListener('DOMContentLoaded', function () {
+    const logoutButton = document.getElementById('logoutButton');
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async function () {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('Logout failed');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            } finally {
+                window.location.href = '/';
+            }
+        });
+    }
+});
+
+
+// =========================
+// Copy invite URL
+// =========================
+
+function copyInviteUrl(btn) {
+    const textEl = btn.previousElementSibling || btn.parentElement.querySelector('.invite-url-text');
+
+    if (!textEl) {
+        return;
+    }
+
+    const rawText = textEl.textContent.trim();
+    const url = rawText.startsWith('http')
+        ? rawText
+        : window.location.origin + rawText;
+
+    navigator.clipboard.writeText(url).then(function () {
+        btn.textContent = 'Copied!';
+        setTimeout(function () {
+            btn.textContent = 'Copy';
+        }, 2000);
+    });
+}
+
+
+// =========================
+// Type 3: My Slots
+// =========================
+
 function renderOwnerSlots(slots) {
-    var tbody = document.querySelector('#ownerSlotsTable tbody');
+    const tbody = document.querySelector('#ownerSlotsTable tbody');
     if (!tbody) return;
 
     if (!slots || slots.length === 0) {
@@ -308,19 +289,20 @@ function renderOwnerSlots(slots) {
     }
 
     tbody.innerHTML = slots.map(function (slot) {
-        var bookedByHtml = '<span class="no-link">—</span>';
+        let bookedByHtml = '<span class="no-link">—</span>';
+
         if (slot.student_name && slot.student_email) {
             bookedByHtml =
                 escapeHtml(slot.student_name) +
                 ' <a class="table-link" href="mailto:' + encodeURIComponent(slot.student_email) + '">(email)</a>';
         }
 
-        var actionsHtml = '';
+        let actionsHtml = '';
 
         if (slot.status === 'Booked') {
             actionsHtml =
                 '<div class="table-actions">' +
-                    '<button class="table-action danger" onclick="deleteSlot(this, \'' + escapeHtml(slot.student_email || '') + '\')">Delete</button>' +
+                    '<button class="table-action danger" onclick="deleteSlot(this, \'' + escapeForJs(slot.student_email || '') + '\')">Delete</button>' +
                 '</div>';
         } else if (slot.status === 'Private') {
             actionsHtml =
@@ -350,6 +332,24 @@ function renderOwnerSlots(slots) {
     }).join('');
 }
 
+async function loadOwnerSlots() {
+    try {
+        const response = await fetch('/api/type3/owner_slots');
+        const data = await response.json();
+
+        if (!response.ok) {
+            showOwnerError('slotsError', data.error || 'Could not load slots.');
+            return;
+        }
+
+        hideMsg('slotsError');
+        renderOwnerSlots(data.slots || []);
+
+    } catch (error) {
+        console.error('Error loading owner slots:', error);
+        showOwnerError('slotsError', 'Could not load slots.');
+    }
+}
 
 async function updateOwnerSlotVisibility(url, payload, successMessage, fallbackErrorMessage) {
     try {
@@ -363,7 +363,9 @@ async function updateOwnerSlotVisibility(url, payload, successMessage, fallbackE
         hideMsg('slotsError');
         showOwnerMsg('slotsMsg', successMessage);
         await loadOwnerSlots();
+
         return true;
+
     } catch (error) {
         console.error('Slot visibility update error:', error);
         showOwnerError('slotsError', fallbackErrorMessage);
@@ -371,42 +373,16 @@ async function updateOwnerSlotVisibility(url, payload, successMessage, fallbackE
     }
 }
 
-
-async function loadOwnerSlots() {
-    try {
-        const response = await fetch('/api/type3/owner_slots');
-        const data = await response.json();
-
-        if (!response.ok) {
-            showOwnerError('slotsError', data.error || 'Could not load slots.');
-            return;
-        }
-
-        hideMsg('slotsError');
-        renderOwnerSlots(data.slots || []);
-    } catch (error) {
-        console.error('Error loading owner slots:', error);
-        showOwnerError('slotsError', 'Could not load slots.');
-    }
-}
-
-
-
-
-/* ═══════════════════════════════════════════
-   TAB 1: My Slots — activate / deactivate / delete
-   ═══════════════════════════════════════════ */
-
 async function toggleSlotStatus(btn) {
-    var row = btn.closest('tr');
-    var slotId = row ? row.getAttribute('data-slot-id') : null;
+    const row = btn.closest('tr');
+    const slotId = row ? row.getAttribute('data-slot-id') : null;
 
     if (!slotId) {
         showOwnerError('slotsError', 'Could not identify slot.');
         return;
     }
 
-    var isActivating = btn.textContent.trim() === 'Activate';
+    const isActivating = btn.textContent.trim() === 'Activate';
 
     await updateOwnerSlotVisibility(
         '/api/type3/set_slot_status',
@@ -417,43 +393,6 @@ async function toggleSlotStatus(btn) {
         isActivating ? 'Slot activated.' : 'Slot deactivated.',
         'Could not update slot status.'
     );
-}
-
-async function deleteSlot(btn, notifyEmail) {
-    var row = btn.closest('tr');
-    var slotID = Number(row.children[0].textContent.trim());
-    
-    if (!confirm('Delete this slot?')) return;
-
-    try {
-        var res = await fetch('/api/type3/delete_slot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slotID: slotID })
-        });
-
-        if (!res.ok) {
-            showOwnerError('slotsError', 'Could not delete slot.');
-            return;
-        }
-
-        hideMsg('slotsError');
-        loadOwnerSlots();
-
-        showOwnerMsg('slotsMsg', 'Slot deleted successfully.');
-
-        // ONLY IF the booking was booked by a student, THEN it opens mailto: to notify the student whose booking was cancelled
-        if (notifyEmail) {
-            showOwnerMsg('slotsMsg', 'Slot deleted successfully. A mailto: window was opened to notify the student.');
-
-            window.location.href = 'mailto:' + notifyEmail +
-                '?subject=' + encodeURIComponent('Bookly - Slot cancelled') +
-                '&body=' + encodeURIComponent('Your booked slot has been cancelled by the owner.');
-        }
-
-    } catch (error) {
-        showOwnerError('slotsError', 'Could not delete slot.');
-    }
 }
 
 async function activateAllSlots() {
@@ -474,21 +413,69 @@ async function deactivateAllSlots() {
     );
 }
 
-/* ═══════════════════════════════════════════
-   TAB 2: Create Office Hours
-   ═══════════════════════════════════════════ */
+async function deleteSlot(btn, notifyEmail) {
+    const row = btn.closest('tr');
+    const slotID = row ? Number(row.children[0].textContent.trim()) : null;
+
+    if (!slotID) {
+        showOwnerError('slotsError', 'Could not identify slot.');
+        return;
+    }
+
+    if (!confirm('Delete this slot?')) return;
+
+    try {
+        const response = await fetch('/api/type3/delete_slot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slotID: slotID })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showOwnerError('slotsError', data.error || 'Could not delete slot.');
+            return;
+        }
+
+        hideMsg('slotsError');
+        showOwnerMsg('slotsMsg', 'Slot deleted successfully.');
+        await loadOwnerSlots();
+
+        if (notifyEmail) {
+            window.location.href =
+                'mailto:' + notifyEmail +
+                '?subject=' + encodeURIComponent('Bookly - Slot cancelled') +
+                '&body=' + encodeURIComponent('Your booked slot has been cancelled by the owner.');
+        }
+
+    } catch (error) {
+        console.error('Delete slot error:', error);
+        showOwnerError('slotsError', 'Could not delete slot.');
+    }
+}
+
+
+// =========================
+// Type 3: Create Office Hours
+// =========================
 
 function addOHSlotEntry() {
-    var container = document.getElementById('ohSlotEntries');
-    var entry = document.createElement('div');
+    const container = document.getElementById('ohSlotEntries');
+    if (!container) return;
+
+    const entry = document.createElement('div');
     entry.className = 'oh-slot-entry';
+
     entry.innerHTML =
         '<div class="oh-slot-row">' +
             '<div>' +
                 '<label class="request-label">Day</label>' +
                 '<select class="request-select oh-day">' +
-                    '<option>Monday</option><option>Tuesday</option>' +
-                    '<option>Wednesday</option><option>Thursday</option>' +
+                    '<option>Monday</option>' +
+                    '<option>Tuesday</option>' +
+                    '<option>Wednesday</option>' +
+                    '<option>Thursday</option>' +
                     '<option>Friday</option>' +
                 '</select>' +
             '</div>' +
@@ -501,34 +488,36 @@ function addOHSlotEntry() {
                 '<input type="time" class="request-select oh-end" value="10:15">' +
             '</div>' +
             '<div style="align-self:end;">' +
-                '<button class="table-action danger" onclick="this.closest(\'.oh-slot-entry\').remove()" ' +
-                    'style="margin-bottom:12px;">✕</button>' +
+                '<button class="table-action danger" onclick="this.closest(\'.oh-slot-entry\').remove()" style="margin-bottom:12px;">✕</button>' +
             '</div>' +
         '</div>';
+
     container.appendChild(entry);
 }
 
 async function createOfficeHours() {
-    var startDate = document.getElementById('ohStartDate').value;
-    var weeks = parseInt(document.getElementById('ohWeeks').value, 10);
+    const startDate = document.getElementById('ohStartDate').value;
+    const weeks = parseInt(document.getElementById('ohWeeks').value, 10);
 
     if (!startDate || !weeks || weeks <= 0) {
         showOwnerError('ohErrorNote', 'Please fill in start date and number of weeks.');
         return;
     }
 
-    var entries = document.querySelectorAll('.oh-slot-entry');
+    const entries = document.querySelectorAll('.oh-slot-entry');
+
     if (entries.length === 0) {
         showOwnerError('ohErrorNote', 'Add at least one slot definition.');
         return;
     }
 
-    var weeklySlots = [];
-    for (var i = 0; i < entries.length; i++) {
-        var entry = entries[i];
-        var day = entry.querySelector('.oh-day').value;
-        var start = entry.querySelector('.oh-start').value;
-        var end = entry.querySelector('.oh-end').value;
+    const weeklySlots = [];
+
+    for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        const day = entry.querySelector('.oh-day')?.value;
+        const start = entry.querySelector('.oh-start')?.value;
+        const end = entry.querySelector('.oh-end')?.value;
 
         if (!day || !start || !end) {
             showOwnerError('ohErrorNote', 'Each slot must include a day, start time, and end time.');
@@ -574,27 +563,30 @@ async function createOfficeHours() {
         );
 
         await loadOwnerSlots();
+
     } catch (error) {
         console.error('Error creating office hours:', error);
         showOwnerError('ohErrorNote', 'Could not create office hours.');
     }
 }
 
-/* ═══════════════════════════════════════════
-   TAB 3: Create Group Meeting
-   ═══════════════════════════════════════════ */
+
+// =========================
+// Type 2: Create Group Meeting
+// =========================
 
 function addGMSlotEntry() {
-    var container = document.getElementById('gmSlotEntries');
-    var entry = document.createElement('div');
-    entry.className = 'gm-slot-entry';
+    const container = document.getElementById('gmSlotEntries');
+    if (!container) return;
 
+    const entry = document.createElement('div');
+    entry.className = 'gm-slot-entry';
 
     entry.innerHTML =
         '<div class="oh-slot-row">' +
             '<div>' +
-                '<label class="request-label">Start Date</label>' +
-                '<input type="date" class="request-select gm-start-date">' +
+                '<label class="request-label">Date</label>' +
+                '<input type="date" class="request-select gm-date">' +
             '</div>' +
             '<div>' +
                 '<label class="request-label">Start Time</label>' +
@@ -602,27 +594,12 @@ function addGMSlotEntry() {
             '</div>' +
             '<div>' +
                 '<label class="request-label">End Time</label>' +
-                '<label class="request-label">End Time</label>' +
                 '<input type="time" class="request-select gm-end" value="15:00">' +
-            '</div>' +
-            '<div>' +
-                '<label class="request-label">Day of Week</label>' +
-                '<select class="request-select gm-day">' +
-                    '<option value="monday">Monday</option>' +
-                    '<option value="tuesday">Tuesday</option>' +
-                    '<option value="wednesday">Wednesday</option>' +
-                    '<option value="thursday">Thursday</option>' +
-                    '<option value="friday">Friday</option>' +
-                    '<option value="saturday">Saturday</option>' +
-                    '<option value="sunday">Sunday</option>' +
-                '</select>' +
             '</div>' +
             '<div style="align-self:end;">' +
                 '<button class="table-action danger" onclick="this.closest(\'.gm-slot-entry\').remove()" style="margin-bottom:12px;">✕</button>' +
-                '<button class="table-action danger" onclick="this.closest(\'.gm-slot-entry\').remove()" style="margin-bottom:12px;">✕</button>' +
             '</div>' +
         '</div>';
-
 
     container.appendChild(entry);
 }
@@ -631,116 +608,10 @@ function toggleGMRecurrenceFields() {
     const checkbox = document.getElementById('gmIsRecurring');
     const fields = document.getElementById('gmRecurrenceFields');
 
-    if (!checkbox || !fields) {
-        return;
-    }
+    if (!checkbox || !fields) return;
 
     fields.style.display = checkbox.checked ? 'block' : 'none';
 }
-
-// async function createGroupMeeting() {
-//     var title = document.getElementById('gmTitle').value.trim();
-//     var description = document.getElementById('gmDesc').value.trim();
-
-//     var startDate = document.getElementById('gmStartDate').value;
-//     var endDate = document.getElementById('gmEndDate').value;
-
-//     if (!title) {
-//         showOwnerError('gmErrorNote', 'Please enter a meeting title.');
-//         return;
-//     }
-
-//     if (!startDate || !endDate) {
-//         showOwnerError('gmErrorNote', 'Please select start and end dates.');
-//         return;
-//     }
-
-//     var entries = document.querySelectorAll('.gm-slot-entry');
-//     if (entries.length === 0) {
-//         showOwnerError('gmErrorNote', 'Add at least one time option.');
-//         return;
-//     }
-
-//     var slots = [];
-
-//     entries.forEach(function (entry) {
-//         var start_date = entry.querySelector('.gm-start-date').value;
-//         var end_date = entry.querySelector('.gm-end-date').value;
-//         var day = entry.querySelector('.gm-day').value;
-//         var start = entry.querySelector('.gm-start').value;
-//         var end = entry.querySelector('.gm-end').value;
-
-//         if (!start_date || !end_date || !start || !end) {
-//             return;
-//         }
-
-//         slots.push({
-//             day: day,
-//             start_date: start_date,
-//             end_date: end_date,
-//             start_time: start,
-//             end_time: end
-//         });
-//     });
-
-//     if (slots.length === 0) {
-//         showOwnerError('gmErrorNote', 'Please fill all slot fields.');
-//         return;
-//     }
-
-//     var inviteText = document.getElementById('gmInvitees').value.trim();
-//     var invitees = inviteText
-//         ? inviteText.split('\n').filter(e => e.trim())
-//         : [];
-
-//     try {
-//         const response = await fetch('/group_meeting', {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json'
-//             },
-//             body: JSON.stringify({
-//                 title,
-//                 description,
-//                 start_date: startDate,
-//                 end_date: endDate,
-//                 slots,
-//                 invitees
-//             })
-//         });
-
-//         const data = await response.json();
-
-//         if (!response.ok) {
-//             showOwnerError('gmErrorNote', data.error || 'Failed to create meeting.');
-//             return;
-//         }
-
-//         var inviteUrl = data.invite_url;
-
-//         if (!inviteUrl) {
-//             showOwnerError('gmErrorNote', 'Meeting created but no invite URL returned.');
-//             return;
-//         }
-
-//         showOwnerMsg('gmSuccessNote',
-//             'Meeting "' + title + '" created. Invite URL: ' + inviteUrl
-//         );
-
-//         if (invitees.length > 0) {
-//             window.open(
-//                 'mailto:' + invitees.join(',') +
-//                 '?subject=' + encodeURIComponent('Bookly – Please vote: ' + title) +
-//                 '&body=' + encodeURIComponent('Vote here: ' + inviteUrl),
-//                 '_self'
-//             );
-//         }
-
-//     } catch (error) {
-//         console.error(error);
-//         showOwnerError('gmErrorNote', 'Server error.');
-//     }
-// }
 
 async function createGroupMeeting() {
     const title = document.getElementById('gmTitle').value.trim();
@@ -758,18 +629,14 @@ async function createGroupMeeting() {
         return;
     }
 
-    let slots = [];
+    const slots = [];
 
-    entries.forEach(entry => {
+    entries.forEach(function (entry) {
         const date = entry.querySelector('.gm-date')?.value;
         const start_time = entry.querySelector('.gm-start')?.value;
         const end_time = entry.querySelector('.gm-end')?.value;
 
         if (date && start_time && end_time) {
-            if (start_time >= end_time) {
-                return;
-            }
-
             slots.push({
                 date,
                 start_time,
@@ -779,8 +646,15 @@ async function createGroupMeeting() {
     });
 
     if (slots.length === 0) {
-        showOwnerError('gmErrorNote', 'Please fill all slot fields correctly.');
+        showOwnerError('gmErrorNote', 'Please fill all slot fields.');
         return;
+    }
+
+    for (let i = 0; i < slots.length; i++) {
+        if (slots[i].start_time >= slots[i].end_time) {
+            showOwnerError('gmErrorNote', 'Each time option must end after it starts.');
+            return;
+        }
     }
 
     const isRecurring = document.getElementById('gmIsRecurring')?.checked ? 1 : 0;
@@ -797,7 +671,9 @@ async function createGroupMeeting() {
         return;
     }
 
-    const minSlotDate = slots.reduce((min, s) => s.date < min ? s.date : min, slots[0].date);
+    const minSlotDate = slots.reduce(function (min, slot) {
+        return slot.date < min ? slot.date : min;
+    }, slots[0].date);
 
     if (isRecurring && recurrenceEndDate < minSlotDate) {
         showOwnerError('gmErrorNote', 'Recurrence end date must be after the first meeting option.');
@@ -806,11 +682,12 @@ async function createGroupMeeting() {
 
     const inviteText = document.getElementById('gmInvitees').value.trim();
     const invitees = inviteText
-        ? inviteText.split('\n').map(e => e.trim()).filter(Boolean)
+        ? inviteText.split('\n').map(function (email) {
+            return email.trim();
+        }).filter(Boolean)
         : [];
 
     try {
-        const response = await fetch('/api/type2/group_meeting', {
         const response = await fetch('/api/type2/group_meeting', {
             method: 'POST',
             headers: {
@@ -834,37 +711,37 @@ async function createGroupMeeting() {
             return;
         }
 
-        const inviteUrl = data.invite_url;
+        hideMsg('gmErrorNote');
 
         showOwnerMsg(
-            'mgmSuccessNote',
-            `Meeting "${title}" created successfully. Invite URL: ${inviteUrl}`
+            'gmSuccessNote',
+            `Meeting "${title}" created successfully. Invite URL: ${data.invite_url || ''}`
         );
 
         if (typeof loadOwnerGroupMeetings === 'function') {
             await loadOwnerGroupMeetings();
         }
 
-        if (typeof loadOwnerGroupMeetings === 'function') {
-            await loadOwnerGroupMeetings();
-        }
-
-        if (invitees.length > 0 && inviteUrl) {
+        if (invitees.length > 0 && data.invite_url) {
             window.open(
                 'mailto:' + invitees.join(',') +
                 '?subject=' + encodeURIComponent('Bookly – Please vote: ' + title) +
-                '&body=' + encodeURIComponent('Vote here: ' + inviteUrl),
+                '&body=' + encodeURIComponent('Vote here: ' + window.location.origin + data.invite_url),
                 '_self'
             );
         }
 
     } catch (error) {
-        console.error(error);
+        console.error('Create group meeting error:', error);
         showOwnerError('gmErrorNote', 'Server error.');
     }
 }
 
-/* Group Bookings */
+
+// =========================
+// Type 2: Owner group bookings table
+// =========================
+
 async function loadOwnerGroupBookings() {
     const table = document.getElementById('ownerGroupTable');
     if (!table) return;
@@ -903,7 +780,6 @@ async function loadOwnerGroupBookings() {
 
         meetings.forEach(function (meeting) {
             const row = document.createElement('tr');
-
             const status = meeting.status || '';
 
             const zoomHtml = meeting.zoom_link && status !== 'cancelled'
@@ -918,26 +794,17 @@ async function loadOwnerGroupBookings() {
                 ? escapeHtml(meeting.attendee_names)
                 : '<span class="no-link">No attendees</span>';
 
-            const actionHtml = status === 'booked'
+            const actionHtml = status === 'cancelled'
                 ? `
+                    <button class="table-action danger" onclick="deleteGroupMeeting(${meeting.meetingID})">
+                        Remove
+                    </button>
+                `
+                : `
                     <button class="table-action danger" onclick="cancelGroupMeeting(${meeting.meetingID})">
                         Cancel
                     </button>
-                `
-                : status === 'cancelled'
-                    ? `
-                        <button class="table-action danger" onclick="deleteGroupMeeting(${meeting.meetingID})">
-                            Remove
-                        </button>
-                    `
-                    : `
-                        <button class="table-action vote" onclick="openFinalizeView(${meeting.meetingID}, '${escapeForJs(meeting.title || '')}')">
-                            View votes
-                        </button>
-                        <button class="table-action danger" onclick="deleteGroupMeeting(${meeting.meetingID})">
-                            Remove
-                        </button>
-                    `;
+                `;
 
             row.innerHTML = `
                 <td>${escapeHtml(meeting.title || 'Untitled group meeting')}</td>
@@ -948,14 +815,19 @@ async function loadOwnerGroupBookings() {
                 <td>${zoomHtml}</td>
                 <td><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></td>
                 <td>${attendeesText}</td>
-                <td>${actionHtml}</td>
+                <td>
+                    <div class="table-actions">
+                        ${actionHtml}
+                    </div>
+                </td>
             `;
 
             tbody.appendChild(row);
         });
 
     } catch (error) {
-        console.error(error);
+        console.error('Load owner group bookings error:', error);
+
         tbody.innerHTML = `
             <tr>
                 <td colspan="9" class="appt-table-empty">
@@ -967,9 +839,12 @@ async function loadOwnerGroupBookings() {
 }
 
 
-/* Group Bookings */
-async function loadOwnerGroupBookings() {
-    const table = document.getElementById('ownerGroupTable');
+// =========================
+// Type 2: Manage group meetings / finalize
+// =========================
+
+async function loadOwnerGroupMeetings() {
+    const table = document.getElementById('groupMeetingsManageTable');
     if (!table) return;
 
     const tbody = table.querySelector('tbody');
@@ -977,13 +852,13 @@ async function loadOwnerGroupBookings() {
 
     tbody.innerHTML = `
         <tr>
-            <td colspan="9" class="appt-table-empty">Loading group meetings...</td>
+            <td colspan="5" class="appt-table-empty">Loading group meetings...</td>
         </tr>
     `;
 
     try {
-        const response = await fetch('/api/type2/group_meeting/owner_bookings');
-        const data = await readJsonResponse(response);
+        const response = await fetch('/api/type2/group_meeting/owner');
+        const data = await response.json();
 
         if (!response.ok) {
             throw new Error(data.error || 'Failed to load group meetings.');
@@ -994,8 +869,8 @@ async function loadOwnerGroupBookings() {
         if (meetings.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="appt-table-empty">
-                        No finalized group meetings yet.
+                    <td colspan="5" class="appt-table-empty">
+                        No group meetings created yet.
                     </td>
                 </tr>
             `;
@@ -1005,21 +880,9 @@ async function loadOwnerGroupBookings() {
         tbody.innerHTML = '';
 
         meetings.forEach(function (meeting) {
-            const row = document.createElement('tr');
-
-            const status = meeting.status || '';
-
-            const zoomHtml = meeting.zoom_link && status !== 'cancelled'
-                ? `<a class="table-link" href="${escapeHtml(meeting.zoom_link)}" target="_blank">Join</a>`
-                : `<span class="no-link">No link</span>`;
-
-            const recurrenceText = Number(meeting.isRecurring) === 1
-                ? `${escapeHtml(meeting.recurrenceType || 'Recurring')} × ${escapeHtml(meeting.numOfRecurrences || '')}`
-                : 'One-time';
-
-            const attendeesText = meeting.attendee_names
-                ? escapeHtml(meeting.attendee_names)
-                : '<span class="no-link">No attendees</span>';
+            const status = meeting.status || 'open';
+            const inviteUrl = meeting.invite_url || `/group/${meeting.meetingID}`;
+            const dateRange = `${meeting.startDate || ''} to ${meeting.endDate || ''}`;
 
             const actionHtml = status === 'booked'
                 ? `
@@ -1042,101 +905,127 @@ async function loadOwnerGroupBookings() {
                         </button>
                     `;
 
+            const row = document.createElement('tr');
+
             row.innerHTML = `
                 <td>${escapeHtml(meeting.title || 'Untitled group meeting')}</td>
-                <td>${escapeHtml(meeting.date || '')}</td>
-                <td>${escapeHtml(meeting.start_time || '')}</td>
-                <td>${escapeHtml(meeting.end_time || '')}</td>
-                <td>${recurrenceText}</td>
-                <td>${zoomHtml}</td>
+                <td>${escapeHtml(dateRange)}</td>
+                <td>
+                    <span class="invite-url-text">${escapeHtml(inviteUrl)}</span>
+                    <button class="table-action" onclick="copyInviteUrl(this)" style="margin-left:4px;">Copy</button>
+                </td>
                 <td><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></td>
-                <td>${attendeesText}</td>
-                <td>${actionHtml}</td>
+                <td>
+                    <div class="table-actions">
+                        ${actionHtml}
+                    </div>
+                </td>
             `;
 
             tbody.appendChild(row);
         });
 
     } catch (error) {
-        console.error(error);
+        console.error('Load owner group meetings error:', error);
+
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="appt-table-empty">
+                <td colspan="5" class="appt-table-empty">
                     ${escapeHtml(error.message)}
                 </td>
             </tr>
         `;
     }
 }
-
-
-/* ═══════════════════════════════════════════
-   TAB 4: Manage Group Meetings — finalize
-   ═══════════════════════════════════════════ */
 
 async function openFinalizeView(meetingID, title) {
     ownerSwitchTab('finalizeGMView');
 
-    document.getElementById('finalizeIntro').textContent =
-        'Review vote counts for "' + title + '" and pick the best time.';
-    document.getElementById('finalizeTitle').textContent = title;
+    const finalizeIntro = document.getElementById('finalizeIntro');
+    const finalizeTitle = document.getElementById('finalizeTitle');
+    const list = document.getElementById('finalizeSlotList');
+    const backBtn = document.getElementById('backToManageGMBtn');
+
+    if (finalizeIntro) {
+        finalizeIntro.textContent = 'Review vote counts for "' + title + '" and pick the best time.';
+    }
+
+    if (finalizeTitle) {
+        finalizeTitle.textContent = title;
+    }
+
     hideMsg('finalizeSuccessNote');
     hideMsg('finalizeErrorNote');
 
-    /*
-     * BACKEND TODO: replace dummySlots with fetch from /api/type2/meeting/<meetingID>
-     * Response includes slots[] with count per slot
-     */
-    // var dummySlots = [
-    //     { slotID: 1, date: '2026-04-28', start_time: '13:00', end_time: '14:00', count: 3 },
-    //     { slotID: 2, date: '2026-04-28', start_time: '15:00', end_time: '16:00', count: 1 },
-    //     { slotID: 3, date: '2026-04-29', start_time: '10:00', end_time: '11:00', count: 2 },
-    //     { slotID: 4, date: '2026-04-30', start_time: '14:00', end_time: '15:00', count: 3 }
-    // ];
-    const res = await fetch(`/api/type2/group_meeting?meetingID=${meetingID}`);
-    const res = await fetch(`/api/type2/group_meeting?meetingID=${meetingID}`);
-    const data = await res.json();
-    const slots = data.availabilities || [];
+    if (!list) return;
 
-    var list = document.getElementById('finalizeSlotList');
-    list.innerHTML = '';
+    list.innerHTML = '<p class="slots-note">Loading vote results...</p>';
 
-    slots.forEach(function (slot) {
-        var row = document.createElement('div');
-        row.className = 'vote-slot-row';
+    try {
+        const response = await fetch(`/api/type2/group_meeting?meetingID=${meetingID}`);
+        const data = await response.json();
 
-        var lbl = document.createElement('div');
-        lbl.className = 'vote-slot-label';
-        lbl.innerHTML =
-            '<span class="vote-slot-date">' + slot.date + '</span>' +
-            '<span class="vote-slot-time">' + slot.start_time + ' – ' + slot.end_time + '</span>';
+        if (!response.ok) {
+            showOwnerError('finalizeErrorNote', data.error || 'Could not load vote results.');
+            list.innerHTML = '';
+            return;
+        }
 
-        var count = document.createElement('span');
-        count.className = 'finalize-count';
-        count.textContent = (slot.vote_count || 0) + ' vote(s)';
-        count.textContent = (slot.vote_count || 0) + ' vote(s)';
+        const slots = data.availabilities || [];
+        list.innerHTML = '';
 
-        var pickBtn = document.createElement('button');
-        pickBtn.className = 'table-action vote';
-        pickBtn.textContent = 'Pick this';
-        pickBtn.addEventListener('click', function () {
-            finalizeMeeting(meetingID, slot);
+        if (slots.length === 0) {
+            list.innerHTML = '<p class="slots-note">No availability options found.</p>';
+            return;
+        }
+
+        slots.forEach(function (slot) {
+            const row = document.createElement('div');
+            row.className = 'vote-slot-row';
+
+            const lbl = document.createElement('div');
+            lbl.className = 'vote-slot-label';
+            lbl.innerHTML =
+                '<span class="vote-slot-date">' + escapeHtml(slot.date) + '</span>' +
+                '<span class="vote-slot-time">' + escapeHtml(slot.start_time) + ' – ' + escapeHtml(slot.end_time) + '</span>';
+
+            const count = document.createElement('span');
+            count.className = 'finalize-count';
+            count.textContent = (slot.vote_count || 0) + ' vote(s)';
+
+            const pickBtn = document.createElement('button');
+            pickBtn.className = 'table-action vote';
+            pickBtn.textContent = 'Pick this';
+
+            if (slot.status !== 'open') {
+                pickBtn.disabled = true;
+                pickBtn.style.opacity = '0.45';
+                pickBtn.style.cursor = 'not-allowed';
+            } else {
+                pickBtn.addEventListener('click', function () {
+                    finalizeMeeting(meetingID, slot);
+                });
+            }
+
+            row.appendChild(lbl);
+            row.appendChild(count);
+            row.appendChild(pickBtn);
+            list.appendChild(row);
         });
 
-        row.appendChild(lbl);
-        row.appendChild(count);
-        row.appendChild(pickBtn);
-        list.appendChild(row);
-    });
+        if (backBtn) {
+            backBtn.onclick = function () {
+                ownerSwitchTab('manageGMView');
+            };
+        }
 
-    document.getElementById('backToManageGMBtn').onclick = function () {
-        ownerSwitchTab('manageGMView');
-    };
+    } catch (error) {
+        console.error('Open finalize view error:', error);
+        list.innerHTML = '';
+        showOwnerError('finalizeErrorNote', 'Server error while loading vote results.');
+    }
 }
 
-async function finalizeMeeting(meetingID, slot) {
-    if (!confirm('Finalize this group meeting time?')) {
-        return;
 async function finalizeMeeting(meetingID, slot) {
     if (!confirm('Finalize this group meeting time?')) {
         return;
@@ -1179,33 +1068,35 @@ async function finalizeMeeting(meetingID, slot) {
         }, 800);
 
     } catch (error) {
-        console.error(error);
+        console.error('Finalize meeting error:', error);
         showOwnerError('finalizeErrorNote', 'Server error while finalizing meeting.');
+    }
+}
+
+async function cancelGroupMeeting(meetingID) {
+    if (!confirm('Cancel this finalized group meeting?')) {
+        return;
     }
 
     try {
-        const response = await fetch('/api/type2/group_meeting/decide', {
+        const response = await fetch('/api/type2/group_meeting/cancel', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                meetingID: meetingID,
-                availabilityID: slot.availabilityID
+                meetingID: meetingID
             })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            showOwnerError('finalizeErrorNote', data.error || 'Could not finalize meeting.');
+            showOwnerError('mgmErrorNote', data.error || 'Failed to cancel group meeting.');
             return;
         }
 
-        showOwnerMsg(
-            'finalizeSuccessNote',
-            `Meeting finalized for ${slot.date} from ${slot.start_time} to ${slot.end_time}.`
-        );
+        showOwnerMsg('mgmSuccessNote', data.message || 'Group meeting cancelled.');
 
         await loadOwnerGroupMeetings();
 
@@ -1213,19 +1104,53 @@ async function finalizeMeeting(meetingID, slot) {
             await loadOwnerGroupBookings();
         }
 
-        setTimeout(function () {
-            ownerSwitchTab('ownerApptsView');
-        }, 800);
-
     } catch (error) {
-        console.error(error);
-        showOwnerError('finalizeErrorNote', 'Server error while finalizing meeting.');
+        console.error('Cancel group meeting error:', error);
+        showOwnerError('mgmErrorNote', 'Server error while cancelling group meeting.');
     }
 }
 
-/* ═══════════════════════════════════════════
-   TAB 5: Pending Requests — accept / decline
-   ═══════════════════════════════════════════ */
+async function deleteGroupMeeting(meetingID) {
+    if (!confirm('Remove this group meeting permanently? This cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/type2/group_meeting/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                meetingID: meetingID
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showOwnerError('mgmErrorNote', data.error || 'Failed to remove group meeting.');
+            return;
+        }
+
+        showOwnerMsg('mgmSuccessNote', data.message || 'Group meeting removed.');
+
+        await loadOwnerGroupMeetings();
+
+        if (typeof loadOwnerGroupBookings === 'function') {
+            await loadOwnerGroupBookings();
+        }
+
+    } catch (error) {
+        console.error('Delete group meeting error:', error);
+        showOwnerError('mgmErrorNote', 'Server error while removing group meeting.');
+    }
+}
+
+
+// =========================
+// Type 1: Pending requests
+// =========================
 
 async function acceptRequest(meetingID, studentEmail) {
     try {
@@ -1248,6 +1173,7 @@ async function acceptRequest(meetingID, studentEmail) {
         await loadOwnerType1Meetings();
 
         showOwnerMsg('pendingSuccessNote', 'Request ' + meetingID + ' accepted.');
+
     } catch (error) {
         console.error('Accept request error:', error);
         showOwnerError('pendingErrorNote', 'Could not connect to server.');
@@ -1274,6 +1200,7 @@ async function declineRequest(meetingID, studentEmail) {
         await loadPendingRequests();
 
         showOwnerMsg('pendingSuccessNote', 'Request ' + meetingID + ' declined.');
+
     } catch (error) {
         console.error('Decline request error:', error);
         showOwnerError('pendingErrorNote', 'Could not connect to server.');
@@ -1327,26 +1254,27 @@ async function loadPendingRequests() {
         tbody.innerHTML = '';
 
         requests.forEach(function (request) {
+            const studentEmail = request.student_email || '';
             const row = document.createElement('tr');
+
             row.id = `pending-row-${request.meetingID}`;
 
             row.innerHTML = `
-                <td>${request.meetingID}</td>
+                <td>${escapeHtml(request.meetingID)}</td>
                 <td>
-                    ${request.student_email}
+                    ${escapeHtml(studentEmail)}
                     <br>
-                    <span class="no-link">${request.student_email}</span>
+                    <span class="no-link">${escapeHtml(studentEmail)}</span>
                 </td>
-                <td>${request.message || ''}</td>
-                <td>${request.date || ''}</td>
-                <td>${request.start_time || ''}</td>
-                <td>${request.end_time || ''}</td>
-
+                <td>${escapeHtml(request.message || '')}</td>
+                <td>${escapeHtml(request.date || '')}</td>
+                <td>${escapeHtml(request.start_time || '')}</td>
+                <td>${escapeHtml(request.end_time || '')}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="table-action vote" onclick="acceptRequest(${request.meetingID}, '${request.student_email}')">Accept</button>
-                        <button class="table-action danger" onclick="declineRequest(${request.meetingID}, '${request.student_email}')">Decline</button>
-                        <a class="table-action" href="mailto:${request.student_email}?subject=Bookly%20-%20Meeting%20request">Email</a>
+                        <button class="table-action vote" onclick="acceptRequest(${request.meetingID}, '${escapeForJs(studentEmail)}')">Accept</button>
+                        <button class="table-action danger" onclick="declineRequest(${request.meetingID}, '${escapeForJs(studentEmail)}')">Decline</button>
+                        <a class="table-action" href="mailto:${escapeHtml(studentEmail)}?subject=Bookly%20-%20Meeting%20request">Email</a>
                     </div>
                 </td>
             `;
@@ -1356,6 +1284,7 @@ async function loadPendingRequests() {
 
     } catch (error) {
         console.error('Load pending requests error:', error);
+
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="appt-table-empty">Could not connect to server.</td>
@@ -1363,6 +1292,11 @@ async function loadPendingRequests() {
         `;
     }
 }
+
+
+// =========================
+// Type 1: Owner individual meetings
+// =========================
 
 async function loadOwnerType1Meetings() {
     const tbody = document.querySelector('#ownerIndividualTable tbody');
@@ -1392,7 +1326,7 @@ async function loadOwnerType1Meetings() {
         if (meetings.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="appt-table-empty">No accepted individual meetings yet.</td>
+                    <td colspan="8" class="appt-table-empty">No individual meetings yet.</td>
                 </tr>
             `;
             return;
@@ -1401,26 +1335,11 @@ async function loadOwnerType1Meetings() {
         tbody.innerHTML = '';
 
         meetings.forEach(function (meeting) {
-            const zoomCell = meeting.zoom_link
-                ? `<a class="table-action primary" href="${meeting.zoom_link}" target="_blank">Join</a>`
-                : `<button class="table-action" disabled style="opacity:0.45; cursor:not-allowed;">Join</button>`;
-
             const row = document.createElement('tr');
 
-            const actionHtml = meeting.status === 'cancelled'
-                ? `
-                    <button class="table-action danger" onclick="deleteOwnerType1Meeting(${meeting.meetingID})">
-                        Remove
-                    </button>
-                `
-                : `
-                    <a class="table-action" href="mailto:${escapeHtml(meeting.student_email || '')}">
-                        Email
-                    </a>
-                    <button class="table-action danger" onclick="cancelOwnerType1Meeting(${meeting.meetingID})">
-                        Cancel
-                    </button>
-                `;
+            const zoomCell = meeting.zoom_link && meeting.status !== 'cancelled'
+                ? `<a class="table-action primary" href="${escapeHtml(meeting.zoom_link)}" target="_blank">Join</a>`
+                : `<button class="table-action" disabled style="opacity:0.45; cursor:not-allowed;">Join</button>`;
 
             const actionHtml = meeting.status === 'cancelled'
                 ? `
@@ -1438,15 +1357,15 @@ async function loadOwnerType1Meetings() {
                 `;
 
             row.innerHTML = `
-                <td>${meeting.meetingID}</td>
+                <td>${escapeHtml(meeting.meetingID)}</td>
                 <td>
-                    ${meeting.student_name}
+                    ${escapeHtml(meeting.student_name || '')}
                     <br>
-                    <span class="no-link">${meeting.student_email}</span>
+                    <span class="no-link">${escapeHtml(meeting.student_email || '')}</span>
                 </td>
-                <td>${meeting.date}</td>
-                <td>${meeting.start_time}</td>
-                <td>${meeting.end_time}</td>
+                <td>${escapeHtml(meeting.date || '')}</td>
+                <td>${escapeHtml(meeting.start_time || '')}</td>
+                <td>${escapeHtml(meeting.end_time || '')}</td>
                 <td>${zoomCell}</td>
                 <td>
                     <span class="status-badge ${escapeHtml(meeting.status || '')}">
@@ -1454,13 +1373,7 @@ async function loadOwnerType1Meetings() {
                     </span>
                 </td>
                 <td>
-                    <span class="status-badge ${escapeHtml(meeting.status || '')}">
-                        ${escapeHtml(meeting.status || '')}
-                    </span>
-                </td>
-                <td>
                     <div class="table-actions">
-                        ${actionHtml}
                         ${actionHtml}
                     </div>
                 </td>
@@ -1471,6 +1384,7 @@ async function loadOwnerType1Meetings() {
 
     } catch (error) {
         console.error('Load owner Type 1 meetings error:', error);
+
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="appt-table-empty">Could not connect to server.</td>
@@ -1479,205 +1393,6 @@ async function loadOwnerType1Meetings() {
     }
 }
 
-async function loadOwnerGroupMeetings() {
-    const table = document.getElementById('groupMeetingsManageTable');
-    if (!table) return;
-
-    const tbody = table.querySelector('tbody');
-    if (!tbody) return;
-
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="5" class="appt-table-empty">Loading group meetings...</td>
-        </tr>
-    `;
-
-    try {
-        const response = await fetch('/api/type2/group_meeting/owner');
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to load group meetings.');
-        }
-
-        const meetings = data.meetings || [];
-
-        if (meetings.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="appt-table-empty">
-                        No group meetings created yet.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        tbody.innerHTML = '';
-
-        meetings.forEach(function (meeting) {
-            const status = meeting.status || 'open';
-            const inviteUrl = meeting.invite_url || `/group/${meeting.meetingID}`;
-            const dateRange = `${meeting.startDate || ''} to ${meeting.endDate || ''}`;
-
-            const actionHtml = status === 'booked'
-                ? `
-                    <button class="table-action danger" onclick="cancelGroupMeeting(${meeting.meetingID})">
-                        Cancel
-                    </button>
-                `
-                : status === 'cancelled'
-                    ? `
-                        <button class="table-action danger" onclick="deleteGroupMeeting(${meeting.meetingID})">
-                            Remove
-                        </button>
-                    `
-                    : `
-                        <button class="table-action vote" onclick="openFinalizeView(${meeting.meetingID}, '${escapeForJs(meeting.title || '')}')">
-                            View votes
-                        </button>
-                        <button class="table-action danger" onclick="deleteGroupMeeting(${meeting.meetingID})">
-                            Remove
-                        </button>
-                    `;
-
-
-            const row = document.createElement('tr');
-
-            row.innerHTML = `
-                <td>${escapeHtml(meeting.title || 'Untitled group meeting')}</td>
-                <td>${escapeHtml(dateRange)}</td>
-                <td>
-                    <span class="invite-url-text">${escapeHtml(inviteUrl)}</span>
-                    <button class="table-action" onclick="copyInviteUrl(this)" style="margin-left:4px;">Copy</button>
-                </td>
-                <td><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></td>
-                <td>
-                    <div class="table-actions">
-                        ${actionHtml}
-                    </div>
-                </td>
-            `;
-
-            tbody.appendChild(row);
-        });
-
-    } catch (error) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="appt-table-empty">
-                    ${escapeHtml(error.message)}
-                </td>
-            </tr>
-        `;
-    }
-}
-
-
-document.addEventListener('DOMContentLoaded', async function () {
-    if (typeof loadCurrentUser === 'function') {
-        await loadCurrentUser();
-    }
-
-    ownerSwitchTab('ownerApptsView');
-
-    if (typeof loadPendingRequests === 'function') {
-        loadPendingRequests();
-    }
-
-    if (typeof loadOwnerGroupMeetings === 'function') {
-        loadOwnerGroupMeetings();
-    }
-
-    if (typeof loadOwnerSlots === 'function') {
-        loadOwnerSlots();
-    }
-});
-
-
-/* ═══════════════════════════════════════════
-            Cancel / Remove
-   ═══════════════════════════════════════════ */
-
-async function cancelGroupMeeting(meetingID) {
-    if (!confirm('Cancel this finalized group meeting?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/type2/group_meeting/cancel', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                meetingID: meetingID
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            showOwnerError('mgmErrorNote', data.error || 'Failed to cancel group meeting.');
-            return;
-        }
-
-        showOwnerMsg('mgmSuccessNote', data.message || 'Group meeting cancelled.');
-
-        if (typeof loadOwnerGroupMeetings === 'function') {
-            await loadOwnerGroupMeetings();
-        }
-
-        if (typeof loadOwnerGroupBookings === 'function') {
-            await loadOwnerGroupBookings();
-        }
-
-    } catch (error) {
-        console.error(error);
-        showOwnerError('mgmErrorNote', 'Server error while cancelling group meeting.');
-    }
-}
-
-async function deleteGroupMeeting(meetingID) {
-    if (!confirm('Remove this group meeting permanently? This cannot be undone.')) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/type2/group_meeting/delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                meetingID: meetingID
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            showOwnerError('mgmErrorNote', data.error || 'Failed to remove group meeting.');
-            return;
-        }
-
-        showOwnerMsg('mgmSuccessNote', data.message || 'Group meeting removed.');
-
-        if (typeof loadOwnerGroupMeetings === 'function') {
-            await loadOwnerGroupMeetings();
-        }
-
-        if (typeof loadOwnerGroupBookings === 'function') {
-            await loadOwnerGroupBookings();
-        }
-
-    } catch (error) {
-        console.error(error);
-        showOwnerError('mgmErrorNote', 'Server error while removing group meeting.');
-    }
-}
-
 async function cancelOwnerType1Meeting(meetingID) {
     if (!confirm('Cancel this individual meeting?')) {
         return;
@@ -1699,12 +1414,10 @@ async function cancelOwnerType1Meeting(meetingID) {
             return;
         }
 
-        if (typeof loadOwnerType1Meetings === 'function') {
-            await loadOwnerType1Meetings();
-        }
+        await loadOwnerType1Meetings();
 
     } catch (error) {
-        console.error(error);
+        console.error('Cancel owner Type 1 meeting error:', error);
         alert('Server error while cancelling individual meeting.');
     }
 }
@@ -1730,110 +1443,133 @@ async function deleteOwnerType1Meeting(meetingID) {
             return;
         }
 
-        if (typeof loadOwnerType1Meetings === 'function') {
-            await loadOwnerType1Meetings();
-        }
+        await loadOwnerType1Meetings();
 
     } catch (error) {
-        console.error(error);
+        console.error('Delete owner Type 1 meeting error:', error);
         alert('Server error while removing individual meeting.');
     }
 }
-async function loadOwnerGroupMeetings() {
-    const table = document.getElementById('groupMeetingsManageTable');
-    if (!table) return;
 
-    const tbody = table.querySelector('tbody');
-    if (!tbody) return;
 
-    tbody.innerHTML = `
+// =========================
+// Type 3: Owner appointment bookings
+// =========================
+
+async function loadOwnerAppointments() {
+    const ohBody = document.getElementById('ownerOHTableBody');
+    if (!ohBody) return;
+
+    ohBody.innerHTML = `
         <tr>
-            <td colspan="5" class="appt-table-empty">Loading group meetings...</td>
+            <td colspan="7" class="appt-table-empty">Loading office hours bookings...</td>
         </tr>
     `;
 
     try {
-        const response = await fetch('/api/type2/group_meeting/owner');
-
+        const response = await fetch('/api/type3/my_bookings');
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error || 'Failed to load group meetings.');
-        }
-
-        const meetings = data.meetings || [];
-
-        if (meetings.length === 0) {
-            tbody.innerHTML = `
+            ohBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="appt-table-empty">
-                        No group meetings created yet.
-                    </td>
+                    <td colspan="7" class="appt-table-empty">Error loading bookings.</td>
                 </tr>
             `;
             return;
         }
 
-        tbody.innerHTML = '';
+        const bookings = data.bookings || [];
 
-        meetings.forEach(function (meeting) {
-            const status = meeting.status || 'open';
-            const inviteUrl = meeting.invite_url || `/group/${meeting.meetingID}`;
-            const dateRange = `${meeting.startDate || ''} to ${meeting.endDate || ''}`;
+        if (bookings.length === 0) {
+            ohBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="appt-table-empty">No office hours bookings.</td>
+                </tr>
+            `;
+            return;
+        }
 
-            const actionHtml = status === 'booked'
-                ? `
-                    <button class="table-action danger" onclick="cancelGroupMeeting(${meeting.meetingID})">
-                        Cancel
-                    </button>
-                `
-                : status === 'cancelled'
-                    ? `
-                        <button class="table-action danger" onclick="deleteGroupMeeting(${meeting.meetingID})">
-                            Remove
-                        </button>
-                    `
-                    : `
-                        <button class="table-action vote" onclick="openFinalizeView(${meeting.meetingID}, '${escapeForJs(meeting.title || '')}')">
-                            View votes
-                        </button>
-                        <button class="table-action danger" onclick="deleteGroupMeeting(${meeting.meetingID})">
-                            Remove
-                        </button>
-                    `;
+        ohBody.innerHTML = '';
 
+        bookings.forEach(function (booking) {
+            const tr = document.createElement('tr');
 
-            const row = document.createElement('tr');
+            const zoomHtml = booking.zoom_link
+                ? `<a class="table-link" href="${escapeHtml(booking.zoom_link)}" target="_blank">Join</a>`
+                : '<span class="no-link">—</span>';
 
-            row.innerHTML = `
-                <td>${escapeHtml(meeting.title || 'Untitled group meeting')}</td>
-                <td>${escapeHtml(dateRange)}</td>
+            tr.innerHTML = `
+                <td>${escapeHtml(booking.slotID)}</td>
                 <td>
-                    <span class="invite-url-text">${escapeHtml(inviteUrl)}</span>
-                    <button class="table-action" onclick="copyInviteUrl(this)" style="margin-left:4px;">Copy</button>
+                    ${escapeHtml(booking.student_name || '')}
+                    <br>
+                    <span class="no-link">${escapeHtml(booking.student_email || '')}</span>
                 </td>
-                <td><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></td>
+                <td>${escapeHtml(booking.start_date || '')}</td>
+                <td>${escapeHtml(booking.start_time || '')}</td>
+                <td>${escapeHtml(booking.end_time || '')}</td>
+                <td>${zoomHtml}</td>
                 <td>
                     <div class="table-actions">
-                        ${actionHtml}
+                        <a class="table-action" href="mailto:${escapeHtml(booking.student_email || '')}">Email</a>
+                        <button class="table-action danger" onclick="cancelOHBooking(${booking.booking3ID}, '${escapeForJs(booking.student_email || '')}')">
+                            Cancel
+                        </button>
                     </div>
                 </td>
             `;
 
-            tbody.appendChild(row);
+            ohBody.appendChild(tr);
         });
 
     } catch (error) {
-        tbody.innerHTML = `
+        console.error('Load owner appointments error:', error);
+
+        ohBody.innerHTML = `
             <tr>
-                <td colspan="5" class="appt-table-empty">
-                    ${escapeHtml(error.message)}
-                </td>
+                <td colspan="7" class="appt-table-empty">Error loading bookings.</td>
             </tr>
         `;
     }
 }
 
+async function cancelOHBooking(bookingID, studentEmail) {
+    if (!confirm('Cancel this booking?')) return;
+
+    try {
+        const response = await fetch('/api/type3/cancel_booking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking3ID: bookingID })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || 'Failed to cancel booking.');
+            return;
+        }
+
+        await loadOwnerAppointments();
+
+        if (studentEmail) {
+            window.location.href =
+                'mailto:' + studentEmail +
+                '?subject=' + encodeURIComponent('Bookly - Booking cancelled') +
+                '&body=' + encodeURIComponent('Your office hours booking has been cancelled.');
+        }
+
+    } catch (error) {
+        console.error('Cancel office hours booking error:', error);
+        alert('Server error while cancelling booking.');
+    }
+}
+
+
+// =========================
+// Initial page load
+// =========================
 
 document.addEventListener('DOMContentLoaded', async function () {
     if (typeof loadCurrentUser === 'function') {
@@ -1854,170 +1590,3 @@ document.addEventListener('DOMContentLoaded', async function () {
         loadOwnerSlots();
     }
 });
-
-
-/* ═══════════════════════════════════════════
-            Cancel / Remove
-   ═══════════════════════════════════════════ */
-
-async function cancelGroupMeeting(meetingID) {
-    if (!confirm('Cancel this finalized group meeting?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/type2/group_meeting/cancel', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                meetingID: meetingID
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            showOwnerError('mgmErrorNote', data.error || 'Failed to cancel group meeting.');
-            return;
-        }
-
-        showOwnerMsg('mgmSuccessNote', data.message || 'Group meeting cancelled.');
-
-        if (typeof loadOwnerGroupMeetings === 'function') {
-            await loadOwnerGroupMeetings();
-        }
-
-        if (typeof loadOwnerGroupBookings === 'function') {
-            await loadOwnerGroupBookings();
-        }
-
-    } catch (error) {
-        console.error(error);
-        showOwnerError('mgmErrorNote', 'Server error while cancelling group meeting.');
-    }
-}
-
-async function deleteGroupMeeting(meetingID) {
-    if (!confirm('Remove this group meeting permanently? This cannot be undone.')) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/type2/group_meeting/delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                meetingID: meetingID
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            showOwnerError('mgmErrorNote', data.error || 'Failed to remove group meeting.');
-            return;
-        }
-
-        showOwnerMsg('mgmSuccessNote', data.message || 'Group meeting removed.');
-
-        if (typeof loadOwnerGroupMeetings === 'function') {
-            await loadOwnerGroupMeetings();
-        }
-
-        if (typeof loadOwnerGroupBookings === 'function') {
-            await loadOwnerGroupBookings();
-        }
-
-    } catch (error) {
-        console.error(error);
-        showOwnerError('mgmErrorNote', 'Server error while removing group meeting.');
-    }
-}
-
-async function cancelOwnerType1Meeting(meetingID) {
-    if (!confirm('Cancel this individual meeting?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/type1/cancel', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ meetingID })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert(data.error || 'Failed to cancel individual meeting.');
-            return;
-        }
-
-        if (typeof loadOwnerType1Meetings === 'function') {
-            await loadOwnerType1Meetings();
-        }
-
-    } catch (error) {
-        console.error(error);
-        alert('Server error while cancelling individual meeting.');
-    }
-}
-
-async function deleteOwnerType1Meeting(meetingID) {
-    if (!confirm('Remove this individual meeting permanently?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/type1/delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ meetingID })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert(data.error || 'Failed to remove individual meeting.');
-            return;
-        }
-
-        if (typeof loadOwnerType1Meetings === 'function') {
-            await loadOwnerType1Meetings();
-        }
-
-    } catch (error) {
-        console.error(error);
-        alert('Server error while removing individual meeting.');
-    }
-}
-
-/* ═══════════════════════════════════════════
-   Shared message helpers
-   ═══════════════════════════════════════════ */
-
-function showOwnerMsg(id, text) {
-    var el = document.getElementById(id);
-    el.textContent = text;
-    el.classList.add('show');
-}
-
-function showOwnerError(id, text) {
-    var el = document.getElementById(id);
-    el.textContent = text;
-    el.classList.add('show');
-}
-
-function hideMsg(id) {
-    var el = document.getElementById(id);
-    el.textContent = '';
-    el.classList.remove('show');
-}
