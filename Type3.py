@@ -199,6 +199,25 @@ def create_office_hours():
             weekday_index = weekday_name_to_index(slot.get("weekday"))
             if weekday_index is None:
                 continue
+
+            start_time = slot.get("start_time")
+            end_time = slot.get("end_time")
+
+            if not start_time or not end_time:
+                conn.rollback()
+                return jsonify({"error": "Each weekly slot needs start_time and end_time"}), 400
+
+            try:
+                start_dt = datetime.strptime(start_time, "%H:%M")
+                end_dt = datetime.strptime(end_time, "%H:%M")
+
+                if end_dt <= start_dt:
+                    conn.rollback()
+                    return jsonify({"error": "Each office hours slot end time must be after start time"}), 400
+
+            except ValueError:
+                conn.rollback()
+                return jsonify({"error": "Invalid office hours time format"}), 400
             
             # Generate recurring calendar dates
             dates = generate_dates_for_weekday(start_date, weekday_index, num_weeks)
@@ -217,6 +236,10 @@ def create_office_hours():
                     SLOT_PRIVATE
                 ))
                 inserted_slots += 1
+
+            if inserted_slots == 0:
+                conn.rollback()
+                return jsonify({"error": "No valid office hour slots were created"}), 400
         
         conn.commit()
 

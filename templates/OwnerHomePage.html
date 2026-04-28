@@ -122,12 +122,8 @@
                             <div class="gm-slot-entry">
                                 <div class="oh-slot-row">
                                     <div>
-                                        <label class="request-label">Start Date</label>
-                                        <input type="date" class="request-select gm-start-date">
-                                    </div>
-                                    <div>
-                                        <label class="request-label">End Date</label>
-                                        <input type="date" class="request-select gm-end-date">
+                                        <label class="request-label">Date</label>
+                                        <input type="date" class="request-select gm-date">
                                     </div>
                                     <div>
                                         <label class="request-label">Start Time</label>
@@ -137,19 +133,24 @@
                                         <label class="request-label">End Time</label>
                                         <input type="time" class="request-select gm-end" value="15:00">
                                     </div>
-                                    <div>
-                                        <label class="request-label">Day of Week</label>
-                                        <select class="request-select gm-day">
-                                            <option value="monday">Monday</option>
-                                            <option value="tuesday">Tuesday</option>
-                                            <option value="wednesday">Wednesday</option>
-                                            <option value="thursday">Thursday</option>
-                                            <option value="friday">Friday</option>
-                                            <option value="saturday">Saturday</option>
-                                            <option value="sunday">Sunday</option>
-                                        </select>
-                                    </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="slots-card" style="margin-top:12px;">
+                            <label class="request-label">
+                                <input type="checkbox" id="gmIsRecurring" onchange="toggleGMRecurrenceFields()">
+                                Make this meeting recurring after finalization
+                            </label>
+
+                            <div id="gmRecurrenceFields" style="display:none; margin-top:12px;">
+                                <label class="request-label" for="gmRecurrenceType">Recurring frequency</label>
+                                <select class="request-select" id="gmRecurrenceType">
+                                    <option value="weekly">Weekly</option>
+                                </select>
+
+                                <label class="request-label" for="gmRecurrenceEndDate">Repeat until</label>
+                                <input type="date" class="request-select" id="gmRecurrenceEndDate">
                             </div>
                         </div>
 
@@ -193,32 +194,7 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>COMP 307 Project Sync</td>
-                                        <td>2026-04-28 to 2026-04-30</td>
-                                        <td>
-                                            <span class="invite-url-text">/book/abc123xyz</span>
-                                            <button class="table-action" onclick="copyInviteUrl(this)" style="margin-left:4px;">Copy</button>
-                                        </td>
-                                        <td><span class="status-badge open">Open</span></td>
-                                        <td>
-                                            <div class="table-actions">
-                                                <button class="table-action vote" onclick="openFinalizeView(1, 'COMP 307 Project Sync')">View votes</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>TA Review Session</td>
-                                        <td>2026-05-01 to 2026-05-02</td>
-                                        <td>
-                                            <span class="invite-url-text">/book/def456uvw</span>
-                                            <button class="table-action" onclick="copyInviteUrl(this)" style="margin-left:4px;">Copy</button>
-                                        </td>
-                                        <td><span class="status-badge booked">Finalized</span></td>
-                                        <td>
-                                            <div class="table-actions">
-                                                <span class="no-link">Done</span>
-                                            </div>
-                                        </td>
+                                        <td colspan="5" class="appt-table-empty">Loading group meetings...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -332,18 +308,12 @@
                                         <th>Zoom Link</th>
                                         <th>Status</th>
                                         <th>Attendees</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>COMP 307 Project Sync</td>
-                                        <td>2026-04-28</td>
-                                        <td>13:00</td>
-                                        <td>14:00</td>
-                                        <td>Weekly × 4</td>
-                                        <td><a class="table-link" href="https://mcgill.zoom.us/j/987654321" target="_blank">Join</a></td>
-                                        <td><span class="status-badge booked">Finalized</span></td>
-                                        <td>Alice Wang, Bob Smith</td>
+                                        <td colspan="9" class="appt-table-empty">Loading group meetings...</td>
                                     </tr>
                                 </tbody>
                             </table>
