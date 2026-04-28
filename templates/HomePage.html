@@ -278,12 +278,20 @@
         </div>
     </div>
 
+    
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <script>
+        window.BOOKLY_INVITE_OWNER_ID = "{{ booking_owner_id|default('', true) }}";
+    </script>
+    
     <script src="{{ url_for('static', filename='homepage.js') }}"></script>
     <script src="{{ url_for('static', filename='type1.js') }}"></script>
     <script src="{{ url_for('static', filename='type2.js') }}"></script>
     <script src="{{ url_for('static', filename='type3.js') }}"></script>
-    <script> initProfSearch();</script>
+    <script>
+        initProfSearch();
+    </script>
 
 </body>
 </html>

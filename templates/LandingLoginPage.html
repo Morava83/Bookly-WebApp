@@ -338,7 +338,8 @@
                         return;
                     }
 
-                    window.location.href = '/home';
+                    window.location.href = result.redirect_url || "/home";
+
                 } catch (error) {
                     alert('Could not connect to the server.');
                 }

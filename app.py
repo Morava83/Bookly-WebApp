@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO
@@ -191,10 +191,16 @@ def login_api():
         session["email"] = user["email"]
         session["role"] = role
 
+        redirect_url = session.pop("next_after_login", None)
+
+        if not redirect_url:
+            redirect_url = "/home"
+
         return jsonify({
             "message": "Login successful",
             "userID": user["userID"],
-            "role": role
+            "role": role,
+            "redirect_url": redirect_url
         }), 200
 
     finally:
@@ -314,6 +320,18 @@ def search_owners():
     rows = cur.fetchall()
     conn.close()
     return jsonify({"owners": [dict(r) for r in rows]})
+
+# -====== Invitational Link ===========
+@app.route("/book/owner/<int:owner_id>")
+def book_owner_slots(owner_id):
+    if "user_id" not in session:
+        session["next_after_login"] = f"/book/owner/{owner_id}"
+        return redirect("/")
+
+    if session.get("role") == "owner":
+        return redirect("/home")
+
+    return render_template("HomePage.html", booking_owner_id=owner_id)
 
 # ======== Pages ==========
 @app.route("/")

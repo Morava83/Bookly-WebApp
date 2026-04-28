@@ -11,15 +11,7 @@ function open_vote_view(meetingID, title, ownerName) {
     document.getElementById('voteSelectionText').textContent =
         'Check the time slots that work for you.';
     document.getElementById('voteSuccessNote').classList.remove('show');
-    document.getElementById('voteErrorNote').classList.remove('show');
-
-    // TODO: replace with real fetch from /api/type2/meeting/<meetingID>
-    var dummySlots = [
-        { slotID: 1, date: '2026-04-28', start_time: '13:00', end_time: '14:00' },
-        { slotID: 2, date: '2026-04-28', start_time: '15:00', end_time: '16:00' },
-        { slotID: 3, date: '2026-04-29', start_time: '10:00', end_time: '11:00' },
-        { slotID: 4, date: '2026-04-30', start_time: '14:00', end_time: '15:00' }
-    ];
+    document.getElementById('voteErrorNote').classList.remove('show');    
 
     var list = document.getElementById('voteSlotList');
     var selectionText = document.getElementById('voteSelectionText');
@@ -181,9 +173,121 @@ function initProfSearch() {
         window.renderSlots();
     }
 }
-    
 
-/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+async function loadAvailableSlots() {
+    var ownerID = window.BOOKLY_INVITE_OWNER_ID;
+
+    if (!ownerID) {
+        return;
+    }
+
+    var profSearch = document.getElementById("profSearch");
+    var profDropdown = document.getElementById("profDropdown");
+    var profBanner = document.getElementById("profBanner");
+    var profBannerText = document.getElementById("profBannerText");
+    var profClear = document.getElementById("profClear");
+    var slotsNote = document.getElementById("slotsNote");
+    var selectedSlotText = document.getElementById("selectedSlotText");
+
+    try {
+        var selectedOwner = null;
+
+        try {
+            var ownersRes = await fetch("/api/owners");
+            var ownersData = await ownersRes.json();
+
+            if (ownersRes.ok) {
+                var owners = ownersData.owners || [];
+                selectedOwner = owners.find(function (owner) {
+                    return String(owner.userID) === String(ownerID);
+                }) || null;
+            }
+        } catch (ownerError) {
+            console.error("Could not load invited owner details:", ownerError);
+        }
+
+        var res = await fetch("/api/type3/available_slots?owner_id=" + encodeURIComponent(ownerID));
+        var data = await res.json();
+
+        if (!res.ok) {
+            console.error(data.error || "Could not load invitation slots.");
+
+            if (slotsNote) {
+                slotsNote.textContent = data.error || "Could not load this owner's available slots.";
+            }
+
+            if (selectedSlotText) {
+                selectedSlotText.textContent = "Please try again later.";
+            }
+
+            ownerSlots = [];
+
+            if (typeof window.renderSlots === "function") {
+                window.renderSlots();
+            }
+
+            return;
+        }
+
+        ownerSlots = data.slots || [];
+
+        if (!selectedOwner && ownerSlots.length > 0) {
+            selectedOwner = {
+                userID: ownerSlots[0].ownerID,
+                name: ownerSlots[0].owner_name,
+                email: ownerSlots[0].owner_email
+            };
+        }
+
+        window.getSelectedOwner = function () {
+            return selectedOwner;
+        };
+
+        if (profSearch) {
+            profSearch.value = "";
+            profSearch.style.display = "none";
+        }
+
+        if (profDropdown) {
+            profDropdown.classList.remove("open");
+            profDropdown.innerHTML = "";
+        }
+
+        if (profClear) {
+            profClear.style.display = "none";
+        }
+
+        if (profBanner && profBannerText) {
+            profBanner.style.display = "flex";
+            profBannerText.textContent = selectedOwner
+                ? selectedOwner.name + " (" + selectedOwner.email + ")"
+                : "Invited owner";
+        }
+
+        if (slotsNote) {
+            slotsNote.textContent = "Select a date from the calendar to see this owner's activated slots.";
+        }
+
+        if (typeof window.renderSlots === "function") {
+            window.renderSlots();
+        }
+
+    } catch (error) {
+        console.error("Invitation slot load error:", error);
+
+        ownerSlots = [];
+
+        if (slotsNote) {
+            slotsNote.textContent = "Could not connect to the server to load this owner's slots.";
+        }
+
+        if (selectedSlotText) {
+            selectedSlotText.textContent = "Please try again later.";
+        }
+    }
+}
+
+window.loadAvailableSlots = loadAvailableSlots;
 
 function toggleNotifications(e) {
     e.stopPropagation();
@@ -209,6 +313,41 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     if (typeof loadType3Meetings === 'function') {
         await loadType3Meetings();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', async function () {
+    if (window.BOOKLY_INVITE_OWNER_ID) {
+        if (typeof make_appointment === 'function') {
+            make_appointment();
+        }
+
+        if (typeof loadAvailableSlots === 'function') {
+            await loadAvailableSlots();
+        }
+
+        var intro = document.getElementById('availabilityIntro');
+        if (intro) {
+            intro.textContent = 'You are viewing activated office-hour slots for this owner.';
+        }
+    }
+});
+
+/* ======== Invitational Link ========= */
+document.addEventListener('DOMContentLoaded', async function () {
+    if (window.BOOKLY_INVITE_OWNER_ID) {
+        if (typeof make_appointment === 'function') {
+            make_appointment();
+        }
+
+        if (typeof loadAvailableSlots === 'function') {
+            await loadAvailableSlots();
+        }
+
+        const intro = document.getElementById('availabilityIntro');
+        if (intro) {
+            intro.textContent = 'You are viewing activated office-hour slots for this owner.';
+        }
     }
 });
 
@@ -243,12 +382,23 @@ async function view_appointments() {
     }
 }
 
-function make_appointment(){
-    document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'block';
-    document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'none';
-    document.getElementsByClassName('vote-meeting-tab-view')[0].style.display = 'none';
-}
+function make_appointment() {
+    var makeView = document.getElementsByClassName('make-appointment-tab-view')[0];
+    var appointmentView = document.getElementsByClassName('view-appointment-tab-view')[0];
+    var voteView = document.getElementById('voteMeetingView');
 
+    if (makeView) {
+        makeView.style.display = 'block';
+    }
+
+    if (appointmentView) {
+        appointmentView.style.display = 'none';
+    }
+
+    if (voteView) {
+        voteView.style.display = 'none';
+    }
+}
 /* Helpers */
 var monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -507,75 +657,40 @@ function createCalendar(opts) {
         ownerSlots = ownerSlots.filter(function (s) { return s.slotID !== bookedID; });
 
         // Refresh slots so the booked one disappears
-        var owner = window.getSelectedOwner();
-        if (owner) {
+        var bookedSlotText = formatSelectedSlot();
+        selectedSlot = null;
+        renderSlots();
+        renderAvailability();
+        syncSharedBookingState();
 
-            showSuccess('Booked slot: ' + formatSelectedSlot() + '. Wait for the popup window  to send a notification email.');
+        var bookedID = selectedSlot.slotID;
+        var bookedSlotText = formatSelectedSlot();
+
+        ownerSlots = ownerSlots.filter(function (s) {
+            return s.slotID !== bookedID;
+        });
+
+        selectedSlot = null;
+        renderSlots();
+        renderAvailability();
+        syncSharedBookingState();
+
+        var owner = window.getSelectedOwner();
+
+        if (owner) {
+            showSuccess('Booked slot: ' + bookedSlotText + '. Wait for the popup window to send a notification email.');
 
             window.location.href = 'mailto:' + owner.email +
                 '?subject=' + encodeURIComponent('Bookly - New office hour booking') +
                 '&body=' + encodeURIComponent('Hello,\n\nI have made a new office hour booking. You can find it on your dashboard.\n\nKind regards,');
+        } else {
+            showSuccess('Booked slot: ' + bookedSlotText + '.');
         }
     } catch (err) {
         console.error('Booking error:', err);
         showError('Could not connect to the server.');
     }
     });
-
-    // Handled in type1.js
-    // sendRequestButton.addEventListener('click', async function () {
-    //     clearMessages();
-
-    //     if (!cal.getSelectedDate() || !selectedSlot) {
-    //         showError('Please choose a date and a 15-minute time slot first.');
-    //         return;
-    //     }
-
-    //     if (!currentUser || !currentUser.email) {
-    //         showError('You must be logged in.');
-    //         return;
-    //     }
-
-    //     if (!ownerSelect.value) {
-    //         showError('Please choose an owner.');
-    //         return;
-    //     }
-
-    //     if (!meetingMessage.value.trim()) {
-    //         showError('Please enter a request message.');
-    //         return;
-    //     }
-
-    //     try {
-    //         const response = await fetch('/api/type1/request_meeting', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json'
-    //             },
-    //             body: JSON.stringify({
-    //                 student_email: currentUser.email,
-    //                 owner_email: ownerSelect.value,
-    //                 message: meetingMessage.value.trim()
-    //             })
-    //         });
-
-    //         const data = await response.json();
-
-    //         if (!response.ok) {
-    //             showError(data.error || 'Could not create meeting request.');
-    //             return;
-    //         }
-
-    //         showSuccess(
-    //             'Successfully requested a meeting for ' +
-    //             formatSelectedSlot() +
-    //             '. Request ID: ' + data.meetingID
-    //         );
-    //     } catch (error) {
-    //         console.error('Error:', error);
-    //         showError('Could not connect to the server.');
-    //     }
-    // });
 
     async function loadCurrentUser() {
         try {
@@ -664,8 +779,13 @@ function createCalendar(opts) {
         clearMessages();
 
         if (ownerSlots.length === 0) {
-            slotsNote.textContent = 'Search for a professor above to see their available slots.';
-            selectedSlotText.textContent = 'Choose a professor, then a date and time slot.';
+            if (window.BOOKLY_INVITE_OWNER_ID) {
+                slotsNote.textContent = 'This owner does not have any activated office-hour slots right now.';
+                selectedSlotText.textContent = 'No available slots for this invitation link.';
+            } else {
+                slotsNote.textContent = 'Search for a professor above to see their available slots.';
+                selectedSlotText.textContent = 'Choose a professor, then a date and time slot.';
+            }
             bookArea.classList.remove('show');
             return;
         }

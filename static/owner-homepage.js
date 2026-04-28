@@ -112,6 +112,16 @@ function formatStatusBadge(status) {
     return '<span class="status-badge open">Active</span>';
 }
 
+function updateOwnerBookingInviteUrl(user) {
+    const el = document.getElementById('ownerBookingInviteUrl');
+
+    if (!el || !user || !user.userID) {
+        return;
+    }
+
+    el.textContent = `${window.location.origin}/book/owner/${user.userID}`;
+}
+
 
 // =========================
 // Current logged-in owner
@@ -136,6 +146,7 @@ async function loadCurrentUser() {
         if (currentUserName) currentUserName.textContent = data.name || 'Unknown';
         if (currentUserEmail) currentUserEmail.textContent = data.email || 'Unknown';
         if (currentUserRole) currentUserRole.textContent = formatRoleLabel(data.role);
+        updateOwnerBookingInviteUrl(data);
 
     } catch (error) {
         console.error('Error loading current user:', error);
@@ -261,12 +272,14 @@ function copyInviteUrl(btn) {
     }
 
     const rawText = textEl.textContent.trim();
+
     const url = rawText.startsWith('http')
         ? rawText
         : window.location.origin + rawText;
 
     navigator.clipboard.writeText(url).then(function () {
         btn.textContent = 'Copied!';
+
         setTimeout(function () {
             btn.textContent = 'Copy';
         }, 2000);

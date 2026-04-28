@@ -133,6 +133,28 @@ async function cancelType3Booking(booking3ID, ownerEmail) {
     }
 }
 
+/* ====== Invitational URL ============== */
+function getInviteOwnerID() {
+    if (window.BOOKLY_INVITE_OWNER_ID) {
+        return Number(window.BOOKLY_INVITE_OWNER_ID);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const ownerID = params.get('owner_id');
+
+    return ownerID ? Number(ownerID) : null;
+}
+
+function getAvailableSlotsUrl() {
+    const ownerID = getInviteOwnerID();
+
+    if (ownerID) {
+        return `/api/type3/available_slots?owner_id=${encodeURIComponent(ownerID)}`;
+    }
+
+    return '/api/type3/available_slots';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // Load on page load only if the appointments view is already visible
 });

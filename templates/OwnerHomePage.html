@@ -351,10 +351,12 @@
                 </div>
 
                 <div class="status-card show" id="inviteUrlCard">
-                    <h2 class="status-card-title">Invitation URLs</h2>
-                    <p class="slots-note">Share these links so students can go directly to your available slots.</p>
+                    <h2 class="status-card-title">Invitation URL</h2>
+                    <p class="slots-note">
+                        Share this link so students can go directly to your activated office-hour slots.
+                    </p>
                     <div class="invite-url-box">
-                        <span class="invite-url-text" id="inviteUrl1">/book/xyZ_abc123</span>
+                        <span class="invite-url-text" id="ownerBookingInviteUrl">Loading...</span>
                         <button class="table-action" onclick="copyInviteUrl(this)">Copy</button>
                     </div>
                 </div>
@@ -378,28 +380,17 @@
                     <button onclick="ownerSwitchTab('ownerApptsView')">
                         <h3>My appointments</h3>
                     </button>
+
                     <div class="notif-wrapper">
                         <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications(event)">
-                            <h3>Notifications <span class="notif-count" id="notifCount">2</span></h3>
+                            <h3>Notifications <span class="notif-count" id="notifCount">0</span></h3>
                         </button>
+
                         <div class="notif-panel" id="notifPanel">
                             <div class="notif-header">Notifications</div>
                             <div class="notif-list" id="notifList">
-                                <div class="notif-item unread">
-                                    <div class="notif-text">Alice Wang <strong>booked</strong> your 10:15 AM slot on Apr 21</div>
-                                    <div class="notif-time">1 hour ago</div>
-                                </div>
-                                <div class="notif-item unread">
-                                    <div class="notif-text">New meeting request from <strong>Bob Smith</strong></div>
-                                    <div class="notif-time">3 hours ago</div>
-                                </div>
                                 <div class="notif-item">
-                                    <div class="notif-text">Carol Lee submitted availability for <strong>COMP 307 Project Sync</strong></div>
-                                    <div class="notif-time">Yesterday</div>
-                                </div>
-                                <div class="notif-item">
-                                    <div class="notif-text">Alice Wang <strong>cancelled</strong> her booking on Apr 14</div>
-                                    <div class="notif-time">3 days ago</div>
+                                    <div class="notif-text">No notifications yet.</div>
                                 </div>
                             </div>
                         </div>
