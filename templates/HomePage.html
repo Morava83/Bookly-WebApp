@@ -207,26 +207,13 @@
                     </button>
                     <div class="notif-wrapper">
                         <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications(event)">
-                            <h3>Notifications <span class="notif-count" id="notifCount">3</span></h3>
+                            <h3>Notifications <span class="notif-count" id="notifCount"></span></h3>
                         </button>
                         <div class="notif-panel" id="notifPanel">
                             <div class="notif-header">Notifications</div>
                             <div class="notif-list" id="notifList">
-                                <div class="notif-item unread">
-                                    <div class="notif-text">Prof. Vybihal <strong>accepted</strong> your meeting request</div>
-                                    <div class="notif-time">2 hours ago</div>
-                                </div>
-                                <div class="notif-item unread">
-                                    <div class="notif-text">Prof. Bhatt <strong>declined</strong> your meeting request</div>
-                                    <div class="notif-time">5 hours ago</div>
-                                </div>
                                 <div class="notif-item">
-                                    <div class="notif-text">Your office hours slot with Prof. Pientka was <strong>cancelled</strong></div>
-                                    <div class="notif-time">Yesterday</div>
-                                </div>
-                                <div class="notif-item">
-                                    <div class="notif-text">Sarah Chen booked a group meeting: <strong>TA Review Session</strong></div>
-                                    <div class="notif-time">2 days ago</div>
+                                    <div class="notif-text">No notifications yet.</div>
                                 </div>
                             </div>
                         </div>
@@ -284,7 +271,7 @@
     <script>
         window.BOOKLY_INVITE_OWNER_ID = "{{ booking_owner_id|default('', true) }}";
     </script>
-    
+
     <script src="{{ url_for('static', filename='homepage.js') }}"></script>
     <script src="{{ url_for('static', filename='type1.js') }}"></script>
     <script src="{{ url_for('static', filename='type2.js') }}"></script>

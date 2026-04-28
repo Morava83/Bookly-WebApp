@@ -7,6 +7,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, date
 
+from notifications import create_notification
+
 # Zoom utils
 from zoom_utils import get_owner_zoom_link
 
@@ -515,9 +517,9 @@ def book_slots():
             password=config.get("EMAIL_PASSWORD")
         )
 
-        send_notification(
-            f"New office hours booking on {row['start_date']} at {row['start_time']}",
-            row["ownerID"]
+        create_notification(
+            row["ownerID"],
+            f"New office hours booking from {row['student_name']} on {row['start_date']} at {row['start_time']}."
         )
 
         return jsonify({"success": True}), 201
@@ -659,6 +661,12 @@ def delete_slot():
         cur.execute("DELETE FROM TimeSlot WHERE slotID = ?", (slot_id,))
 
         conn.commit()
+
+        if row["booking3ID"] and row["studentID"]:
+            create_notification(
+                row["studentID"],
+                f"Your office hours booking on {row['start_date']} at {row['start_time']} was cancelled by the owner."
+            )
 
         return jsonify({
             "success": True,

@@ -145,6 +145,16 @@ CREATE TABLE IF NOT EXISTS GroupInvite (
     FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE
 );
 
+-- Notifications
+CREATE TABLE IF NOT EXISTS Notification (
+    notificationID INTEGER PRIMARY KEY AUTOINCREMENT,
+    userID INTEGER NOT NULL,
+    message TEXT NOT NULL,
+    is_read INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userID) REFERENCES User(userID) ON DELETE CASCADE
+);
+
 --Constraint added to avoid duplicate meetings
 --Constraints using trigger
 --This is employed to avoid double meeting reservation

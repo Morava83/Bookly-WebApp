@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session, redirect
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, join_room
 import sqlite3
 import os
 
@@ -21,6 +21,12 @@ app = Flask(__name__, template_folder="templates")
 #socketio = SocketIO(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key") # Change later
+
+@socketio.on("connect")
+def handle_socket_connect():
+    if "user_id" in session:
+        join_room(str(session["user_id"]))
+        print(f"User {session['user_id']} connected to notification room")
 
 # Dynamic media query
 # SMTP config
@@ -245,7 +251,6 @@ def send_verification():
     if not is_mcgill_email(email):
         return jsonify({"error": "Only McGill emails can register"}), 400
     
-    # Check if already registered
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT 1 FROM User WHERE email = ?", (email,))
@@ -254,13 +259,10 @@ def send_verification():
         return jsonify({"error": "Email already registered"}), 409
     conn.close()
     
-    # Generate 6 digit code
     code = str(random.randint(100000, 999999))
     session["verify_code"] = code
     session["verify_email"] = email
     
-    # Send email
-
     try:
         msg = MIMEMultipart()
         msg["From"] = app.config["FROM_EMAIL"]
@@ -348,6 +350,68 @@ def home_page():
     if session["role"] == "owner":
         return render_template("OwnerHomePage.html")
     return render_template("HomePage.html")
+
+# ======= Notification ==========
+@app.route("/api/notifications", methods=["GET"])
+@login_required
+def get_notifications():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT notificationID, message, is_read, created_at
+            FROM Notification
+            WHERE userID = ?
+            ORDER BY created_at DESC
+            LIMIT 20
+        """, (session["user_id"],))
+
+        rows = cur.fetchall()
+
+        cur.execute("""
+            SELECT COUNT(*) AS unread_count
+            FROM Notification
+            WHERE userID = ? AND is_read = 0
+        """, (session["user_id"],))
+
+        unread_count = cur.fetchone()["unread_count"]
+
+        return jsonify({
+            "notifications": [
+                {
+                    "notificationID": row["notificationID"],
+                    "message": row["message"],
+                    "is_read": row["is_read"],
+                    "created_at": row["created_at"]
+                }
+                for row in rows
+            ],
+            "unread_count": unread_count
+        }), 200
+
+    finally:
+        conn.close()
+
+
+@app.route("/api/notifications/mark-read", methods=["POST"])
+@login_required
+def mark_notifications_read():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            UPDATE Notification
+            SET is_read = 1
+            WHERE userID = ?
+        """, (session["user_id"],))
+
+        conn.commit()
+        return jsonify({"success": True}), 200
+
+    finally:
+        conn.close()
 
 # ======== Blueprints ======== 
 app.register_blueprint(type1_blueprint, url_prefix="/api/type1")

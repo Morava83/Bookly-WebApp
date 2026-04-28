@@ -7,6 +7,8 @@ from email.mime.multipart import MIMEMultipart
 from zoom_utils import create_type2_zoom_meeting
 from datetime import datetime, timedelta
 
+from notifications import create_notification
+
 # -------Type 2: Group Meeting-------------
 
 type2_blueprint = Blueprint('Type2', __name__)
@@ -304,6 +306,12 @@ def create_group_meeting():
             )
             if cursor.rowcount > 0:
                 saved_invitees += 1
+                create_notification(
+                    student_id,
+                    f"You were invited to vote for group meeting '{title}'."
+                )
+
+            
 
         conn.commit()
         return jsonify(
@@ -578,10 +586,12 @@ def decide_meeting():
                 meeting_id,
             ),
         )
+
         cursor.execute(
             "UPDATE GroupMeeting SET numOfRecurrences = ? WHERE meetingID = ?",
             (num_recurrences, meeting_id),
         )
+
         cursor.execute(
             """
             INSERT OR IGNORE INTO Booking2 (studentID, ownerID, meetingID, availabilityID)
@@ -591,7 +601,22 @@ def decide_meeting():
             """,
             (session["user_id"], meeting_id, availability_id, availability_id),
         )
+
         booked_count = cursor.rowcount
+
+        cursor.execute("""
+            SELECT DISTINCT studentID
+            FROM Booking2
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        booked_students = cursor.fetchall()
+
+        for student in booked_students:
+            create_notification(
+                student["studentID"],
+                f"Group meeting '{meeting_row['title']}' has been finalized for {selected_slot['date']} at {selected_slot['start_time']}."
+            )
 
         recurring_instance_ids = []
         if num_recurrences and num_recurrences > 1:
@@ -718,6 +743,27 @@ def cancel_group_meeting():
             return jsonify({"error": "Unauthorized"}), 403
         cursor.execute("UPDATE Meeting SET status = 'cancelled' WHERE meetingID = ?", (meeting_id,))
         cursor.execute("UPDATE Availability SET status = 'closed' WHERE meetingID = ?", (meeting_id,))
+
+        # Notifications
+        cursor.execute("""
+            SELECT DISTINCT studentID
+            FROM GroupInvite
+            WHERE meetingID = ?
+            UNION
+            SELECT DISTINCT studentID
+            FROM Booking2
+            WHERE meetingID = ?
+        """, (meeting_id, meeting_id))
+
+        students_to_notify = cursor.fetchall()
+
+        for student in students_to_notify:
+            create_notification(
+                student["studentID"],
+                "A group meeting you were invited to or booked for was cancelled."
+            )
+
+
         conn.commit()
         return jsonify({"status": "ok", "message": "Group meeting cancelled successfully."}), 200
     except Exception as e:
@@ -858,6 +904,22 @@ def submit_vote():
             "UPDATE GroupInvite SET status = 'voted' WHERE meetingID = ? AND studentID = ?",
             (meeting_id, student_id),
         )
+
+        # Notification
+        cursor.execute("""
+            SELECT ownerID, title
+            FROM GroupMeeting
+            WHERE meetingID = ?
+        """, (meeting_id,))
+        meeting_info = cursor.fetchone()
+
+        if meeting_info:
+            create_notification(
+                meeting_info["ownerID"],
+                f"A student submitted availability for group meeting '{meeting_info['title']}'."
+            )
+
+
         conn.commit()
         return jsonify({"status": "ok"}), 200
     except Exception as e:

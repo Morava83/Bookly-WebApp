@@ -6,6 +6,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
+# Notification Feature
+from notifications import create_notification
+
 # Zoom Feature
 from zoom_utils import create_type1_zoom_meeting
 
@@ -41,25 +44,6 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
             print(f"Email sent to {to_email}")
     except Exception as e:
         print(f"Email error: {e}")
-
-
-
-# SOCKET NOTIFICATION
-
-def send_notification(message, user_id):
-    try:
-        from app import socketio
-
-        socketio.emit(
-            "notification",
-            {"message": message},
-            to=str(user_id)
-        )
-
-    except Exception as e:
-        print("Socket error:", e)
-
-
 
 # DB HELPERS
 
@@ -128,6 +112,8 @@ def create_meeting(student_id, owner_id, message, meeting_date, start_time, end_
 
     conn.commit()
     conn.close()
+
+    
 
     return meeting_id
 
@@ -198,17 +184,6 @@ def request_meeting():
         zoom_link
     )
 
-    # # Update message in RequestMeeting (since insert used empty string earlier)
-    # conn = sqlite3.connect(DB_PATH) // Use get_db_connection() instead of direct sqlite3 connection
-    # cursor = conn.cursor()
-    # cursor.execute("""
-    #     UPDATE RequestMeeting
-    #     SET message = ?
-    #     WHERE meetingID = ?
-    # """, (message, meeting_id))
-    # conn.commit()
-    # conn.close()
-
     # Email owner
     config = current_app.config
 
@@ -229,8 +204,10 @@ def request_meeting():
         password=config.get("EMAIL_PASSWORD")
     )
 
-    # Socket notification
-    send_notification(f"New meeting request from {user_email}", owner_id)
+    create_notification(
+        owner_id,
+        f"New meeting request from {user_email} for {meeting_date} at {start_time}."
+    )
 
     return jsonify({
         "success": True,
@@ -342,7 +319,10 @@ def accept_meeting():
             password=config.get("EMAIL_PASSWORD")
         )
 
-        send_notification(f"Meeting accepted for {student_email}", student_id)
+        create_notification(
+            student_id,
+            f"Your meeting request was accepted. Zoom link: {row['zoom_link'] or 'Not provided'}"
+        )
 
     return jsonify({"success": True}), 200
 
@@ -399,8 +379,10 @@ def decline_meeting():
         password=config.get("EMAIL_PASSWORD")
     )
 
-
-    send_notification(f"Meeting declined (ID: {meeting_id})", student_id)
+    create_notification(
+        student_id,
+        f"Your meeting request was declined."
+    )
 
     return jsonify({"success": True}), 200
 
@@ -442,6 +424,16 @@ def cancel_individual_meeting():
         """, (meeting_id,))
 
         conn.commit()
+
+        if session["user_id"] == row["studentID"]:
+            notify_user_id = row["ownerID"]
+        else:
+            notify_user_id = row["studentID"]
+
+        create_notification(
+            notify_user_id,
+            f"An individual meeting was cancelled."
+        )
 
         return jsonify({
             "success": True,

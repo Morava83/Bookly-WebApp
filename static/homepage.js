@@ -209,14 +209,30 @@ async function loadAvailableSlots() {
 
 window.loadAvailableSlots = loadAvailableSlots;
 
-function toggleNotifications(e) {
+async function toggleNotifications(e) {
     e.stopPropagation();
+
     var panel = document.getElementById('notifPanel');
+
+    if (!panel) {
+        return;
+    }
+
     panel.classList.toggle('open');
+
+    if (panel.classList.contains('open')) {
+        await loadNotifications();
+        await markNotificationsRead();
+    }
 }
 
 document.addEventListener('click', function (e) {
     var panel = document.getElementById('notifPanel');
+
+    if (!panel) {
+        return;
+    }
+
     if (!panel.contains(e.target)) {
         panel.classList.remove('open');
     }
@@ -233,6 +249,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     if (typeof loadType3Meetings === 'function') {
         await loadType3Meetings();
+    }
+
+    if (typeof loadNotifications === 'function') {
+        await loadNotifications();
     }
 });
 
@@ -300,6 +320,104 @@ function make_appointment() {
         voteView.style.display = 'none';
     }
 }
+
+/* Notifications */
+async function loadNotifications() {
+    var notifList = document.getElementById('notifList');
+    var notifCount = document.getElementById('notifCount');
+
+    if (!notifList || !notifCount) {
+        return;
+    }
+
+    try {
+        var res = await fetch('/api/notifications');
+        var data = await res.json();
+
+        if (!res.ok) {
+            console.error(data.error || 'Could not load notifications.');
+            return;
+        }
+
+        var notifications = data.notifications || [];
+        var unreadCount = data.unread_count || 0;
+
+        notifCount.textContent = unreadCount > 0 ? String(unreadCount) : '';
+
+        notifList.innerHTML = '';
+
+        if (notifications.length === 0) {
+            notifList.innerHTML =
+                '<div class="notif-item">' +
+                    '<div class="notif-text">No notifications yet.</div>' +
+                '</div>';
+            return;
+        }
+
+        notifications.forEach(function (n) {
+            var item = document.createElement('div');
+            item.className = 'notif-item' + (n.is_read ? '' : ' unread');
+
+            item.innerHTML =
+                '<div class="notif-text">' + escapeHtml(n.message) + '</div>' +
+                '<div class="notif-time">' + formatNotificationTime(n.created_at) + '</div>';
+
+            notifList.appendChild(item);
+        });
+
+    } catch (error) {
+        console.error('Notification load error:', error);
+    }
+}
+
+async function markNotificationsRead() {
+    var notifCount = document.getElementById('notifCount');
+
+    try {
+        await fetch('/api/notifications/mark-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (notifCount) {
+            notifCount.textContent = '';
+        }
+
+        var unreadItems = document.querySelectorAll('.notif-item.unread');
+        unreadItems.forEach(function (item) {
+            item.classList.remove('unread');
+        });
+
+    } catch (error) {
+        console.error('Could not mark notifications as read:', error);
+    }
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function formatNotificationTime(value) {
+    if (!value) {
+        return '';
+    }
+
+    var date = new Date(value.replace(' ', 'T'));
+    if (isNaN(date.getTime())) {
+        return value;
+    }
+
+    return date.toLocaleString();
+}
+
+
 /* Helpers */
 var monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -312,12 +430,7 @@ var startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate
 function padNumber(value) {
     return value < 10 ? '0' + value : String(value);
 }
-function formatTime(hour, minute) {
-    var suffix = hour >= 12 ? 'PM' : 'AM';
-    var displayHour = hour % 12;
-    if (displayHour === 0) displayHour = 12;
-    return displayHour + ':' + padNumber(minute) + ' ' + suffix;
-}
+
 function formatDateOnly(date) {
     return weekdayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
 }
@@ -641,16 +754,20 @@ function createCalendar(opts) {
         try {
             const socket = io();
 
-            socket.on('notification', function (data) {
+            socket.on('notification', async function (data) {
                 if (data && data.message) {
                     showSuccess(data.message);
+                }
+
+                if (typeof loadNotifications === 'function') {
+                    await loadNotifications();
                 }
             });
         } catch (error) {
             console.error('Socket setup error:', error);
         }
     }
-
+    
     function renderSlots() {
         var d = cal.getSelectedDate();
         slotsGrid.innerHTML = '';

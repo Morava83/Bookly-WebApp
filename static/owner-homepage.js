@@ -212,23 +212,140 @@ function ownerSwitchTab(tabId) {
 // Notifications
 // =========================
 
-function toggleNotifications(e) {
+async function toggleNotifications(e) {
     e.stopPropagation();
 
     const panel = document.getElementById('notifPanel');
-    if (panel) {
-        panel.classList.toggle('open');
+
+    if (!panel) {
+        return;
     }
+
+    panel.classList.toggle('open');
+
+    if (panel.classList.contains('open')) {
+        await loadOwnerNotifications();
+        await markOwnerNotificationsRead();
+    }
+}
+
+async function loadOwnerNotifications() {
+    const notifList = document.getElementById('notifList');
+    const notifCount = document.getElementById('notifCount');
+
+    if (!notifList || !notifCount) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/notifications');
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error(data.error || 'Could not load owner notifications.');
+            return;
+        }
+
+        const notifications = data.notifications || [];
+        const unreadCount = data.unread_count || 0;
+
+        notifCount.textContent = unreadCount > 0 ? String(unreadCount) : '';
+
+        notifList.innerHTML = '';
+
+        if (notifications.length === 0) {
+            notifList.innerHTML =
+                '<div class="notif-item">' +
+                    '<div class="notif-text">No notifications yet.</div>' +
+                '</div>';
+            return;
+        }
+
+        notifications.forEach(function (notification) {
+            const item = document.createElement('div');
+            item.className = 'notif-item' + (notification.is_read ? '' : ' unread');
+
+            item.innerHTML =
+                '<div class="notif-text">' + escapeHtml(notification.message) + '</div>' +
+                '<div class="notif-time">' + formatOwnerNotificationTime(notification.created_at) + '</div>';
+
+            notifList.appendChild(item);
+        });
+
+    } catch (error) {
+        console.error('Owner notification load error:', error);
+    }
+}
+
+async function markOwnerNotificationsRead() {
+    const notifCount = document.getElementById('notifCount');
+
+    try {
+        await fetch('/api/notifications/mark-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (notifCount) {
+            notifCount.textContent = '';
+        }
+
+        document.querySelectorAll('.notif-item.unread').forEach(function (item) {
+            item.classList.remove('unread');
+        });
+
+    } catch (error) {
+        console.error('Could not mark owner notifications as read:', error);
+    }
+}
+
+function formatOwnerNotificationTime(value) {
+    if (!value) {
+        return '';
+    }
+
+    const date = new Date(String(value).replace(' ', 'T'));
+
+    if (isNaN(date.getTime())) {
+        return value;
+    }
+
+    return date.toLocaleString();
 }
 
 document.addEventListener('click', function (e) {
     const panel = document.getElementById('notifPanel');
+    const toggle = document.getElementById('notifToggle');
 
-    if (panel && !panel.contains(e.target)) {
+    if (!panel) {
+        return;
+    }
+
+    if (toggle && toggle.contains(e.target)) {
+        return;
+    }
+
+    if (!panel.contains(e.target)) {
         panel.classList.remove('open');
     }
 });
 
+function setupOwnerSocket() {
+    try {
+        const socket = io();
+
+        socket.on('notification', async function (data) {
+            if (data && data.message) {
+                await loadOwnerNotifications();
+            }
+        });
+
+    } catch (error) {
+        console.error('Owner SocketIO setup error:', error);
+    }
+}
 
 // =========================
 // Logout
@@ -1587,6 +1704,14 @@ async function cancelOHBooking(bookingID, studentEmail) {
 document.addEventListener('DOMContentLoaded', async function () {
     if (typeof loadCurrentUser === 'function') {
         await loadCurrentUser();
+    }
+
+    if (typeof loadOwnerNotifications === 'function') {
+        await loadOwnerNotifications();
+    }
+
+    if (typeof setupOwnerSocket === 'function') {
+        setupOwnerSocket();
     }
 
     ownerSwitchTab('ownerApptsView');
