@@ -4,6 +4,7 @@ import sqlite3
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from zoom_utils import create_type2_zoom_meeting
 #-------Type 2: Group Meeting-------------
 
 #=======Setup========
@@ -63,13 +64,26 @@ def get_schedule():
     cursor = conn.cursor()
 
     cursor.execute("""
-                   SELECT DISTINCT gm.startDate, gm.endDate, a.start_time, a.end_time, a.day
-                   FROM availability a 
-                   JOIN GroupMeeting gm 
-                   ON gm.meetingID = a.meetingID 
-                   WHERE gm.meetingID = ?
-                   """,
-                   (meeting_id,))
+        SELECT 
+            a.availabilityID,
+            a.date,
+            a.start_time,
+            a.end_time,
+            a.count,
+            a.status,
+            COUNT(v.studentID) AS vote_count
+        FROM Availability a
+        LEFT JOIN Vote v ON v.availabilityID = a.availabilityID
+        WHERE a.meetingID = ?
+        GROUP BY 
+            a.availabilityID,
+            a.date,
+            a.start_time,
+            a.end_time,
+            a.count,
+            a.status
+        ORDER BY a.date, a.start_time
+    """, (meeting_id,))
     rows = cursor.fetchall()
     
     conn.close()
@@ -77,11 +91,13 @@ def get_schedule():
     availabilities = []
     for row in rows:
         availabilities.append({
-            "start_date": row["startDate"],
-            "end_date": row["endDate"],
+            "availabilityID": row["availabilityID"],
+            "date": row["date"],
             "start_time": row["start_time"],
             "end_time": row["end_time"],
-            "day": row["day"],
+            "count": row["count"],
+            "status": row["status"],
+            "vote_count": row["vote_count"]
         })
     return jsonify({
         "meetingID": meeting_id,
@@ -120,11 +136,17 @@ def create_group_meeting():
     try:
         
         # 1. Create base Meeting record
-        
+        first_slot = slots[0]
+
+
         cursor.execute("""
         INSERT INTO Meeting (date, start_time, end_time, status)
-        VALUES (NULL, NULL, NULL, 'open')
-    """)
+        VALUES (?, ?, ?, 'open')
+    """, (
+            first_slot["start_date"],
+            first_slot["start_time"],
+            first_slot["end_time"]
+    ))
 
         meeting_id = cursor.lastrowid
 
@@ -160,15 +182,37 @@ def create_group_meeting():
         for slot in slots:
             cursor.execute("""
                 INSERT INTO Availability (
-                    meetingID, day, start_time, end_time
+                    meetingID, date, start_time, end_time, status
                 )
-                VALUES (?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, 'open')
             """, (
                 meeting_id,
-                slot["day"],  # TODO: map real weekday if needed
+                slot["start_date"], 
                 slot["start_time"],
                 slot["end_time"]
             ))
+
+        # 4. Save invited students
+        invitees = invitees or []
+
+        for email in invitees:
+            email = (email or "").strip().lower()
+
+            if not email:
+                continue
+
+            student_id = get_student_id_by_email(email)
+
+            if not student_id:
+                # Ignore invalid/non-student
+                continue
+
+            cursor.execute("""
+                INSERT OR IGNORE INTO GroupInvite (meetingID, studentID)
+                VALUES (?, ?)
+            """, (meeting_id, student_id))
+
+
 
         conn.commit()
 
@@ -187,8 +231,97 @@ def create_group_meeting():
     return jsonify({
         "status": "ok",
         "meetingID": meeting_id,
-        "invite_url": invite_url
+        "invite_url": invite_url,
+        "saved_invitees": len(invitees or [])
     })
+
+# GET owner-created group meetings
+@type2_blueprint.route('/group_meeting/owner', methods=['GET'])
+def owner_group_meetings():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    if session.get("role") != "owner":
+        return jsonify({"error": "Owner access required"}), 403
+
+    owner_id = session["user_id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT
+                gm.meetingID,
+                gm.title,
+                gm.description,
+                gm.startDate,
+                gm.endDate,
+                gm.isRecurring,
+                gm.recurrenceType,
+                gm.numOfRecurrences,
+                m.date,
+                m.start_time,
+                m.end_time,
+                m.status,
+                m.zoom_link,
+                COUNT(DISTINCT gi.studentID) AS invited_count,
+                COUNT(DISTINCT v.studentID) AS voted_count
+            FROM GroupMeeting gm
+            JOIN Meeting m
+                ON m.meetingID = gm.meetingID
+            LEFT JOIN GroupInvite gi
+                ON gi.meetingID = gm.meetingID
+            LEFT JOIN Availability a
+                ON a.meetingID = gm.meetingID
+            LEFT JOIN Vote v
+                ON v.availabilityID = a.availabilityID
+            WHERE gm.ownerID = ? 
+            GROUP BY
+                gm.meetingID,
+                gm.title,
+                gm.description,
+                gm.startDate,
+                gm.endDate,
+                gm.isRecurring,
+                gm.recurrenceType,
+                gm.numOfRecurrences,
+                m.date,
+                m.start_time,
+                m.end_time,
+                m.status,
+                m.zoom_link
+            ORDER BY gm.startDate DESC, gm.meetingID DESC
+        """, (owner_id,))
+
+        rows = cursor.fetchall()
+
+        return jsonify({
+            "meetings": [
+                {
+                    "meetingID": row["meetingID"],
+                    "title": row["title"],
+                    "description": row["description"],
+                    "startDate": row["startDate"],
+                    "endDate": row["endDate"],
+                    "date": row["date"],
+                    "start_time": row["start_time"],
+                    "end_time": row["end_time"],
+                    "status": row["status"],
+                    "zoom_link": row["zoom_link"],
+                    "isRecurring": row["isRecurring"],
+                    "recurrenceType": row["recurrenceType"],
+                    "numOfRecurrences": row["numOfRecurrences"],
+                    "invited_count": row["invited_count"],
+                    "voted_count": row["voted_count"],
+                    "invite_url": f"/group/{row['meetingID']}"
+                }
+                for row in rows
+            ]
+        }), 200
+
+    finally:
+        conn.close()
 
 #To be put in STUDENT VIEW Dashboard where all Type2 meetings should be display
 @type2_blueprint.route('/group_meeting/student_view', methods=['POST'])
@@ -210,9 +343,11 @@ def get_group_meetings():
         gm.title,
         gm.startDate,
         gm.endDate,
+        a.date,
         a.start_time,
         a.end_time,
-        m.status,
+        a.status AS availability_status,
+        m.status AS meeting_status,
         m.zoom_link,
         COUNT(v.studentID) AS vote_count
         FROM GroupMeeting gm
@@ -228,17 +363,31 @@ def get_group_meetings():
             gm.title,
             gm.startDate,
             gm.endDate,
+            a.date,
             a.start_time,
             a.end_time,
+            a.status,
             m.status,
             m.zoom_link
     """, (meeting_id,))
 
     meetings = cursor.fetchall()
     results = [
-        {"Availability": m[0], "Title": m[1], "Start Date": m[2], "End Date": m[3], "Start Time": m[4], "End Time": m[5], "Status": m[6], "Zoom Link": m[7], "Count": m[8]}
-        for m in meetings
-    ]
+    {
+        "availabilityID": m["availabilityID"],
+        "title": m["title"],
+        "startDate": m["startDate"],
+        "endDate": m["endDate"],
+        "date": m["date"],
+        "start_time": m["start_time"],
+        "end_time": m["end_time"],
+        "availability_status": m["availability_status"],
+        "meeting_status": m["meeting_status"],
+        "zoom_link": m["zoom_link"],
+        "vote_count": m["vote_count"]
+    }
+    for m in meetings
+]
     conn.close()
 
     return jsonify(results)
@@ -292,16 +441,17 @@ def finalize_meeting():
 #Using form with radio button or checkbox
 @type2_blueprint.route('/group_meeting/decide', methods=['POST'])
 def decide_meeting():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     meeting_id = data.get("meetingID")
     availability_id = data.get("availabilityID")
 
     if not meeting_id:
         return jsonify({"error": "Missing meetingID"}), 400
+
     if not availability_id:
         return jsonify({"error": "Missing availabilityID"}), 400
-    
+
     if "user_id" not in session:
         return jsonify({"error": "Login required"}), 401
 
@@ -309,22 +459,101 @@ def decide_meeting():
     cursor = conn.cursor()
 
     try:
-        # 1. Mark selected availability as booked
+        # Check owner owns this group meeting
+        cursor.execute("""
+            SELECT ownerID, title
+            FROM GroupMeeting
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        meeting_row = cursor.fetchone()
+
+        if not meeting_row:
+            return jsonify({"error": "Meeting not found"}), 404
+
+        if meeting_row["ownerID"] != session["user_id"]:
+            return jsonify({"error": "Unauthorized"}), 403
+
+        # Get selected availability
+        cursor.execute("""
+            SELECT date, start_time, end_time
+            FROM Availability
+            WHERE availabilityID = ?
+            AND meetingID = ?
+        """, (availability_id, meeting_id))
+
+        selected_slot = cursor.fetchone()
+
+        if not selected_slot:
+            return jsonify({"error": "Selected availability not found"}), 404
+
+        zoom_link = None
+
+        try:
+            zoom_data = create_type2_zoom_meeting(
+                current_app,
+                meeting_row["title"] or "Group Meeting",
+                selected_slot["date"],
+                selected_slot["start_time"],
+                selected_slot["end_time"]
+            )
+            zoom_link = zoom_data["zoom_link"]
+
+        except Exception as zoom_error:
+            conn.rollback()
+            return jsonify({
+                "error": "Type 2 Zoom creation failed",
+                "details": str(zoom_error)
+            }), 500
+
+        # Mark selected availability as booked
         cursor.execute("""
             UPDATE Availability
             SET status = 'booked'
             WHERE availabilityID = ?
-        """, (availability_id,))
+            AND meetingID = ?
+        """, (availability_id, meeting_id))
 
-        # 2. Close all OTHER availabilities for the SAME meeting
+        # Close the other options
         cursor.execute("""
             UPDATE Availability
             SET status = 'closed'
             WHERE meetingID = ?
-              AND availabilityID != ?
+            AND availabilityID != ?
         """, (meeting_id, availability_id))
 
+        # Finalize the main Meeting row with Zoom link
+        cursor.execute("""
+            UPDATE Meeting
+            SET date = ?, start_time = ?, end_time = ?, status = 'booked', zoom_link = ?
+            WHERE meetingID = ?
+        """, (
+            selected_slot["date"],
+            selected_slot["start_time"],
+            selected_slot["end_time"],
+            zoom_link,
+            meeting_id
+        ))
+
+        # Create Booking2 rows for students who voted for the selected slot
+        cursor.execute("""
+            INSERT OR IGNORE INTO Booking2 (studentID, ownerID, meetingID, availabilityID)
+            SELECT DISTINCT
+                v.studentID,
+                ?,
+                ?,
+                ?
+            FROM Vote v
+            WHERE v.availabilityID = ?
+        """, (
+            session["user_id"],
+            meeting_id,
+            availability_id,
+            availability_id
+        ))
+
         conn.commit()
+        return jsonify({"message": "Meeting decided successfully"}), 200
 
     except Exception as e:
         conn.rollback()
@@ -333,23 +562,118 @@ def decide_meeting():
     finally:
         conn.close()
 
-    #Send email to Owner once meeting is booked
-    #send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password, zoom)
-    #TODO Optionally delete all closed availability
 
-    return jsonify({"message": "Meeting decided successfully"})
-
-#----------FORM TO DATABASE------------
-#Student chooses most convenient dates & time slots out of those made available by the TA
-@type2_blueprint.route('/group_meeting/vote', methods=['POST'])
-def submit_vote():
-    data = request.get_json()
-
-    if not data:
-        return jsonify({"error": "No JSON received"}), 400
-
+# --------- Cancel Meeting ----------
+@type2_blueprint.route('/group_meeting/cancel', methods=['POST'])
+def cancel_group_meeting():
+    data = request.get_json() or {}
     meeting_id = data.get("meetingID")
-    availability_id = data.get("availabilityID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT ownerID
+            FROM GroupMeeting
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        row = cursor.fetchone()
+
+        if not row:
+            return jsonify({"error": "Group meeting not found"}), 404
+
+        if row["ownerID"] != session["user_id"]:
+            return jsonify({"error": "Unauthorized"}), 403
+
+        cursor.execute("""
+            UPDATE Meeting
+            SET status = 'cancelled'
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        cursor.execute("""
+            UPDATE Availability
+            SET status = 'closed'
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        conn.commit()
+
+        return jsonify({
+            "status": "ok",
+            "message": "Group meeting cancelled successfully."
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        conn.close()
+
+@type2_blueprint.route('/group_meeting/delete', methods=['POST'])
+def delete_group_meeting():
+    data = request.get_json() or {}
+    meeting_id = data.get("meetingID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT ownerID
+            FROM GroupMeeting
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        row = cursor.fetchone()
+
+        if not row:
+            return jsonify({"error": "Group meeting not found"}), 404
+
+        if row["ownerID"] != session["user_id"]:
+            return jsonify({"error": "Unauthorized"}), 403
+
+        cursor.execute("""
+            DELETE FROM Meeting
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        conn.commit()
+
+        return jsonify({
+            "status": "ok",
+            "message": "Group meeting removed successfully."
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        conn.close()
+
+@type2_blueprint.route('/group_meeting/student_remove', methods=['POST'])
+def student_remove_group_meeting():
+    data = request.get_json() or {}
+    meeting_id = data.get("meetingID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
 
     if "user_id" not in session:
         return jsonify({"error": "Login required"}), 401
@@ -361,35 +685,142 @@ def submit_vote():
 
     try:
         cursor.execute("""
-            INSERT INTO Vote (
-                studentID, availabilityID
-            )
-            VALUES (?, ?)
-        """, (
-            student_id,
-            availability_id
-        ))
+            SELECT m.status
+            FROM Meeting m
+            JOIN GroupMeeting gm ON gm.meetingID = m.meetingID
+            WHERE m.meetingID = ?
+        """, (meeting_id,))
 
-        #OPTION 1: Keep track of counter with counter attribute
-        # increment vote count (optional but useful)
-        # cursor.execute("""
-        #     UPDATE Availability
-        #     SET count = count + 1
-        #     WHERE availabilityID = ?
-        # """, (availability_id,))
+        row = cursor.fetchone()
 
-        # Count number of votes via query using COUNT aggregation
+        if not row:
+            return jsonify({"error": "Group meeting not found"}), 404
+
+        if row["status"] != "cancelled":
+            return jsonify({"error": "Only cancelled group meetings can be removed"}), 400
+
+        cursor.execute("""
+            DELETE FROM Booking2
+            WHERE meetingID = ?
+              AND studentID = ?
+        """, (meeting_id, student_id))
+
+        cursor.execute("""
+            DELETE FROM GroupInvite
+            WHERE meetingID = ?
+              AND studentID = ?
+        """, (meeting_id, student_id))
 
         conn.commit()
 
+        return jsonify({
+            "status": "ok",
+            "message": "Cancelled group meeting removed."
+        }), 200
+
     except Exception as e:
         conn.rollback()
-        conn.close()
         return jsonify({"error": str(e)}), 500
 
-    conn.close()
+    finally:
+        conn.close()
 
-    return jsonify({"status": "ok"})
+#----------FORM TO DATABASE------------
+#Student chooses most convenient dates & time slots out of those made available by the TA
+@type2_blueprint.route('/group_meeting/vote', methods=['POST'])
+def submit_vote():
+    data = request.get_json() or {}
+
+    meeting_id = data.get("meetingID")
+    availability_ids = data.get("availabilityIDs")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+
+    if not availability_ids or not isinstance(availability_ids, list):
+        return jsonify({"error": "Select at least one availability option"}), 400
+
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    student_id = session["user_id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Check student was invited
+        cursor.execute("""
+            SELECT 1
+            FROM GroupInvite
+            WHERE meetingID = ?
+              AND studentID = ?
+        """, (meeting_id, student_id))
+
+        if not cursor.fetchone():
+            return jsonify({"error": "You are not invited to this group meeting"}), 403
+
+        # Check meeting is still open
+        cursor.execute("""
+            SELECT status
+            FROM Meeting
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        meeting_row = cursor.fetchone()
+
+        if not meeting_row:
+            return jsonify({"error": "Meeting not found"}), 404
+
+        if meeting_row["status"] != "open":
+            return jsonify({"error": "Voting is closed for this meeting"}), 400
+
+        # Clear previous votes for this meeting, so resubmitting replaces choices
+        cursor.execute("""
+            DELETE FROM Vote
+            WHERE studentID = ?
+              AND availabilityID IN (
+                  SELECT availabilityID
+                  FROM Availability
+                  WHERE meetingID = ?
+              )
+        """, (student_id, meeting_id))
+
+        # Insert selected votes
+        for availability_id in availability_ids:
+            cursor.execute("""
+                SELECT 1
+                FROM Availability
+                WHERE availabilityID = ?
+                  AND meetingID = ?
+                  AND status = 'open'
+            """, (availability_id, meeting_id))
+
+            if not cursor.fetchone():
+                conn.rollback()
+                return jsonify({"error": "Invalid or closed availability selected"}), 400
+
+            cursor.execute("""
+                INSERT INTO Vote (studentID, availabilityID)
+                VALUES (?, ?)
+            """, (student_id, availability_id))
+
+        cursor.execute("""
+            UPDATE GroupInvite
+            SET status = 'voted'
+            WHERE meetingID = ?
+              AND studentID = ?
+        """, (meeting_id, student_id))
+
+        conn.commit()
+        return jsonify({"status": "ok"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        conn.close()
 
 @type2_blueprint.route('/group_meeting/vote_counts', methods=['GET'])
 def get_all_vote_counts():
@@ -439,6 +870,239 @@ def get_guests(students):
 
 #--------Schedule Meeting----------
 
+
+
+# ----------- Student View -----------------
+@type2_blueprint.route('/group_meeting/my_bookings', methods=['GET'])
+def my_group_bookings():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    student_id = session["user_id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT
+                b.booking2ID,
+                b.meetingID,
+                b.availabilityID,
+                gm.title,
+                gm.description,
+                gm.startDate,
+                gm.endDate,
+                gm.isRecurring,
+                gm.recurrenceType,
+                gm.numOfRecurrences,
+                m.date,
+                m.start_time,
+                m.end_time,
+                m.status,
+                m.zoom_link,
+                u.name AS owner_name,
+                u.email AS owner_email
+            FROM Booking2 b
+            JOIN GroupMeeting gm
+                ON gm.meetingID = b.meetingID
+            JOIN Meeting m
+                ON m.meetingID = b.meetingID
+            JOIN User u
+                ON u.userID = b.ownerID
+            WHERE b.studentID = ?
+            ORDER BY m.date, m.start_time
+        """, (student_id,))
+
+        rows = cursor.fetchall()
+
+        return jsonify({
+            "meetings": [
+                {
+                    "booking2ID": row["booking2ID"],
+                    "meetingID": row["meetingID"],
+                    "availabilityID": row["availabilityID"],
+                    "title": row["title"],
+                    "description": row["description"],
+                    "owner_name": row["owner_name"],
+                    "owner_email": row["owner_email"],
+                    "startDate": row["startDate"],
+                    "endDate": row["endDate"],
+                    "date": row["date"],
+                    "start_time": row["start_time"],
+                    "end_time": row["end_time"],
+                    "status": row["status"],
+                    "zoom_link": row["zoom_link"],
+                    "isRecurring": row["isRecurring"],
+                    "recurrenceType": row["recurrenceType"],
+                    "numOfRecurrences": row["numOfRecurrences"]
+                }
+                for row in rows
+            ]
+        }), 200
+
+    finally:
+        conn.close()
+
+@type2_blueprint.route('/group_meeting/my_invites', methods=['GET'])
+def my_group_invites():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    student_id = session["user_id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT
+                gm.meetingID,
+                gm.title,
+                gm.description,
+                gm.startDate,
+                gm.endDate,
+                m.status,
+                u.name AS owner_name,
+                u.email AS owner_email,
+                COUNT(DISTINCT a.availabilityID) AS option_count,
+                COUNT(DISTINCT v.availabilityID) AS my_vote_count
+            FROM GroupInvite gi
+            JOIN GroupMeeting gm
+                ON gm.meetingID = gi.meetingID
+            JOIN Meeting m
+                ON m.meetingID = gm.meetingID
+            JOIN User u
+                ON u.userID = gm.ownerID
+            LEFT JOIN Availability a
+                ON a.meetingID = gm.meetingID
+            LEFT JOIN Vote v
+                ON v.availabilityID = a.availabilityID
+               AND v.studentID = gi.studentID
+            WHERE gi.studentID = ?
+              AND m.status = 'open'
+            GROUP BY
+                gm.meetingID,
+                gm.title,
+                gm.description,
+                gm.startDate,
+                gm.endDate,
+                m.status,
+                u.name,
+                u.email
+            ORDER BY gm.startDate, gm.meetingID
+        """, (student_id,))
+
+        rows = cursor.fetchall()
+
+        return jsonify({
+            "meetings": [
+                {
+                    "meetingID": row["meetingID"],
+                    "title": row["title"],
+                    "description": row["description"],
+                    "startDate": row["startDate"],
+                    "endDate": row["endDate"],
+                    "status": row["status"],
+                    "owner_name": row["owner_name"],
+                    "owner_email": row["owner_email"],
+                    "option_count": row["option_count"],
+                    "my_vote_count": row["my_vote_count"]
+                }
+                for row in rows
+            ]
+        }), 200
+
+    finally:
+        conn.close()
+
+@type2_blueprint.route('/group_meeting/owner_bookings', methods=['GET'])
+def owner_group_bookings():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    if session.get("role") != "owner":
+        return jsonify({"error": "Owner access required"}), 403
+
+    owner_id = session["user_id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT
+                gm.meetingID,
+                gm.title,
+                gm.description,
+                gm.startDate,
+                gm.endDate,
+                gm.isRecurring,
+                gm.recurrenceType,
+                gm.numOfRecurrences,
+                m.date,
+                m.start_time,
+                m.end_time,
+                m.status,
+                m.zoom_link,
+                GROUP_CONCAT(u.name, ', ') AS attendee_names,
+                GROUP_CONCAT(u.email, ', ') AS attendee_emails,
+                COUNT(DISTINCT b.studentID) AS attendee_count
+            FROM GroupMeeting gm
+            JOIN Meeting m
+                ON m.meetingID = gm.meetingID
+            LEFT JOIN Booking2 b
+                ON b.meetingID = gm.meetingID
+            LEFT JOIN User u
+                ON u.userID = b.studentID
+            WHERE gm.ownerID = ?
+              AND m.status IN ('booked', 'cancelled')
+            GROUP BY
+                gm.meetingID,
+                gm.title,
+                gm.description,
+                gm.startDate,
+                gm.endDate,
+                gm.isRecurring,
+                gm.recurrenceType,
+                gm.numOfRecurrences,
+                m.date,
+                m.start_time,
+                m.end_time,
+                m.status,
+                m.zoom_link
+            ORDER BY m.date, m.start_time
+        """, (owner_id,))
+
+        rows = cursor.fetchall()
+
+        return jsonify({
+            "meetings": [
+                {
+                    "meetingID": row["meetingID"],
+                    "title": row["title"],
+                    "description": row["description"],
+                    "startDate": row["startDate"],
+                    "endDate": row["endDate"],
+                    "date": row["date"],
+                    "start_time": row["start_time"],
+                    "end_time": row["end_time"],
+                    "status": row["status"],
+                    "zoom_link": row["zoom_link"],
+                    "isRecurring": row["isRecurring"],
+                    "recurrenceType": row["recurrenceType"],
+                    "numOfRecurrences": row["numOfRecurrences"],
+                    "attendee_names": row["attendee_names"] or "",
+                    "attendee_emails": row["attendee_emails"] or "",
+                    "attendee_count": row["attendee_count"]
+                }
+                for row in rows
+            ]
+        }), 200
+
+    finally:
+        conn.close()
+
 #======Helper Functions==========
 def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password, zoom):
     msg = MIMEMultipart()
@@ -470,3 +1134,18 @@ def weekday_name_to_index(name):
     }
     return mapping.get((name or "").strip().lower())
 
+def get_student_id_by_email(email):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT s.userID
+        FROM Student s
+        JOIN User u ON s.userID = u.userID
+        WHERE u.email = ?
+    """, (email,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return row["userID"] if row else None

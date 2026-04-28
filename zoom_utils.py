@@ -66,6 +66,48 @@ def create_type1_zoom_meeting(app, owner_name, student_email, meeting_date, star
         "start_url": data.get("start_url"),
     }
 
+#=============================
+# Type 2 : Group Meetings
+
+def create_type2_zoom_meeting(app, title, meeting_date, start_time, end_time):
+    access_token = get_zoom_token(app)
+
+    start_dt = datetime.strptime(f"{meeting_date} {start_time}", "%Y-%m-%d %H:%M")
+    end_dt = datetime.strptime(f"{meeting_date} {end_time}", "%Y-%m-%d %H:%M")
+
+    duration_minutes = int((end_dt - start_dt).total_seconds() / 60)
+
+    if duration_minutes <= 0:
+        raise ValueError("End time must be after start time.")
+
+    response = requests.post(
+        f"{BASE_URL}/users/me/meetings",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "topic": f"Bookly Group Meeting - {title}",
+            "type": 2,
+            "start_time": f"{meeting_date}T{start_time}:00",
+            "duration": duration_minutes,
+            "settings": {
+                "waiting_room": True,
+                "join_before_host": False,
+                "mute_upon_entry": True,
+            },
+        },
+        timeout=20,
+    )
+
+    response.raise_for_status()
+    data = response.json()
+
+    return {
+        "zoom_meeting_id": str(data["id"]),
+        "zoom_link": data["join_url"],
+        "start_url": data.get("start_url"),
+    }
 
 #=============================
 # Type 3 : Office Hours

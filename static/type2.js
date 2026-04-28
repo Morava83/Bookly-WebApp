@@ -1,210 +1,429 @@
-// /* ═══════════════════════════════════════════
-//    TYPE 2: GROUP MEETING (OWNER)
-//    Compatible with ownerhomepage.js
-//    ═══════════════════════════════════════════ */
+let currentVoteMeetingID = null;
 
-// /* ─────────────────────────────
-//    CREATE SLOT ENTRY
-//    ───────────────────────────── */
+// =========================
+// Helpers
+// =========================
 
-// function addGMSlotEntry() {
-//     const container = document.getElementById('gmSlotEntries');
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
 
-//     const entry = document.createElement('div');
-//     entry.className = 'gm-slot-entry';
+function escapeForJs(value) {
+    return String(value ?? '')
+        .replaceAll('\\', '\\\\')
+        .replaceAll("'", "\\'")
+        .replaceAll('"', '\\"')
+        .replaceAll('\n', ' ')
+        .replaceAll('\r', ' ');
+}
 
-//     entry.innerHTML = `
-//         <div class="oh-slot-row">
+function showSuccess(id, message) {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-//             <div>
-//                 <label class="request-label">Date</label>
-//                 <input type="date" class="request-select gm-date">
-//             </div>
+    el.textContent = message;
+    el.classList.add('show');
+}
 
-//             <div>
-//                 <label class="request-label">Start</label>
-//                 <input type="time" class="request-select gm-start">
-//             </div>
+function showError(id, message) {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-//             <div>
-//                 <label class="request-label">End</label>
-//                 <input type="time" class="request-select gm-end">
-//             </div>
+    el.textContent = message;
+    el.classList.add('show');
+}
 
-//             <div style="align-self:end;">
-//                 <button class="table-action danger"
-//                         onclick="this.closest('.gm-slot-entry').remove()"
-//                         style="margin-bottom:12px;">✕</button>
-//             </div>
+function hideNote(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-//         </div>
-//     `;
+    el.textContent = '';
+    el.classList.remove('show');
+}
 
-//     container.appendChild(entry);
-// }
 
-// /* ─────────────────────────────
-//    CREATE GROUP MEETING
-//    ───────────────────────────── */
+// =========================
+// Combined Type 2 table loader
+// Shows BOTH:
+// 1. Open group meeting invites that need voting
+// 2. Finalized/booked group meetings
+// =========================
 
-// async function createGroupMeeting() {
-//     try {
-//         const title = document.getElementById('gmTitle').value.trim();
-//         const description = document.getElementById('gmDesc').value.trim();
+async function loadAllStudentGroupRows() {
+    const tbody = document.getElementById('groupMeetingsTableBody');
 
-//         const startDate = document.getElementById('gmStartDate').value;
-//         const endDate = document.getElementById('gmEndDate').value;
+    if (!tbody) {
+        return;
+    }
 
-//         if (!title) return showOwnerError('gmErrorNote', 'Please enter a meeting title.');
-//         if (!startDate || !endDate)
-//             return showOwnerError('gmErrorNote', 'Please select start and end dates.');
-//         if (startDate > endDate)
-//             return showOwnerError('gmErrorNote', 'Start date must be before end date.');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="9" class="appt-table-empty">Loading group meetings...</td>
+        </tr>
+    `;
 
-//         const entries = document.querySelectorAll('.gm-slot-entry');
+    try {
+        const [invitesResponse, bookingsResponse] = await Promise.all([
+            fetch('/api/type2/group_meeting/my_invites'),
+            fetch('/api/type2/group_meeting/my_bookings')
+        ]);
 
-//         if (!entries.length)
-//             return showOwnerError('gmErrorNote', 'Add at least one time slot.');
+        const invitesData = await invitesResponse.json();
+        const bookingsData = await bookingsResponse.json();
 
-//         const slots = [];
+        if (!invitesResponse.ok) {
+            throw new Error(invitesData.error || 'Failed to load group meeting invitations.');
+        }
 
-//         entries.forEach(entry => {
-//             const date = entry.querySelector('.gm-date')?.value;
-//             const start_time = entry.querySelector('.gm-start')?.value;
-//             const end_time = entry.querySelector('.gm-end')?.value;
+        if (!bookingsResponse.ok) {
+            throw new Error(bookingsData.error || 'Failed to load finalized group meetings.');
+        }
 
-//             if (!date || !start_time || !end_time) return;
-//             if (start_time >= end_time) return;
+        const invites = invitesData.meetings || [];
+        const bookings = bookingsData.meetings || [];
 
-//             slots.push({
-//                 date,
-//                 start_time,
-//                 end_time
-//             });
-//         });
+        if (invites.length === 0 && bookings.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="appt-table-empty">
+                        No group meetings yet.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
 
-//         if (!slots.length)
-//             return showOwnerError('gmErrorNote', 'Please fill valid slots.');
+        tbody.innerHTML = '';
 
-//         const inviteText = document.getElementById('gmInvitees').value.trim();
-//         const invitees = inviteText
-//             ? inviteText.split('\n').map(e => e.trim()).filter(Boolean)
-//             : [];
+        // 1. Open invitations that need voting
+        invites.forEach(function (meeting) {
+            const row = document.createElement('tr');
 
-//         const payload = {
-//             title,
-//             description,
-//             start_date: startDate,
-//             end_date: endDate,
-//             slots,
-//             invitees
-//         };
+            const voteLabel = Number(meeting.my_vote_count || 0) > 0
+                ? 'Edit vote'
+                : 'Vote';
 
-//         const result = await postJson('/group_meeting', payload);
+            row.innerHTML = `
+                <td>${escapeHtml(meeting.title || 'Untitled group meeting')}</td>
+                <td>${escapeHtml(meeting.owner_name || meeting.owner_email || '')}</td>
+                <td>${escapeHtml(meeting.startDate || '')} to ${escapeHtml(meeting.endDate || '')}</td>
+                <td>—</td>
+                <td>—</td>
+                <td>Voting stage</td>
+                <td><span class="no-link">No link yet</span></td>
+                <td><span class="status-badge open">open</span></td>
+                <td>
+                    <button class="table-action primary"
+                        onclick="openVoteMeeting(${meeting.meetingID}, '${escapeForJs(meeting.title || '')}')">
+                        ${voteLabel}
+                    </button>
+                </td>
+            `;
 
-//         if (!result.response.ok) {
-//             return showOwnerError(
-//                 'gmErrorNote',
-//                 result.data.error || 'Failed to create meeting.'
-//             );
-//         }
+            tbody.appendChild(row);
+        });
 
-//         showOwnerMsg('gmSuccessNote', 'Group meeting created.');
+        // 2. Finalized/booked group meetings
+        bookings.forEach(function (meeting) {
+            const row = document.createElement('tr');
 
-//         if (result.data.invite_url) {
-//             showOwnerMsg('gmSuccessNote', 'Invite: ' + result.data.invite_url);
-//         }
+            const zoomHtml = meeting.zoom_link
+                ? `<a class="table-link" href="${escapeHtml(meeting.zoom_link)}" target="_blank">Join</a>`
+                : `<span class="no-link">No link</span>`;
 
-//         return result.data;
+            const recurrenceText = Number(meeting.isRecurring) === 1
+                ? `${escapeHtml(meeting.recurrenceType || 'Recurring')} × ${escapeHtml(meeting.numOfRecurrences || '')}`
+                : 'One-time';
 
-//     } catch (err) {
-//         console.error(err);
-//         showOwnerError('gmErrorNote', 'Server error.');
-//     }
-// }
+            const actionHtml = meeting.status === 'cancelled'
+                ? `
+                    <button class="table-action danger" onclick="removeStudentGroupMeeting(${meeting.meetingID})">
+                        Remove
+                    </button>
+                `
+                : `<span class="no-link">—</span>`;
 
-// /* ─────────────────────────────
-//    FINALIZE VIEW
-//    ───────────────────────────── */
+            row.innerHTML = `
+                <td>${escapeHtml(meeting.title || 'Untitled group meeting')}</td>
+                <td>${escapeHtml(meeting.owner_name || meeting.owner_email || '')}</td>
+                <td>${escapeHtml(meeting.date || '')}</td>
+                <td>${escapeHtml(meeting.start_time || '')}</td>
+                <td>${escapeHtml(meeting.end_time || '')}</td>
+                <td>${recurrenceText}</td>
+                <td>${zoomHtml}</td>
+                <td><span class="status-badge ${escapeHtml(meeting.status || '')}">${escapeHtml(meeting.status || '')}</span></td>
+                <td>${actionHtml}</td>
+            `;
 
-// async function openFinalizeView(meetingID, title) {
-//     ownerSwitchTab('finalizeGMView');
 
-//     document.getElementById('finalizeIntro').textContent =
-//         `Select final time for "${title}"`;
 
-//     document.getElementById('finalizeTitle').textContent = title;
+            tbody.appendChild(row);
+        });
 
-//     hideMsg('finalizeSuccessNote');
-//     hideMsg('finalizeErrorNote');
+    } catch (error) {
+        console.error(error);
 
-//     try {
-//         const res = await fetch(`/group_meeting?meetingID=${meetingID}`);
-//         const data = await res.json();
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="appt-table-empty">
+                    ${escapeHtml(error.message)}
+                </td>
+            </tr>
+        `;
+    }
+}
 
-//         const slots = data.availabilities || [];
 
-//         const list = document.getElementById('finalizeSlotList');
-//         list.innerHTML = '';
+// =========================
+// Backwards-compatible loaders
+// These call the combined loader so old calls still work.
+// =========================
 
-//         slots.forEach(slot => {
-//             const row = document.createElement('div');
-//             row.className = 'vote-slot-row';
+async function loadStudentGroupMeetings() {
+    await loadAllStudentGroupRows();
+}
 
-//             row.innerHTML = `
-//                 <div class="vote-slot-label">
-//                     <span class="vote-slot-date">${slot.date}</span>
-//                     <span class="vote-slot-time">${slot.start_time} – ${slot.end_time}</span>
-//                 </div>
-//                 <span class="finalize-count">${slot.count} vote(s)</span>
-//             `;
+async function loadStudentGroupInvites() {
+    await loadAllStudentGroupRows();
+}
 
-//             const btn = document.createElement('button');
-//             btn.className = 'table-action vote';
-//             btn.textContent = 'Pick this';
 
-//             btn.onclick = () => finalizeMeeting(meetingID, slot);
+// =========================
+// Voting screen
+// =========================
 
-//             row.appendChild(btn);
-//             list.appendChild(row);
-//         });
+async function openVoteMeeting(meetingID, title) {
+    currentVoteMeetingID = meetingID;
 
-//         document.getElementById('backToManageGMBtn').onclick = () => {
-//             ownerSwitchTab('manageGMView');
-//         };
+    const makeAppointmentView = document.querySelector('.make-appointment-tab-view');
+    const appointmentView = document.querySelector('.view-appointment-tab-view');
+    const voteView = document.getElementById('voteMeetingView');
+    const voteIntro = document.getElementById('voteIntro');
+    const voteSlotList = document.getElementById('voteSlotList');
+    const voteSelectionText = document.getElementById('voteSelectionText');
 
-//     } catch (err) {
-//         console.error(err);
-//         showOwnerError('finalizeErrorNote', 'Could not load meeting.');
-//     }
-// }
+    if (makeAppointmentView) {
+        makeAppointmentView.style.display = 'none';
+    }
 
-// /* ─────────────────────────────
-//    FINALIZE MEETING
-//    ───────────────────────────── */
+    if (appointmentView) {
+        appointmentView.style.display = 'none';
+    }
 
-// async function finalizeMeeting(meetingID, slot) {
-//     const recurring = confirm('Make recurring meeting?');
+    if (voteView) {
+        voteView.style.display = 'block';
+    }
 
-//     let weeks = 1;
-//     if (recurring) {
-//         const input = prompt('Number of weeks?', '5');
-//         weeks = parseInt(input) || 1;
-//     }
+    if (voteIntro) {
+        voteIntro.textContent = `Select all times that work for you for "${title}".`;
+    }
 
-//     const res = await postJson('/api/type2/finalize', {
-//         meetingID,
-//         slotID: slot.slotID,
-//         is_recurring: recurring,
-//         num_weeks: weeks
-//     });
+    if (voteSelectionText) {
+        voteSelectionText.textContent = 'Check the time slots that work for you.';
+    }
 
-//     if (!res.response.ok) {
-//         return showOwnerError('finalizeErrorNote', 'Could not finalize meeting.');
-//     }
+    if (voteSlotList) {
+        voteSlotList.innerHTML = '<p class="slots-note">Loading options...</p>';
+    }
 
-//     showOwnerMsg(
-//         'finalizeSuccessNote',
-//         `Finalized for ${slot.date} ${slot.start_time}`
-//     );
-// }
+    hideNote('voteSuccessNote');
+    hideNote('voteErrorNote');
+
+    try {
+        const response = await fetch(`/api/type2/group_meeting?meetingID=${meetingID}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to load voting options.');
+        }
+
+        const slots = data.availabilities || [];
+
+        if (slots.length === 0) {
+            voteSlotList.innerHTML = '<p class="slots-note">No voting options available.</p>';
+            return;
+        }
+
+        voteSlotList.innerHTML = '';
+
+        let openSlotCount = 0;
+
+        slots.forEach(function (slot) {
+            if (slot.status !== 'open') {
+                return;
+            }
+
+            openSlotCount++;
+
+            const option = document.createElement('label');
+            option.className = 'vote-option';
+            option.style.display = 'block';
+            option.style.padding = '12px';
+            option.style.border = '1px solid #d6d6d6';
+            option.style.marginBottom = '8px';
+            option.style.cursor = 'pointer';
+
+            option.innerHTML = `
+                <input type="checkbox" class="vote-checkbox" value="${slot.availabilityID}">
+                <strong>${escapeHtml(slot.date)}</strong>
+                ${escapeHtml(slot.start_time)} - ${escapeHtml(slot.end_time)}
+                <span class="no-link">(${slot.vote_count || 0} vote(s))</span>
+            `;
+
+            voteSlotList.appendChild(option);
+        });
+
+        if (openSlotCount === 0) {
+            voteSlotList.innerHTML = '<p class="slots-note">Voting is closed for this meeting.</p>';
+        }
+
+    } catch (error) {
+        console.error(error);
+
+        if (voteSlotList) {
+            voteSlotList.innerHTML = `
+                <p class="error-note show">${escapeHtml(error.message)}</p>
+            `;
+        }
+    }
+}
+
+
+// =========================
+// Submit vote
+// =========================
+
+async function submitGroupVote() {
+    if (!currentVoteMeetingID) {
+        showError('voteErrorNote', 'No group meeting selected.');
+        return;
+    }
+
+    hideNote('voteSuccessNote');
+    hideNote('voteErrorNote');
+
+    const checkedBoxes = document.querySelectorAll('.vote-checkbox:checked');
+
+    const availabilityIDs = Array.from(checkedBoxes).map(function (box) {
+        return Number(box.value);
+    });
+
+    if (availabilityIDs.length === 0) {
+        showError('voteErrorNote', 'Please select at least one time slot.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/type2/group_meeting/vote', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                meetingID: currentVoteMeetingID,
+                availabilityIDs: availabilityIDs
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showError('voteErrorNote', data.error || 'Failed to submit vote.');
+            return;
+        }
+
+        showSuccess('voteSuccessNote', 'Your availability was submitted successfully.');
+
+        setTimeout(async function () {
+            backToAppointmentsFromVote();
+
+            if (typeof loadAllStudentGroupRows === 'function') {
+                await loadAllStudentGroupRows();
+            }
+        }, 800);
+
+    } catch (error) {
+        console.error(error);
+        showError('voteErrorNote', 'Server error while submitting vote.');
+    }
+}
+
+
+// =========================
+// Back button from voting screen
+// =========================
+
+function backToAppointmentsFromVote() {
+    const makeAppointmentView = document.querySelector('.make-appointment-tab-view');
+    const appointmentView = document.querySelector('.view-appointment-tab-view');
+    const voteView = document.getElementById('voteMeetingView');
+
+    if (makeAppointmentView) {
+        makeAppointmentView.style.display = 'none';
+    }
+
+    if (voteView) {
+        voteView.style.display = 'none';
+    }
+
+    if (appointmentView) {
+        appointmentView.style.display = 'block';
+    }
+
+    currentVoteMeetingID = null;
+}
+
+async function removeStudentGroupMeeting(meetingID) {
+    if (!confirm('Remove this cancelled group meeting from your appointments?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/type2/group_meeting/student_remove', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ meetingID })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || 'Failed to remove group meeting.');
+            return;
+        }
+
+        if (typeof loadAllStudentGroupRows === 'function') {
+            await loadAllStudentGroupRows();
+        }
+
+    } catch (error) {
+        console.error(error);
+        alert('Server error while removing group meeting.');
+    }
+}
+
+
+// =========================
+// Button listeners
+// =========================
+
+document.addEventListener('DOMContentLoaded', function () {
+    const submitVoteBtn = document.getElementById('submitVoteBtn');
+    const backToApptsBtn = document.getElementById('backToApptsBtn');
+
+    if (submitVoteBtn) {
+        submitVoteBtn.addEventListener('click', submitGroupVote);
+    }
+
+    if (backToApptsBtn) {
+        backToApptsBtn.addEventListener('click', backToAppointmentsFromVote);
+    }
+});
+

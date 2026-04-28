@@ -3,7 +3,7 @@ async function sendType1MeetingRequest() {
     const meetingMessage = document.getElementById('meetingMessage');
     const bookingNote = document.getElementById('type1RequestSuccessNote');
     const errorNote = document.getElementById('type1RequestErrorNote');
-    
+
     if (!ownerSelect || !meetingMessage) {
         console.error('Type1 form elements not found.');
         return;
@@ -159,56 +159,72 @@ async function loadType1Meetings() {
 }
 
 async function cancelType1Meeting(meetingID) {
-    if (!confirm("Cancel this pending meeting request?")) {
+    if (!confirm('Cancel this individual meeting?')) {
         return;
     }
 
     try {
-        const response = await fetch("/api/type1/cancel", {
-            method: "POST",
+        const response = await fetch('/api/type1/cancel', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ meetingID: meetingID })
+            body: JSON.stringify({ meetingID })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            alert(data.error || "Could not cancel meeting.");
+            alert(data.error || 'Failed to cancel meeting.');
             return;
         }
 
-        await loadType1Meetings();
+        if (typeof loadType1Meetings === 'function') {
+            await loadType1Meetings();
+        }
+
+        if (typeof loadOwnerAppointments === 'function') {
+            await loadOwnerAppointments();
+        }
 
     } catch (error) {
-        console.error("Cancel Type 1 meeting error:", error);
-        alert("Could not cancel meeting.");
+        console.error(error);
+        alert('Server error while cancelling meeting.');
     }
 }
 
 async function removeType1Meeting(meetingID) {
+    if (!confirm('Delete this individual meeting permanently?')) {
+        return;
+    }
+
     try {
-        const response = await fetch("/api/type1/remove", {
-            method: "POST",
+        const response = await fetch('/api/type1/delete', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ meetingID: meetingID })
+            body: JSON.stringify({ meetingID })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            alert(data.error || "Could not remove meeting.");
+            alert(data.error || 'Failed to remove meeting.');
             return;
         }
 
-        await loadType1Meetings();
+        if (typeof loadType1Meetings === 'function') {
+            await loadType1Meetings();
+        }
+
+        if (typeof loadOwnerAppointments === 'function') {
+            await loadOwnerAppointments();
+        }
 
     } catch (error) {
-        console.error("Remove Type 1 meeting error:", error);
-        alert("Could not remove meeting.");
+        console.error(error);
+        alert('Server error while removing meeting.');
     }
 }
 
@@ -234,20 +250,20 @@ function renderType1Meetings(meetings) {
             ? `<a class="table-action primary" href="${meeting.zoom_link}" target="_blank">Join</a>`
             : `<button class="table-action" disabled style="opacity: 0.45; cursor: not-allowed;">Join</button>`;
         
-        const actionButtons = `
-            <a class="table-action" href="mailto:${meeting.owner_email}">Email</a>
-            ${
-                meeting.status === 'pending'
-                    ? `<button class="table-action danger" onclick="cancelType1Meeting(${meeting.meetingID})">Cancel</button>`
-                    : ''
-            }
-
-            ${
-                meeting.status === "cancelled"
-                    ? `<button class="table-action danger" onclick="removeType1Meeting(${meeting.meetingID})">Remove</button>`
-                    : ""
-            }
-        `; 
+        const actionButtons = meeting.status === 'cancelled'
+            ? `
+                <button class="table-action danger" onclick="removeType1Meeting(${meeting.meetingID})">
+                    Remove
+                </button>
+            `
+            : `
+                <a class="table-action" href="mailto:${escapeHtml(meeting.owner_email || '')}">
+                    Email
+                </a>
+                <button class="table-action danger" onclick="cancelType1Meeting(${meeting.meetingID})">
+                    Cancel
+                </button>
+            `;
 
         row.innerHTML = `
             <td>${meeting.meetingID}</td>

@@ -49,6 +49,9 @@ CREATE TABLE IF NOT EXISTS GroupMeeting (
     ownerID INTEGER NOT NULL,
     title VARCHAR(100),
     description TEXT,
+    isRecurring INTEGER NOT NULL DEFAULT 0 CHECK (isRecurring IN (0, 1)),
+    recurrenceType VARCHAR(10),
+    numOfRecurrences INTEGER,
     startDate DATE NOT NULL,
     endDate DATE NOT NULL,
     FOREIGN KEY (meetingID) REFERENCES Meeting(meetingID) ON DELETE CASCADE,
@@ -59,13 +62,13 @@ CREATE TABLE IF NOT EXISTS GroupMeeting (
 CREATE TABLE IF NOT EXISTS Availability (
     availabilityID INTEGER PRIMARY KEY AUTOINCREMENT,
     meetingID INTEGER NOT NULL,
-    day TEXT NOT NULL,
+    date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('open', 'closed', 'booked')),
+    count INTEGER NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'booked')),
     FOREIGN KEY (meetingID) REFERENCES GroupMeeting(meetingID) ON DELETE CASCADE
-); --Assuming all group meetings are recurring with start and end date handling the base case. Removed number of recurrences
---as this is also handled by date interval in availability
+);
 
 -- =======Type 2: Vote ==============
 CREATE TABLE IF NOT EXISTS Vote (
@@ -73,8 +76,8 @@ CREATE TABLE IF NOT EXISTS Vote (
     studentID INTEGER NOT NULL,
     PRIMARY KEY (availabilityID, studentID),
     FOREIGN KEY (availabilityID) REFERENCES Availability(availabilityID) ON DELETE CASCADE,
-    FOREIGN KEY (studentID) REFERENCES Student(studentID) ON DELETE CASCADE
-); -- Used to count number of votes for an availability
+    FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE
+);
 
 -- ======== Type 3 : Office Hours ========
 CREATE TABLE IF NOT EXISTS OfficeHours (
@@ -113,6 +116,7 @@ CREATE TABLE IF NOT EXISTS Booking2 (
     ownerID INTEGER NOT NULL,
     meetingID INTEGER NOT NULL,
     availabilityID INTEGER,
+    UNIQUE(studentID, meetingID),
     FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE,
     FOREIGN KEY (ownerID) REFERENCES Owner(userID) ON DELETE CASCADE,
     FOREIGN KEY (meetingID) REFERENCES GroupMeeting(meetingID) ON DELETE CASCADE,
@@ -129,6 +133,16 @@ CREATE TABLE IF NOT EXISTS Booking3 (
     FOREIGN KEY (ownerID) REFERENCES Owner(userID) ON DELETE CASCADE,
     FOREIGN KEY (meetingID) REFERENCES OfficeHours(meetingID) ON DELETE CASCADE,
     FOREIGN KEY (slotID) REFERENCES TimeSlot(slotID) ON DELETE CASCADE
+);
+
+-- Type 2
+CREATE TABLE IF NOT EXISTS GroupInvite (
+    meetingID INTEGER NOT NULL,
+    studentID INTEGER NOT NULL,
+    status TEXT DEFAULT 'invited',
+    PRIMARY KEY (meetingID, studentID),
+    FOREIGN KEY (meetingID) REFERENCES GroupMeeting(meetingID) ON DELETE CASCADE,
+    FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE
 );
 
 --Constraint added to avoid duplicate meetings

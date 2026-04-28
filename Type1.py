@@ -404,9 +404,9 @@ def decline_meeting():
 
     return jsonify({"success": True}), 200
 
-# Cancel meeting
+# Cancel individual meeting
 @type1_blueprint.route('/cancel', methods=['POST'])
-def cancel_meeting():
+def cancel_individual_meeting():
     if "user_id" not in session:
         return jsonify({"error": "Login required"}), 401
 
@@ -421,7 +421,7 @@ def cancel_meeting():
 
     try:
         cursor.execute("""
-            SELECT r.studentID, m.status
+            SELECT r.studentID, r.ownerID, m.status
             FROM RequestMeeting r
             JOIN Meeting m ON m.meetingID = r.meetingID
             WHERE r.meetingID = ?
@@ -430,13 +430,10 @@ def cancel_meeting():
         row = cursor.fetchone()
 
         if not row:
-            return jsonify({"error": "Meeting request not found"}), 404
+            return jsonify({"error": "Individual meeting not found"}), 404
 
-        if row["studentID"] != session["user_id"]:
-            return jsonify({"error": "You can only cancel your own meeting requests"}), 403
-
-        if row["status"] == "declined" or row["status"] == "cancelled":
-            return jsonify({"error": f"Your meeting was already {row['status']}."}), 400
+        if session["user_id"] not in (row["studentID"], row["ownerID"]):
+            return jsonify({"error": "Unauthorized"}), 403
 
         cursor.execute("""
             UPDATE Meeting
@@ -445,7 +442,64 @@ def cancel_meeting():
         """, (meeting_id,))
 
         conn.commit()
-        return jsonify({"success": True}), 200
+
+        return jsonify({
+            "success": True,
+            "message": "Individual meeting cancelled successfully."
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        conn.close()
+
+# Remove individual meeting permanently
+@type1_blueprint.route('/delete', methods=['POST'])
+def delete_individual_meeting():
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+
+    data = request.get_json() or {}
+    meeting_id = data.get("meetingID")
+
+    if not meeting_id:
+        return jsonify({"error": "Missing meetingID"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT studentID, ownerID
+            FROM RequestMeeting
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        row = cursor.fetchone()
+
+        if not row:
+            return jsonify({"error": "Individual meeting not found"}), 404
+
+        if session["user_id"] not in (row["studentID"], row["ownerID"]):
+            return jsonify({"error": "Unauthorized"}), 403
+
+        cursor.execute("""
+            DELETE FROM Meeting
+            WHERE meetingID = ?
+        """, (meeting_id,))
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Individual meeting removed successfully."
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
 
     finally:
         conn.close()
@@ -574,7 +628,7 @@ def owner_meetings():
             JOIN Meeting m ON m.meetingID = r.meetingID
             JOIN User u ON u.userID = r.studentID
             WHERE r.ownerID = ?
-              AND m.status = 'accepted'
+              AND m.status IN ('accepted', 'cancelled')
             ORDER BY m.date, m.start_time
         """, (session["user_id"],))
 

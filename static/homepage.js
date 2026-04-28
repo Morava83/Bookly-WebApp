@@ -198,32 +198,51 @@ document.addEventListener('click', function (e) {
     }
 });
 
-document.addEventListener("DOMContentLoaded", async function () {
-    if (typeof loadType1Meetings === "function") {
+document.addEventListener('DOMContentLoaded', async function () {
+    if (typeof loadType1Meetings === 'function') {
         await loadType1Meetings();
     }
 
-    if (typeof loadType2Meetings === "function") {
-        await loadType2Meetings();
+    if (typeof loadAllStudentGroupRows === 'function') {
+        await loadAllStudentGroupRows();
     }
 
-    if (typeof loadType3Bookings === "function") {
-        await loadType3Bookings();
+    if (typeof loadType3Meetings === 'function') {
+        await loadType3Meetings();
     }
 });
 
-function view_appointments(){
-    document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'none';
-    document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'block';
-    document.getElementsByClassName('vote-meeting-tab-view')[0].style.display = 'none';
+
+async function view_appointments() {
+    const makeView = document.querySelector('.make-appointment-tab-view');
+    const appointmentView = document.querySelector('.view-appointment-tab-view');
+    const voteView = document.getElementById('voteMeetingView');
+
+    if (makeView) {
+        makeView.style.display = 'none';
+    }
+
+    if (voteView) {
+        voteView.style.display = 'none';
+    }
+
+    if (appointmentView) {
+        appointmentView.style.display = 'block';
+    }
 
     if (typeof loadType1Meetings === 'function') {
-        loadType1Meetings();
+        await loadType1Meetings();
     }
+
+    if (typeof loadAllStudentGroupRows === 'function') {
+        await loadAllStudentGroupRows();
+    }
+
     if (typeof loadType3Meetings === 'function') {
-        loadType3Meetings();
+        await loadType3Meetings();
     }
 }
+
 function make_appointment(){
     document.getElementsByClassName('make-appointment-tab-view')[0].style.display = 'block';
     document.getElementsByClassName('view-appointment-tab-view')[0].style.display = 'none';
