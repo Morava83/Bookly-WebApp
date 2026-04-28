@@ -5,6 +5,11 @@ from flask_socketio import SocketIO
 import sqlite3
 import os
 
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 # Blueprint is registered at the bottom
 from Type1 import type1_blueprint
 from Type2 import type2_blueprint
@@ -105,9 +110,13 @@ def register():
     last_name = (data.get("last_name") or "").strip()
     email = normalize_email(data.get("email"))
     password = data.get("password") or ""
+    code = (data.get("code") or "").strip()
 
-    if not first_name or not last_name or not email or not password:
+    if not first_name or not last_name or not email or not password or not code:
         return jsonify({"error": "Missing required fields"}), 400
+    
+    if session.get("verify_code") != code or session.get("verify_email") != email:
+        return jsonify({"error": "Invalid or expired verification code"}), 400
 
     if not is_mcgill_email(email):
         return jsonify({"error": "Only McGill emails can register"}), 400
@@ -141,6 +150,9 @@ def register():
             cur.execute("INSERT INTO Student (userID) VALUES (?)", (user_id,))
 
         conn.commit()
+
+        session.pop("verify_code", None)
+        session.pop("verify_email", None)
 
         return jsonify({
             "message": "Registered successfully",
@@ -216,6 +228,49 @@ def me():
 
     finally:
         conn.close()
+
+@app.route("/api/send-verification", methods=["POST"])
+def send_verification():
+    data = request.get_json() or {}
+    email = normalize_email(data.get("email"))
+    
+    if not email:
+        return jsonify({"error": "Missing email"}), 400
+    if not is_mcgill_email(email):
+        return jsonify({"error": "Only McGill emails can register"}), 400
+    
+    # Check if already registered
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM User WHERE email = ?", (email,))
+    if cur.fetchone():
+        conn.close()
+        return jsonify({"error": "Email already registered"}), 409
+    conn.close()
+    
+    # Generate 6 digit code
+    code = str(random.randint(100000, 999999))
+    session["verify_code"] = code
+    session["verify_email"] = email
+    
+    # Send email
+
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = app.config["FROM_EMAIL"]
+        msg["To"] = email
+        msg["Subject"] = "Bookly - Your verification code"
+        msg.attach(MIMEText(f"Your Bookly verification code is: {code}\n\nThis code expires when you close the page.", "plain"))
+        
+        with smtplib.SMTP(app.config["SMTP_SERVER"], app.config["SMTP_PORT"]) as server:
+            server.starttls()
+            server.login(app.config["FROM_EMAIL"], app.config["EMAIL_PASSWORD"])
+            server.send_message(msg)
+    except Exception as e:
+        print("Verification email error:", e)
+        return jsonify({"error": "Could not send verification email. Check your email and try again."}), 500
+    
+    return jsonify({"message": "Verification code sent"}), 200
 
 @app.route("/api/owners", methods=["GET"])
 @login_required
