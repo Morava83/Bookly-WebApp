@@ -393,9 +393,7 @@ async function loadOwnerSlots() {
 
 
 
-/* ═══════════════════════════════════════════
-   TAB 1: My Slots — activate / deactivate / delete
-   ═══════════════════════════════════════════ */
+/* My Slots - activate / deactivate / delete */
 
 async function toggleSlotStatus(btn) {
     var row = btn.closest('tr');
@@ -474,9 +472,7 @@ async function deactivateAllSlots() {
     );
 }
 
-/* ═══════════════════════════════════════════
-   TAB 2: Create Office Hours
-   ═══════════════════════════════════════════ */
+/* Create OHs */
 
 function addOHSlotEntry() {
     var container = document.getElementById('ohSlotEntries');
@@ -580,9 +576,7 @@ async function createOfficeHours() {
     }
 }
 
-/* ═══════════════════════════════════════════
-   TAB 3: Create Group Meeting
-   ═══════════════════════════════════════════ */
+/* Create group meeting */
 
 function addGMSlotEntry() {
     var container = document.getElementById('gmSlotEntries');
@@ -1070,9 +1064,7 @@ async function loadOwnerGroupBookings() {
 }
 
 
-/* ═══════════════════════════════════════════
-   TAB 4: Manage Group Meetings — finalize
-   ═══════════════════════════════════════════ */
+/* Manage group meetings - finalize */
 
 async function openFinalizeView(meetingID, title) {
     ownerSwitchTab('finalizeGMView');
@@ -1083,16 +1075,6 @@ async function openFinalizeView(meetingID, title) {
     hideMsg('finalizeSuccessNote');
     hideMsg('finalizeErrorNote');
 
-    /*
-     * BACKEND TODO: replace dummySlots with fetch from /api/type2/meeting/<meetingID>
-     * Response includes slots[] with count per slot
-     */
-    // var dummySlots = [
-    //     { slotID: 1, date: '2026-04-28', start_time: '13:00', end_time: '14:00', count: 3 },
-    //     { slotID: 2, date: '2026-04-28', start_time: '15:00', end_time: '16:00', count: 1 },
-    //     { slotID: 3, date: '2026-04-29', start_time: '10:00', end_time: '11:00', count: 2 },
-    //     { slotID: 4, date: '2026-04-30', start_time: '14:00', end_time: '15:00', count: 3 }
-    // ];
     const res = await fetch(`/api/type2/group_meeting?meetingID=${meetingID}`);
     const res = await fetch(`/api/type2/group_meeting?meetingID=${meetingID}`);
     const data = await res.json();
@@ -1223,9 +1205,7 @@ async function finalizeMeeting(meetingID, slot) {
     }
 }
 
-/* ═══════════════════════════════════════════
-   TAB 5: Pending Requests — accept / decline
-   ═══════════════════════════════════════════ */
+/* Pending requests - accept / decline */
 
 async function acceptRequest(meetingID, studentEmail) {
     try {
@@ -1596,9 +1576,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 
-/* ═══════════════════════════════════════════
-            Cancel / Remove
-   ═══════════════════════════════════════════ */
+/* Cancel / Remove */
 
 async function cancelGroupMeeting(meetingID) {
     if (!confirm('Cancel this finalized group meeting?')) {
@@ -1856,9 +1834,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 
-/* ═══════════════════════════════════════════
-            Cancel / Remove
-   ═══════════════════════════════════════════ */
+/* Cancel / Remove */
 
 async function cancelGroupMeeting(meetingID) {
     if (!confirm('Cancel this finalized group meeting?')) {
@@ -2000,9 +1976,7 @@ async function deleteOwnerType1Meeting(meetingID) {
     }
 }
 
-/* ═══════════════════════════════════════════
-   Shared message helpers
-   ═══════════════════════════════════════════ */
+/* Shared message helpers */
 
 function showOwnerMsg(id, text) {
     var el = document.getElementById(id);
