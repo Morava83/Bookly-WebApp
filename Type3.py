@@ -216,6 +216,12 @@ def create_office_hours():
                 if end_dt <= start_dt:
                     conn.rollback()
                     return jsonify({"error": "Each office hours slot end time must be after start time"}), 400
+                
+                duration_minutes = int((end_dt - start_dt).total_seconds() / 60)
+
+                if duration_minutes % 15 != 0:
+                    conn.rollback()
+                    return jsonify({"error": "Office hours duration must be divisible by 15 minutes"}), 400
 
             except ValueError:
                 conn.rollback()
@@ -224,20 +230,26 @@ def create_office_hours():
             # Generate recurring calendar dates
             dates = generate_dates_for_weekday(start_date, weekday_index, num_weeks)
 
+            fifteen_min_slots = generate_15_min_slots(start_time, end_time)
+
+            if not fifteen_min_slots:
+                conn.rollback()
+                return jsonify({"error": "Office hours must be at least 15 minutes long"}), 400
+
             for d in dates:
-                # Inserts one TimeSlot row for each recurring date
-                cur.execute("""
-                    INSERT INTO TimeSlot (meetingID, start_date, end_date, start_time, end_time, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    meeting_id,
-                    d.isoformat(),
-                    d.isoformat(),
-                    slot["start_time"],
-                    slot["end_time"],
-                    SLOT_PRIVATE
-                ))
-                inserted_slots += 1
+                for mini_slot in fifteen_min_slots:
+                    cur.execute("""
+                        INSERT INTO TimeSlot (meetingID, start_date, end_date, start_time, end_time, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (
+                        meeting_id,
+                        d.isoformat(),
+                        d.isoformat(),
+                        mini_slot["start_time"],
+                        mini_slot["end_time"],
+                        SLOT_PRIVATE
+                    ))
+                    inserted_slots += 1
 
             if inserted_slots == 0:
                 conn.rollback()
@@ -253,6 +265,27 @@ def create_office_hours():
 
     finally:
         conn.close() 
+
+
+# Splitting it into 15-min slots
+def generate_15_min_slots(start_time_str, end_time_str):
+    start_dt = datetime.strptime(start_time_str, "%H:%M")
+    end_dt = datetime.strptime(end_time_str, "%H:%M")
+
+    slots = []
+
+    current_start = start_dt
+    while current_start + timedelta(minutes=15) <= end_dt:
+        current_end = current_start + timedelta(minutes=15)
+
+        slots.append({
+            "start_time": current_start.strftime("%H:%M"),
+            "end_time": current_end.strftime("%H:%M")
+        })
+
+        current_start = current_end
+
+    return slots
 
 
 # owner viewing slots created for their office hours
@@ -676,12 +709,3 @@ def delete_slot():
 
     finally:
         conn.close()
-
-
-#Email is sent to owner
-
-
-#Possibly include zoom link in email
-
-#----------Database------------
-#Update Booking table with a modification (insert) command
