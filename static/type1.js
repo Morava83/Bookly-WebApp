@@ -80,6 +80,7 @@ async function sendType1MeetingRequest() {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'same-origin',
             body: JSON.stringify({
                 student_email: window.currentUser.email,
                 owner_email: ownerSelect.value,
@@ -90,37 +91,25 @@ async function sendType1MeetingRequest() {
             })
         });
 
-        const data = await response.json();
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            data = {};
+        }
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to send meeting request');
+            throw new Error(data.error || 'Could not send meeting request.');
         }
 
-        if (bookingNote) {
-            bookingNote.textContent = 'Meeting request sent successfully! The owner has been notified.';
-            bookingNote.classList.add('show');
-        }
+        type1RequestSuccessNote.textContent = 'Meeting request sent successfully.';
+        type1RequestSuccessNote.classList.add('show');
+        type1RequestErrorNote.classList.remove('show');
 
-        if (errorNote) {
-            errorNote.textContent = '';
-            errorNote.classList.remove('show');
-        }
-
-        ownerSelect.value = '';
-        meetingMessage.value = '';
-        meetingDateInput.value = '';
-        startTimeInput.value = '';
-        endTimeInput.value = '';
-
-
-        await loadType1Meetings();
     } catch (error) {
-        console.error('Type1 request error:', error);
-        if (errorNote) {
-            errorNote.textContent = 'Could not connect to the server.';
-            errorNote.classList.add('show');
-        }
+        type1RequestErrorNote.textContent = error.message || 'Could not connect to the server.';
+        type1RequestErrorNote.classList.add('show');
+        type1RequestSuccessNote.classList.remove('show');
     }
 }
 

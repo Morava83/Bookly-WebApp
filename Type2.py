@@ -74,18 +74,14 @@ def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, user
         print(f"Email error: {e}")
 
 
-def get_student_id_by_email(email):
+def get_participant_id_by_email(email):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        """
-        SELECT s.userID
-        FROM Student s
-        JOIN User u ON s.userID = u.userID
-        WHERE u.email = ?
-        """,
-        (email,),
-    )
+    cursor.execute("""
+        SELECT userID
+        FROM User
+        WHERE email = ?
+    """, (email,))
     row = cursor.fetchone()
     conn.close()
     return row["userID"] if row else None
@@ -297,7 +293,7 @@ def create_group_meeting():
             email = (email or "").strip().lower()
             if not email:
                 continue
-            student_id = get_student_id_by_email(email)
+            student_id = get_participant_id_by_email(email)
             if not student_id:
                 continue
             cursor.execute(

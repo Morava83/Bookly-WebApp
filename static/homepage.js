@@ -719,10 +719,16 @@ function createCalendar(opts) {
 
     async function loadCurrentUser() {
         try {
-            const response = await fetch('/api/me');
+            const response = await fetch('/api/me', {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+
             const data = await response.json();
 
             if (!response.ok) {
+                console.error('/api/me failed:', response.status, data);
+
                 currentUserName.textContent = 'Unavailable';
                 currentUserEmail.textContent = 'Unavailable';
                 currentUserRole.textContent = 'Unavailable';
@@ -741,8 +747,15 @@ function createCalendar(opts) {
             currentUserName.textContent = currentUser.name || 'Unknown';
             currentUserEmail.textContent = currentUser.email || 'Unknown';
             currentUserRole.textContent = currentUser.role || 'Unknown';
+
+            var ownerHomeButton = document.getElementById('ownerHomeButton');
+            if (ownerHomeButton && currentUser.role === 'owner') {
+                ownerHomeButton.style.display = 'block';
+            }
+
         } catch (error) {
             console.error('Error loading current user:', error);
+
             window.currentUser = null;
             currentUserName.textContent = 'Unavailable';
             currentUserEmail.textContent = 'Unavailable';

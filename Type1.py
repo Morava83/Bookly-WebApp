@@ -88,6 +88,18 @@ def get_owner_id(email):
     conn.close()
     return row["userID"] if row else None
 
+def get_any_user_id(email):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT userID
+        FROM User
+        WHERE email = ?
+    """, (email,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["userID"] if row else None
+
 # @type1_blueprint.route("/create_meeting", methods=["POST"])
 def create_meeting(student_id, owner_id, message, meeting_date, start_time, end_time, zoom_link):
     """
@@ -146,7 +158,7 @@ def request_meeting():
         return jsonify({"error": "Invalid date or time format"}), 400
 
 
-    student_id = get_student_id(user_email)
+    student_id = get_any_user_id(user_email)
     owner_id = get_owner_id(owner_email)
 
     if not student_id:
@@ -154,6 +166,9 @@ def request_meeting():
     
     if not owner_id:
         return jsonify({"error": "Selected owner is not a registered owner"}), 400
+    
+    if student_id == owner_id:
+        return jsonify({"error": "You cannot request a meeting with yourself"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()

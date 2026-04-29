@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS RequestMeeting (
     message TEXT,
     FOREIGN KEY (meetingID) REFERENCES Meeting(meetingID) ON DELETE CASCADE,
     FOREIGN KEY (ownerID) REFERENCES Owner(userID) ON DELETE CASCADE,
-    FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE
+    FOREIGN KEY (studentID) REFERENCES User(userID) ON DELETE CASCADE
 );
 
 -- ======== Type 2 : Group Meeting ========
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS Vote (
     studentID INTEGER NOT NULL,
     PRIMARY KEY (availabilityID, studentID),
     FOREIGN KEY (availabilityID) REFERENCES Availability(availabilityID) ON DELETE CASCADE,
-    FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE
+    FOREIGN KEY (studentID) REFERENCES User(userID) ON DELETE CASCADE
 );
 
 -- ======== Type 3 : Office Hours ========
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS Booking1 (
     studentID INTEGER NOT NULL,
     ownerID INTEGER NOT NULL,
     meetingID INTEGER NOT NULL UNIQUE,
-    FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE,
+    FOREIGN KEY (studentID) REFERENCES User(userID) ON DELETE CASCADE,
     FOREIGN KEY (ownerID) REFERENCES Owner(userID) ON DELETE CASCADE,
     FOREIGN KEY (meetingID) REFERENCES RequestMeeting(meetingID) ON DELETE CASCADE
 );
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS Booking2 (
     meetingID INTEGER NOT NULL,
     availabilityID INTEGER,
     UNIQUE(studentID, meetingID),
-    FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE,
+    FOREIGN KEY (studentID) REFERENCES User(userID) ON DELETE CASCADE,
     FOREIGN KEY (ownerID) REFERENCES Owner(userID) ON DELETE CASCADE,
     FOREIGN KEY (meetingID) REFERENCES GroupMeeting(meetingID) ON DELETE CASCADE,
     FOREIGN KEY (availabilityID) REFERENCES Availability(availabilityID) ON DELETE SET NULL
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS Booking3 (
     ownerID INTEGER NOT NULL,
     meetingID INTEGER NOT NULL,
     slotID INTEGER NOT NULL UNIQUE,
-    FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE,
+    FOREIGN KEY (studentID) REFERENCES User(userID) ON DELETE CASCADE,
     FOREIGN KEY (ownerID) REFERENCES Owner(userID) ON DELETE CASCADE,
     FOREIGN KEY (meetingID) REFERENCES OfficeHours(meetingID) ON DELETE CASCADE,
     FOREIGN KEY (slotID) REFERENCES TimeSlot(slotID) ON DELETE CASCADE
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS GroupInvite (
     status TEXT DEFAULT 'invited',
     PRIMARY KEY (meetingID, studentID),
     FOREIGN KEY (meetingID) REFERENCES GroupMeeting(meetingID) ON DELETE CASCADE,
-    FOREIGN KEY (studentID) REFERENCES Student(userID) ON DELETE CASCADE
+    FOREIGN KEY (studentID) REFERENCES User(userID) ON DELETE CASCADE
 );
 
 -- Notifications

@@ -330,9 +330,6 @@ def book_owner_slots(owner_id):
         session["next_after_login"] = f"/book/owner/{owner_id}"
         return redirect("/")
 
-    if session.get("role") == "owner":
-        return redirect("/home")
-
     return render_template("HomePage.html", booking_owner_id=owner_id)
 
 # ======== Pages ==========
@@ -349,6 +346,11 @@ def create_account_page():
 def home_page():
     if session["role"] == "owner":
         return render_template("OwnerHomePage.html")
+    return render_template("HomePage.html")
+
+@app.route("/book")
+@login_required
+def book_page():
     return render_template("HomePage.html")
 
 # ======= Notification ==========

@@ -482,8 +482,8 @@ def available_slots():
 @type3_blueprint.route("/book_slot", methods=["POST"])
 @login_required
 def book_slots():
-    if session.get("role") != "user":
-        return jsonify({"error": "Only students can book office hours"}), 403
+    if session.get("role") not in ["user", "owner"]:
+        return jsonify({"error": "Only McGill users can book office hours"}), 403
     
     data = request.get_json() or {}
     slot_id = data.get("slotID")
@@ -525,6 +525,9 @@ def book_slots():
         if not row:
             return jsonify({"error": "Slot not found or already booked"}), 409
 
+        if row["ownerID"] == student_id:
+            return jsonify({"error": "You cannot book your own office hour slot"}), 400
+        
         cur.execute("""
             INSERT INTO Booking3 (studentID, ownerID, meetingID, slotID)
             VALUES (?, ?, ?, ?)
@@ -569,42 +572,23 @@ def my_bookings():
     cur = conn.cursor()
 
     try:
-        if session.get("role") == "user":
-            cur.execute("""
-                SELECT
-                    b3.booking3ID,
-                    b3.slotID,
-                    ts.start_date,
-                    ts.start_time,
-                    ts.end_time,
-                    u.name AS owner_name,
-                    u.email AS owner_email,
-                    m.zoom_link
-                FROM Booking3 b3
-                JOIN TimeSlot ts ON ts.slotID = b3.slotID
-                JOIN Meeting m ON m.meetingID = b3.meetingID
-                JOIN User u ON u.userID = b3.ownerID
-                WHERE b3.studentID = ?
-                ORDER BY ts.start_date, ts.start_time
-            """, (session["user_id"],))
-        else:
-            cur.execute("""
-                SELECT
-                    b3.booking3ID,
-                    b3.slotID,
-                    ts.start_date,
-                    ts.start_time,
-                    ts.end_time,
-                    su.name AS student_name,
-                    su.email AS student_email,
-                    m.zoom_link
-                FROM Booking3 b3
-                JOIN TimeSlot ts ON ts.slotID = b3.slotID
-                JOIN Meeting m ON m.meetingID = b3.meetingID
-                JOIN User su ON su.userID = b3.studentID
-                WHERE b3.ownerID = ?
-                ORDER BY ts.start_date, ts.start_time
-            """, (session["user_id"],))
+        cur.execute("""
+            SELECT
+                b3.booking3ID,
+                b3.slotID,
+                ts.start_date,
+                ts.start_time,
+                ts.end_time,
+                u.name AS owner_name,
+                u.email AS owner_email,
+                m.zoom_link
+            FROM Booking3 b3
+            JOIN TimeSlot ts ON ts.slotID = b3.slotID
+            JOIN Meeting m ON m.meetingID = b3.meetingID
+            JOIN User u ON u.userID = b3.ownerID
+            WHERE b3.studentID = ?
+            ORDER BY ts.start_date, ts.start_time
+        """, (session["user_id"],))
 
         rows = cur.fetchall()
 
@@ -628,16 +612,11 @@ def cancel_booking():
     cur = conn.cursor()
 
     try:
-        if session.get("role") == "user":
-            cur.execute("""
-                DELETE FROM Booking3
-                WHERE booking3ID = ? AND studentID = ?
-            """, (booking_id, session["user_id"]))
-        else:
-            cur.execute("""
-                DELETE FROM Booking3
-                WHERE booking3ID = ? AND ownerID = ?
-            """, (booking_id, session["user_id"]))
+        cur.execute("""
+            DELETE FROM Booking3
+            WHERE booking3ID = ?
+              AND (studentID = ? OR ownerID = ?)
+        """, (booking_id, session["user_id"], session["user_id"]))
 
         if cur.rowcount == 0:
             return jsonify({"error": "Booking not found"}), 404
