@@ -201,31 +201,27 @@ h2 {
 }
 
 .slots-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 10px;
-    max-height: 360px;
-    overflow-y: auto;
-    padding-right: 4px;
+    margin-top: 16px;
 }
 
 .slot-button {
-    padding: 12px 10px;
-    border: 1px solid #a9a9a9;
-    background-color: #fff;
-    color: #222;
-    text-align: center;
+    padding: 10px 14px;
+    border: 1px solid #222;
+    background: white;
     cursor: pointer;
+    font-size: 15px;
 }
 
 .slot-button:hover {
-    background-color: #f3f3f3;
+    background: #eeeeee;
 }
 
 .slot-button.selected {
-    border-color: #111;
-    background-color: #ededed;
-    font-weight: bold;
+    background: #222;
+    color: white;
 }
 
 .book-area {

@@ -431,6 +431,25 @@ function padNumber(value) {
     return value < 10 ? '0' + value : String(value);
 }
 
+function formatTimeStr(timeStr) {
+    if (!timeStr) {
+        return '';
+    }
+
+    var parts = timeStr.split(':');
+    var hour = parseInt(parts[0], 10);
+    var minute = parts[1] || '00';
+
+    var suffix = hour >= 12 ? 'PM' : 'AM';
+    var displayHour = hour % 12;
+
+    if (displayHour === 0) {
+        displayHour = 12;
+    }
+
+    return displayHour + ':' + minute + ' ' + suffix;
+}
+
 function formatDateOnly(date) {
     return weekdayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
 }
@@ -461,6 +480,7 @@ function calculateEndTime(startTime) {
 
 window.formatDateForApi = formatDateForApi;
 window.calculateEndTime = calculateEndTime;
+window.formatTimeStr = formatTimeStr;
 
 /* Reusable calendar factory
     Pass element IDs + optional callbacks */
@@ -571,6 +591,10 @@ function createCalendar(opts) {
     var logoutButton = document.getElementById('logoutButton');
 
     var slotsGrid = document.getElementById('slotsGrid');
+    if (!slotsGrid) {
+        console.error('Missing #slotsGrid element. Time slot buttons cannot be displayed.');
+    }
+
     var slotsNote = document.getElementById('slotsNote');
     var selectedSlotText = document.getElementById('selectedSlotText');
     var availabilityIntro = document.getElementById('availabilityIntro');
@@ -804,20 +828,37 @@ function createCalendar(opts) {
 
         slotsNote.textContent = daySlots.length + ' slot(s) available on ' + formatDateOnly(d) + '.';
 
+        console.log('Selected date:', dateStr);
+        console.log('Day slots:', daySlots);
+        console.log('slotsGrid exists?', slotsGrid);
+
         daySlots.forEach(function (slot) {
             var btn = document.createElement('button');
+
             btn.type = 'button';
             btn.className = 'slot-button';
             btn.textContent = formatTimeStr(slot.start_time) + ' – ' + formatTimeStr(slot.end_time);
+
+            btn.style.display = 'inline-block';
+            btn.style.margin = '8px';
+            btn.style.padding = '10px 14px';
+            btn.style.border = '1px solid #222';
+            btn.style.background = '#fff';
+            btn.style.cursor = 'pointer';
+
             if (selectedSlot && selectedSlot.slotID === slot.slotID) {
                 btn.classList.add('selected');
+                btn.style.background = '#222';
+                btn.style.color = '#fff';
             }
+
             btn.addEventListener('click', function () {
                 selectedSlot = slot;
                 renderSlots();
                 renderAvailability();
                 syncSharedBookingState();
             });
+
             slotsGrid.appendChild(btn);
         });
 
