@@ -1,3 +1,5 @@
+// ------- User booking page --------- //
+
 var ownerSlots = [];
 
 /* Professor search bar — Searches owners from the backend */
@@ -94,6 +96,7 @@ function initProfSearch() {
     }
 }
 
+/* Load all available slots from searched owner */
 async function loadAvailableSlots() {
     var ownerID = window.BOOKLY_INVITE_OWNER_ID;
 
@@ -209,70 +212,7 @@ async function loadAvailableSlots() {
 
 window.loadAvailableSlots = loadAvailableSlots;
 
-async function toggleNotifications(e) {
-    e.stopPropagation();
-
-    var panel = document.getElementById('notifPanel');
-
-    if (!panel) {
-        return;
-    }
-
-    panel.classList.toggle('open');
-
-    if (panel.classList.contains('open')) {
-        await loadNotifications();
-        await markNotificationsRead();
-    }
-}
-
-document.addEventListener('click', function (e) {
-    var panel = document.getElementById('notifPanel');
-
-    if (!panel) {
-        return;
-    }
-
-    if (!panel.contains(e.target)) {
-        panel.classList.remove('open');
-    }
-});
-
-document.addEventListener('DOMContentLoaded', async function () {
-    if (typeof loadType1Meetings === 'function') {
-        await loadType1Meetings();
-    }
-
-    if (typeof loadAllStudentGroupRows === 'function') {
-        await loadAllStudentGroupRows();
-    }
-
-    if (typeof loadType3Meetings === 'function') {
-        await loadType3Meetings();
-    }
-
-    if (typeof loadNotifications === 'function') {
-        await loadNotifications();
-    }
-});
-
-document.addEventListener('DOMContentLoaded', async function () {
-    if (window.BOOKLY_INVITE_OWNER_ID) {
-        if (typeof make_appointment === 'function') {
-            make_appointment();
-        }
-
-        if (typeof loadAvailableSlots === 'function') {
-            await loadAvailableSlots();
-        }
-
-        var intro = document.getElementById('availabilityIntro');
-        if (intro) {
-            intro.textContent = 'You are viewing activated office-hour slots for this owner.';
-        }
-    }
-});
-
+/* Viewing all user related appointments */
 async function view_appointments() {
     const makeView = document.querySelector('.make-appointment-tab-view');
     const appointmentView = document.querySelector('.view-appointment-tab-view');
@@ -303,6 +243,7 @@ async function view_appointments() {
     }
 }
 
+/* Make appointment */
 function make_appointment() {
     var makeView = document.getElementsByClassName('make-appointment-tab-view')[0];
     var appointmentView = document.getElementsByClassName('view-appointment-tab-view')[0];
@@ -322,6 +263,24 @@ function make_appointment() {
 }
 
 /* Notifications */
+
+async function toggleNotifications(e) {
+    e.stopPropagation();
+
+    var panel = document.getElementById('notifPanel');
+
+    if (!panel) {
+        return;
+    }
+
+    panel.classList.toggle('open');
+
+    if (panel.classList.contains('open')) {
+        await loadNotifications();
+        await markNotificationsRead();
+    }
+}
+
 async function loadNotifications() {
     var notifList = document.getElementById('notifList');
     var notifCount = document.getElementById('notifCount');
@@ -418,69 +377,6 @@ function formatNotificationTime(value) {
 }
 
 
-/* Helpers */
-var monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
-var weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-var today = new Date();
-var startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-function padNumber(value) {
-    return value < 10 ? '0' + value : String(value);
-}
-
-function formatTimeStr(timeStr) {
-    if (!timeStr) {
-        return '';
-    }
-
-    var parts = timeStr.split(':');
-    var hour = parseInt(parts[0], 10);
-    var minute = parts[1] || '00';
-
-    var suffix = hour >= 12 ? 'PM' : 'AM';
-    var displayHour = hour % 12;
-
-    if (displayHour === 0) {
-        displayHour = 12;
-    }
-
-    return displayHour + ':' + minute + ' ' + suffix;
-}
-
-function formatDateOnly(date) {
-    return weekdayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
-}
-function isSameDate(a, b) {
-    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-function formatDateForApi(dateObj) {
-    var year = dateObj.getFullYear();
-    var month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    var day = String(dateObj.getDate()).padStart(2, '0');
-    return year + '-' + month + '-' + day;
-}
-
-function calculateEndTime(startTime) {
-    var parts = startTime.split(':');
-    var hour = parseInt(parts[0], 10);
-    var minute = parseInt(parts[1], 10);
-
-    minute += 15;
-    if (minute >= 60) {
-        hour += 1;
-        minute -= 60;
-    }
-
-    return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
-}
-
-window.formatDateForApi = formatDateForApi;
-window.calculateEndTime = calculateEndTime;
-window.formatTimeStr = formatTimeStr;
 
 /* Reusable calendar factory
     Pass element IDs + optional callbacks */
@@ -667,54 +563,55 @@ function createCalendar(opts) {
 
 
     bookButton.addEventListener('click', async function () {
-    clearMessages();
+        clearMessages();
 
-    if (!cal.getSelectedDate() || !selectedSlot) {
-        showError('Please choose a date and a time slot first.');
-        return;
-    }
-
-    try {
-        var res = await fetch('/api/type3/book_slot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slotID: selectedSlot.slotID })
-        });
-        var data = await res.json();
-
-        if (!res.ok) {
-            showError(data.error || 'Could not book the slot.');
+        if (!cal.getSelectedDate() || !selectedSlot) {
+            showError('Please choose a date and a time slot first.');
             return;
         }
 
-        var bookedID = selectedSlot.slotID;
-        var bookedSlotText = formatSelectedSlot();
+        try {
+            var res = await fetch('/api/type3/book_slot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slotID: selectedSlot.slotID })
+            });
 
-        ownerSlots = ownerSlots.filter(function (s) {
-            return s.slotID !== bookedID;
-        });
+            var data = await res.json();
 
-        selectedSlot = null;
-        renderSlots();
-        renderAvailability();
-        syncSharedBookingState();
+            if (!res.ok) {
+                showError(data.error || 'Could not book the slot.');
+                return;
+            }
 
-        var owner = window.getSelectedOwner();
+            var bookedID = selectedSlot.slotID;
+            var bookedSlotText = formatSelectedSlot();
 
-        if (owner) {
-            showSuccess('Booked slot: ' + bookedSlotText + '. Wait for the popup window to send a notification email.');
+            ownerSlots = ownerSlots.filter(function (s) {
+                return s.slotID !== bookedID;
+            });
 
-            window.location.href = 'mailto:' + owner.email +
-                '?subject=' + encodeURIComponent('Bookly - New office hour booking') +
-                '&body=' + encodeURIComponent('Hello,\n\nI have made a new office hour booking. You can find it on your dashboard.\n\nKind regards,');
-        } else {
-            showSuccess('Booked slot: ' + bookedSlotText + '.');
+            selectedSlot = null;
+            renderSlots();
+            renderAvailability();
+            syncSharedBookingState();
+
+            var owner = window.getSelectedOwner();
+
+            if (owner) {
+                showSuccess('Booked slot: ' + bookedSlotText + '. Wait for the popup window to send a notification email.');
+
+                window.location.href = 'mailto:' + owner.email +
+                    '?subject=' + encodeURIComponent('Bookly - New office hour booking') +
+                    '&body=' + encodeURIComponent('Hello,\n\nI have made a new office hour booking. You can find it on your dashboard.\n\nKind regards,');
+            } else {
+                showSuccess('Booked slot: ' + bookedSlotText + '.');
+            }
+
+        } catch (err) {
+            console.error('Booking error:', err);
+            showError('Could not connect to the server.');
         }
-
-    } catch (err) {
-        console.error('Booking error:', err);
-        showError('Could not connect to the server.');
-    }
     });
 
     async function loadCurrentUser() {
@@ -841,10 +738,6 @@ function createCalendar(opts) {
 
         slotsNote.textContent = daySlots.length + ' slot(s) available on ' + formatDateOnly(d) + '.';
 
-        console.log('Selected date:', dateStr);
-        console.log('Day slots:', daySlots);
-        console.log('slotsGrid exists?', slotsGrid);
-
         daySlots.forEach(function (slot) {
             var btn = document.createElement('button');
 
@@ -852,17 +745,8 @@ function createCalendar(opts) {
             btn.className = 'slot-button';
             btn.textContent = formatTimeStr(slot.start_time) + ' – ' + formatTimeStr(slot.end_time);
 
-            btn.style.display = 'inline-block';
-            btn.style.margin = '8px';
-            btn.style.padding = '10px 14px';
-            btn.style.border = '1px solid #222';
-            btn.style.background = '#fff';
-            btn.style.cursor = 'pointer';
-
             if (selectedSlot && selectedSlot.slotID === slot.slotID) {
                 btn.classList.add('selected');
-                btn.style.background = '#222';
-                btn.style.color = '#fff';
             }
 
             btn.addEventListener('click', function () {
@@ -925,3 +809,122 @@ function createCalendar(opts) {
         bookingNote.textContent = '';
     }
 })();
+
+/* ======= Helpers ===========*/
+var monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+];
+var weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var today = new Date();
+var startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+function padNumber(value) {
+    return value < 10 ? '0' + value : String(value);
+}
+
+function formatTimeStr(timeStr) {
+    if (!timeStr) {
+        return '';
+    }
+
+    var parts = timeStr.split(':');
+    var hour = parseInt(parts[0], 10);
+    var minute = parts[1] || '00';
+
+    var suffix = hour >= 12 ? 'PM' : 'AM';
+    var displayHour = hour % 12;
+
+    if (displayHour === 0) {
+        displayHour = 12;
+    }
+
+    return displayHour + ':' + minute + ' ' + suffix;
+}
+
+function formatDateOnly(date) {
+    return weekdayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+}
+function isSameDate(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function formatDateForApi(dateObj) {
+    var year = dateObj.getFullYear();
+    var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    var day = String(dateObj.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+}
+
+function calculateEndTime(startTime) {
+    var parts = startTime.split(':');
+    var hour = parseInt(parts[0], 10);
+    var minute = parseInt(parts[1], 10);
+
+    minute += 15;
+    if (minute >= 60) {
+        hour += 1;
+        minute -= 60;
+    }
+
+    return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+}
+
+window.formatDateForApi = formatDateForApi;
+window.calculateEndTime = calculateEndTime;
+window.formatTimeStr = formatTimeStr;
+
+document.addEventListener('click', function (e) {
+    var panel = document.getElementById('notifPanel');
+
+    if (!panel) {
+        return;
+    }
+
+    if (!panel.contains(e.target)) {
+        panel.classList.remove('open');
+    }
+});
+
+
+async function loadInitialAppointmentData() {
+    if (typeof loadType1Meetings === 'function') {
+        await loadType1Meetings();
+    }
+
+    if (typeof loadType2Meetings === 'function') {
+        await loadType2Meetings();
+    }
+
+    if (typeof loadType3Bookings === 'function') {
+        await loadType3Bookings();
+    }
+
+    if (typeof loadNotifications === 'function') {
+        await loadNotifications();
+    }
+}
+
+async function loadInviteOwnerContext() {
+    if (!window.BOOKLY_INVITE_OWNER_ID) {
+        return;
+    }
+
+    if (typeof make_appointment === 'function') {
+        make_appointment();
+    }
+
+    if (typeof loadAvailableSlots === 'function') {
+        await loadAvailableSlots();
+    }
+
+    var intro = document.getElementById('availabilityIntro');
+    if (intro) {
+        intro.textContent = 'You are viewing activated office-hour slots for this owner.';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function () {
+    await loadInitialAppointmentData();
+    await loadInviteOwnerContext();
+});
