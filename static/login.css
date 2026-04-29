@@ -1,0 +1,200 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f2f2f2;
+    color: #222;
+}
+
+.page {
+    max-width: 1120px;
+    margin: 36px auto;
+    padding: 0 18px;
+}
+
+.student-info {
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #444;
+}
+
+.card {
+    display: flex;
+    flex-wrap: wrap;
+    background-color: #ffffff;
+    border: 1px solid #d9d9d9;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.left-panel,
+.right-panel {
+    padding: 32px;
+}
+
+.left-panel {
+    flex: 1 1 320px;
+    min-width: 280px;
+    background-color: #fafafa;
+    border-right: 1px solid #ececec;
+}
+
+.right-panel {
+    flex: 1 1 560px;
+    min-width: 320px;
+}
+
+h1 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 58px;
+    line-height: 0.95;
+}
+
+h2 {
+    margin: 0 0 10px;
+    font-size: 28px;
+}
+
+.intro {
+    max-width: 360px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+}
+
+.contact-item {
+    margin-bottom: 14px;
+}
+
+.contact-item a {
+    color: #222;
+}
+
+.name-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.field-group {
+    margin-bottom: 14px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+input,
+select,
+textarea,
+button {
+    width: 100%;
+    font: inherit;
+}
+
+input,
+select,
+textarea {
+    padding: 12px 14px;
+    border: 1px solid #9f9f9f;
+    background-color: #fff;
+}
+
+textarea {
+    min-height: 180px;
+    resize: vertical;
+}
+
+.required-note {
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: #666;
+}
+
+.panel-text {
+    margin: 0 0 22px;
+    line-height: 1.6;
+    color: #444;
+}
+
+.section-heading {
+    margin-top: 30px;
+}
+
+.info-list {
+    margin: 0 0 0 18px;
+    padding: 0;
+    line-height: 1.6;
+    color: #444;
+}
+
+.info-list li {
+    margin-bottom: 10px;
+}
+
+.helper-text {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #666;
+}
+
+.secondary-button {
+    display: block;
+    margin-top: 12px;
+    padding: 13px 16px;
+    border: 1px solid #111;
+    background-color: #fff;
+    color: #111;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.secondary-button:hover {
+    background-color: #f3f3f3;
+}
+
+button {
+    margin-top: 10px;
+    padding: 14px 16px;
+    border: none;
+    background-color: #111;
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #222;
+}
+
+@media (max-width: 800px) {
+    h1 {
+        font-size: 42px;
+    }
+
+    .left-panel {
+        border-right: none;
+        border-bottom: 1px solid #ececec;
+    }
+}
+
+@media (max-width: 560px) {
+    .name-row {
+        grid-template-columns: 1fr;
+    }
+
+    .left-panel,
+    .right-panel {
+        padding: 22px;
+    }
+}
