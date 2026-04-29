@@ -1,3 +1,8 @@
+// ========== Office Hours ============
+
+
+// =========== Office Hours Bookings Table ===========
+
 async function loadType3Meetings() {
     const table = document.getElementById('officeHoursTable');
     if (!table) return;
@@ -99,6 +104,8 @@ function bindType3CancelButtons() {
     });
 }
 
+
+// ======== Office Hours Actions ============
 async function cancelType3Booking(booking3ID, ownerEmail) {
     if (!confirm('Cancel this office hour booking?')) return;
     
@@ -155,6 +162,3 @@ function getAvailableSlotsUrl() {
     return '/api/type3/available_slots';
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    // Load on page load only if the appointments view is already visible
-});

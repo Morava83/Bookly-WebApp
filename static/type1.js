@@ -1,3 +1,20 @@
+// --- INDIVIDUAL MEETING REQUESTS ----
+
+// ========= Page Setup ============
+document.addEventListener('DOMContentLoaded', function () {
+    bindType1Handlers();
+});
+
+// ========= Helper Functions =========
+function bindType1Handlers() {
+    const sendRequestButton = document.getElementById('sendRequestButton');
+    if (sendRequestButton) {
+        sendRequestButton.addEventListener('click', sendType1MeetingRequest);
+    }
+}
+
+// ======== Request Form ========
+
 async function sendType1MeetingRequest() {
     const ownerSelect = document.getElementById('ownerSelect');
     const meetingMessage = document.getElementById('meetingMessage');
@@ -113,6 +130,7 @@ async function sendType1MeetingRequest() {
     }
 }
 
+// ========= User Table ============
 async function loadType1Meetings() {
     const tbody = document.getElementById('individualMeetingsTableBody');
     if (!tbody) return;
@@ -147,6 +165,64 @@ async function loadType1Meetings() {
     }
 }
 
+function renderType1Meetings(meetings) {
+    const tbody = document.getElementById('individualMeetingsTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (!meetings || meetings.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="appt-table-empty">No individual meetings yet.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    meetings.forEach(function (meeting) {
+        const row = document.createElement('tr');
+
+        const zoomCell = meeting.status === "accepted" && meeting.zoom_link
+            ? `<a class="table-action primary" href="${meeting.zoom_link}" target="_blank">Join</a>`
+            : `<button class="table-action" disabled style="opacity: 0.45; cursor: not-allowed;">Join</button>`;
+        
+        const actionButtons = meeting.status === 'cancelled'
+            ? `
+                <button class="table-action danger" onclick="removeType1Meeting(${meeting.meetingID})">
+                    Remove
+                </button>
+            `
+            : `
+                <a class="table-action" href="mailto:${escapeHtml(meeting.owner_email || '')}">
+                    Email
+                </a>
+                <button class="table-action danger" onclick="cancelType1Meeting(${meeting.meetingID})">
+                    Cancel
+                </button>
+            `;
+
+        row.innerHTML = `
+            <td>${meeting.meetingID}</td>
+            <td>${meeting.owner_name}</td>
+            <td>${meeting.date}</td>
+            <td>${meeting.start_time}</td>
+            <td>${meeting.end_time}</td>
+            <td>${zoomCell}</td>
+            <td><span class="status-badge ${meeting.status}">${meeting.status}</span></td>
+            <td>
+                <div class="table-actions">
+                    ${actionButtons}
+                </div>
+            </td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+
+// ========== Meeting Actions ============
 async function cancelType1Meeting(meetingID) {
     if (!confirm('Cancel this individual meeting?')) {
         return;
@@ -216,70 +292,3 @@ async function removeType1Meeting(meetingID) {
         alert('Server error while removing meeting.');
     }
 }
-
-function renderType1Meetings(meetings) {
-    const tbody = document.getElementById('individualMeetingsTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-
-    if (!meetings || meetings.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" class="appt-table-empty">No individual meetings yet.</td>
-            </tr>
-        `;
-        return;
-    }
-
-    meetings.forEach(function (meeting) {
-        const row = document.createElement('tr');
-
-        const zoomCell = meeting.status === "accepted" && meeting.zoom_link
-            ? `<a class="table-action primary" href="${meeting.zoom_link}" target="_blank">Join</a>`
-            : `<button class="table-action" disabled style="opacity: 0.45; cursor: not-allowed;">Join</button>`;
-        
-        const actionButtons = meeting.status === 'cancelled'
-            ? `
-                <button class="table-action danger" onclick="removeType1Meeting(${meeting.meetingID})">
-                    Remove
-                </button>
-            `
-            : `
-                <a class="table-action" href="mailto:${escapeHtml(meeting.owner_email || '')}">
-                    Email
-                </a>
-                <button class="table-action danger" onclick="cancelType1Meeting(${meeting.meetingID})">
-                    Cancel
-                </button>
-            `;
-
-        row.innerHTML = `
-            <td>${meeting.meetingID}</td>
-            <td>${meeting.owner_name}</td>
-            <td>${meeting.date}</td>
-            <td>${meeting.start_time}</td>
-            <td>${meeting.end_time}</td>
-            <td>${zoomCell}</td>
-            <td><span class="status-badge ${meeting.status}">${meeting.status}</span></td>
-            <td>
-                <div class="table-actions">
-                    ${actionButtons}
-                </div>
-            </td>
-        `;
-
-        tbody.appendChild(row);
-    });
-}
-
-function bindType1Handlers() {
-    const sendRequestButton = document.getElementById('sendRequestButton');
-    if (sendRequestButton) {
-        sendRequestButton.addEventListener('click', sendType1MeetingRequest);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    bindType1Handlers();
-});

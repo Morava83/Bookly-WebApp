@@ -1,4 +1,16 @@
+// ==== GROUP MEETINGS ====
+
+
+// ======== State =========
 let currentVoteMeetingID = null;
+
+
+// =========== Page Setup ============
+
+document.addEventListener('DOMContentLoaded', function () {
+    bindType2Handlers();
+});
+
 
 // =========================
 // Helpers
@@ -46,13 +58,22 @@ function hideNote(id) {
     el.classList.remove('show');
 }
 
+function bindType2Handlers() {
+    const submitVoteBtn = document.getElementById('submitVoteBtn');
+    const backToApptsBtn = document.getElementById('backToApptsBtn');
 
-// =========================
-// Combined Type 2 table loader
-// Shows BOTH:
-// 1. Open group meeting invites that need voting
-// 2. Finalized/booked group meetings
-// =========================
+    if (submitVoteBtn) {
+        submitVoteBtn.addEventListener('click', submitGroupVote);
+    }
+
+    if (backToApptsBtn) {
+        backToApptsBtn.addEventListener('click', backToAppointmentsFromVote);
+    }
+}
+
+
+
+// ======== Group Meeting Table =========
 
 async function loadAllStudentGroupRows() {
     const tbody = document.getElementById('groupMeetingsTableBody');
@@ -179,11 +200,7 @@ async function loadAllStudentGroupRows() {
 }
 
 
-// =========================
-// Backwards-compatible loaders
-// These call the combined loader so old calls still work.
-// =========================
-
+// ======== Backwards-compatible loaders ========
 async function loadStudentGroupMeetings() {
     await loadAllStudentGroupRows();
 }
@@ -193,9 +210,7 @@ async function loadStudentGroupInvites() {
 }
 
 
-// =========================
-// Voting screen
-// =========================
+// ======== Vote Screen ==========
 
 async function openVoteMeeting(meetingID, title) {
     currentVoteMeetingID = meetingID;
@@ -293,10 +308,30 @@ async function openVoteMeeting(meetingID, title) {
     }
 }
 
+function backToAppointmentsFromVote() {
+    const makeAppointmentView = document.querySelector('.make-appointment-tab-view');
+    const appointmentView = document.querySelector('.view-appointment-tab-view');
+    const voteView = document.getElementById('voteMeetingView');
 
-// =========================
-// Submit vote
-// =========================
+    if (makeAppointmentView) {
+        makeAppointmentView.style.display = 'none';
+    }
+
+    if (voteView) {
+        voteView.style.display = 'none';
+    }
+
+    if (appointmentView) {
+        appointmentView.style.display = 'block';
+    }
+
+    currentVoteMeetingID = null;
+}
+
+
+
+
+// ========== Voting Actino ============
 
 async function submitGroupVote() {
     if (!currentVoteMeetingID) {
@@ -354,30 +389,8 @@ async function submitGroupVote() {
 }
 
 
-// =========================
-// Back button from voting screen
-// =========================
 
-function backToAppointmentsFromVote() {
-    const makeAppointmentView = document.querySelector('.make-appointment-tab-view');
-    const appointmentView = document.querySelector('.view-appointment-tab-view');
-    const voteView = document.getElementById('voteMeetingView');
-
-    if (makeAppointmentView) {
-        makeAppointmentView.style.display = 'none';
-    }
-
-    if (voteView) {
-        voteView.style.display = 'none';
-    }
-
-    if (appointmentView) {
-        appointmentView.style.display = 'block';
-    }
-
-    currentVoteMeetingID = null;
-}
-
+// ======== Meeting Action ============
 async function removeStudentGroupMeeting(meetingID) {
     if (!confirm('Remove this cancelled group meeting from your appointments?')) {
         return;
@@ -408,22 +421,4 @@ async function removeStudentGroupMeeting(meetingID) {
         alert('Server error while removing group meeting.');
     }
 }
-
-
-// =========================
-// Button listeners
-// =========================
-
-document.addEventListener('DOMContentLoaded', function () {
-    const submitVoteBtn = document.getElementById('submitVoteBtn');
-    const backToApptsBtn = document.getElementById('backToApptsBtn');
-
-    if (submitVoteBtn) {
-        submitVoteBtn.addEventListener('click', submitGroupVote);
-    }
-
-    if (backToApptsBtn) {
-        backToApptsBtn.addEventListener('click', backToAppointmentsFromVote);
-    }
-});
 
