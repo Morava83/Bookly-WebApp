@@ -1,7 +1,5 @@
-// =========================
-// Shared helpers
-// =========================
 
+// Shared helpers
 async function postJson(url, payload) {
     const response = await fetch(url, {
         method: 'POST',
@@ -123,10 +121,7 @@ function updateOwnerBookingInviteUrl(user) {
 }
 
 
-// =========================
-// Current logged-in owner
-// =========================
-
+// Current logged in owner
 async function loadCurrentUser() {
     const currentUserName = document.getElementById('currentUserName');
     const currentUserEmail = document.getElementById('currentUserEmail');
@@ -158,10 +153,7 @@ async function loadCurrentUser() {
 }
 
 
-// =========================
 // Tab switching
-// =========================
-
 function ownerSwitchTab(tabId) {
     const views = document.querySelectorAll('.owner-tab-view');
 
@@ -208,9 +200,8 @@ function ownerSwitchTab(tabId) {
 }
 
 
-// =========================
+
 // Notifications
-// =========================
 
 async function toggleNotifications(e) {
     e.stopPropagation();
@@ -347,9 +338,7 @@ function setupOwnerSocket() {
     }
 }
 
-// =========================
 // Logout
-// =========================
 
 document.addEventListener('DOMContentLoaded', function () {
     const logoutButton = document.getElementById('logoutButton');
@@ -377,10 +366,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-// =========================
 // Copy invite URL
-// =========================
-
 function copyInviteUrl(btn) {
     const textEl = btn.previousElementSibling || btn.parentElement.querySelector('.invite-url-text');
 
@@ -404,10 +390,7 @@ function copyInviteUrl(btn) {
 }
 
 
-// =========================
-// Type 3: My Slots
-// =========================
-
+// Type 3 My Slots
 function renderOwnerSlots(slots) {
     const tbody = document.querySelector('#ownerSlotsTable tbody');
     if (!tbody) return;
@@ -586,10 +569,7 @@ async function deleteSlot(btn, notifyEmail) {
 }
 
 
-// =========================
-// Type 3: Create Office Hours
-// =========================
-
+// Type 3 Create Office Hours
 function addOHSlotEntry() {
     const container = document.getElementById('ohSlotEntries');
     if (!container) return;
@@ -701,10 +681,7 @@ async function createOfficeHours() {
 }
 
 
-// =========================
-// Type 2: Create Group Meeting
-// =========================
-
+// Type 2 Create Group Meeting
 function addGMSlotEntry() {
     const container = document.getElementById('gmSlotEntries');
     if (!container) return;
@@ -868,10 +845,7 @@ async function createGroupMeeting() {
 }
 
 
-// =========================
 // Type 2: Owner group bookings table
-// =========================
-
 async function loadOwnerGroupBookings() {
     const table = document.getElementById('ownerGroupTable');
     if (!table) return;
@@ -969,10 +943,8 @@ async function loadOwnerGroupBookings() {
 }
 
 
-// =========================
-// Type 2: Manage group meetings / finalize
-// =========================
 
+// Type 2 Manage group meetings 
 async function loadOwnerGroupMeetings() {
     const table = document.getElementById('groupMeetingsManageTable');
     if (!table) return;
@@ -1278,10 +1250,7 @@ async function deleteGroupMeeting(meetingID) {
 }
 
 
-// =========================
-// Type 1: Pending requests
-// =========================
-
+// Type 1 Pending requests
 async function acceptRequest(meetingID, studentEmail) {
     try {
         const response = await fetch('/api/type1/accept', {
@@ -1424,9 +1393,7 @@ async function loadPendingRequests() {
 }
 
 
-// =========================
 // Type 1: Owner individual meetings
-// =========================
 
 async function loadOwnerType1Meetings() {
     const tbody = document.querySelector('#ownerIndividualTable tbody');
@@ -1582,9 +1549,7 @@ async function deleteOwnerType1Meeting(meetingID) {
 }
 
 
-// =========================
 // Type 3: Owner appointment bookings
-// =========================
 
 async function loadOwnerAppointments() {
     const ohBody = document.getElementById('ownerOHTableBody');
@@ -1697,10 +1662,7 @@ async function cancelOHBooking(bookingID, studentEmail) {
 }
 
 
-// =========================
 // Initial page load
-// =========================
-
 document.addEventListener('DOMContentLoaded', async function () {
     if (typeof loadCurrentUser === 'function') {
         await loadCurrentUser();
