@@ -29,7 +29,7 @@ Public URL: https://bookly-webapp.onrender.com/
 Contributers:
 
 Brian Morava - 261032388
-Type3.py, OwnerHomepage.ks, LandingLoginPage.html, CreateAccount.html, Homepage.html, Deployment, app.py
+Type3.py, OwnerHomepage.js, LandingLoginPage.html, CreateAccount.html, Homepage.html, Deployment & Web-App Hosting, app.py
 
 Maxim Miladinov-Genov - 260989667
 Type1.py, Type2.py, CreateTable.sql, CreateTable.py, app.py
