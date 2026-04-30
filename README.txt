@@ -1,15 +1,6 @@
 Website: https://bookly-webapp.onrender.com/home
 
-Approximately 20-25% of the website was not written directly by our team
-from scratch. This portion mainly consisted of early base skeletons and 
-general frontend guidance.
-
-Outside assistance was also used for general debugging and clarification during
-development. This included asking AI tools and online search tools questions about 
-frontend organization, HTML/CSS structure, JavaScript event handling, Flask routing,
-and database/debugging errors. These tools help explain errors, and provide general
-guidance, but the team was responsible for adapting, integrating, testing, and modifying
-the code to fit the Bookly project requirements.
+The approximately 30% of the website code not written directly by our team consisted mainly of the base skeletons for `OwnerHomepage.html` and `Homepage.html`, along with general frontend debugging support. This included asking Google AI Search clarifying questions to help resolve frontend issues and improve page structure.
 
 Name                    Student ID              Code / Features Worked On
 ------------------------------------------------------------------------------------
