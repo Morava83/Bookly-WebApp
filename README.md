@@ -31,7 +31,7 @@ Public URL: https://bookly-webapp.onrender.com/
 | Team Member | Student ID | Code / Work Completed |
 |---|---:|---|
 | Enoch Chan | 261160969 | `Type1.py`, `Type2.py`, `Type3.py`, Zoom Link, Notifications, Database, `app.py`, `UserHomepage.js`, `OwnerHomepage.js` |
-| Brian Morava | 261032388 | `Type3.py`, `OwnerHomepage.js`, `LandingLoginPage.html`, `CreateAccount.html`, `Homepage.html`, deployment and web-app hosting, `app.py` |
+| Brian Morava | 261032388 | `Type3.py`, `OwnerHomepage.js`, `LandingLoginPage.html`, `CreateAccount.html`, `Homepage.html`, deployment and web hosting, `app.py` |
 | Maxim Miladinov-Genov | 260989667 | `Type1.py`, `Type2.py`, `CreateTable.sql`, `CreateTable.py`, `app.py` |
 | Omer Ege Ozyaba | 261069925 | `Homepage.html`, `OwnerHomePage.html`, `Type3.py`, `app.py` |
 | Hoi Kin Chiu | 261142005 | `Type3.py`, `OwnerHomePage.html`, `HomePage.html`, `app.py`, `CreateTable.sql` |
