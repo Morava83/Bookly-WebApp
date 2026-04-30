@@ -40,6 +40,10 @@ Homepage.html, OwnerHomePage.html, Type3.py, app.py
 Hoi Kin Chiu - 261142005
 Type3.py, OwnerHomePage.html, HomePage.html, app.py, CreatTable.sql
 
+## Code Not Written by Our Team
+
+The approximately 30% of the website code not written directly by our team consisted mainly of the base skeletons for `OwnerHomepage.html` and `Homepage.html`, along with general frontend debugging support. This included asking Google AI Search clarifying questions to help resolve frontend issues and improve page structure.
+
 
 
 
