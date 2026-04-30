@@ -6,7 +6,69 @@
 // Enoch Chan - 261160969
 
 
+/* ======= Helpers ===========*/
+var monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+];
+var weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var today = new Date();
+var startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
+function padNumber(value) {
+    return value < 10 ? '0' + value : String(value);
+}
+
+function formatTimeStr(timeStr) {
+    if (!timeStr) {
+        return '';
+    }
+
+    var parts = timeStr.split(':');
+    var hour = parseInt(parts[0], 10);
+    var minute = parts[1] || '00';
+
+    var suffix = hour >= 12 ? 'PM' : 'AM';
+    var displayHour = hour % 12;
+
+    if (displayHour === 0) {
+        displayHour = 12;
+    }
+
+    return displayHour + ':' + minute + ' ' + suffix;
+}
+
+function formatDateOnly(date) {
+    return weekdayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+}
+function isSameDate(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function formatDateForApi(dateObj) {
+    var year = dateObj.getFullYear();
+    var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    var day = String(dateObj.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+}
+
+function calculateEndTime(startTime) {
+    var parts = startTime.split(':');
+    var hour = parseInt(parts[0], 10);
+    var minute = parseInt(parts[1], 10);
+
+    minute += 15;
+    if (minute >= 60) {
+        hour += 1;
+        minute -= 60;
+    }
+
+    return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+}
+
+window.formatDateForApi = formatDateForApi;
+window.calculateEndTime = calculateEndTime;
+window.formatTimeStr = formatTimeStr;
 
 var ownerSlots = [];
 
@@ -546,28 +608,30 @@ function createCalendar(opts) {
     loadOwners();
     setupSocket();
 
-    logoutButton.addEventListener('click', async function(){
-        try {
-            const response = await fetch('/api/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async function () {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError(data.error || 'Could not log out.');
+                    return;
                 }
-            });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                showError(data.error || 'Could not log out.');
-                return;
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout error:', error);
+                showError('Could not log out.');
             }
-
-            window.location.href = '/';
-        } catch (error) {
-            console.error('Logout error:', error);
-            showError('Could not log out.')
-        }
-    });
+        });
+    }
 
 
     bookButton.addEventListener('click', async function () {
@@ -818,69 +882,7 @@ function createCalendar(opts) {
     }
 })();
 
-/* ======= Helpers ===========*/
-var monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
-var weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-var today = new Date();
-var startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-function padNumber(value) {
-    return value < 10 ? '0' + value : String(value);
-}
-
-function formatTimeStr(timeStr) {
-    if (!timeStr) {
-        return '';
-    }
-
-    var parts = timeStr.split(':');
-    var hour = parseInt(parts[0], 10);
-    var minute = parts[1] || '00';
-
-    var suffix = hour >= 12 ? 'PM' : 'AM';
-    var displayHour = hour % 12;
-
-    if (displayHour === 0) {
-        displayHour = 12;
-    }
-
-    return displayHour + ':' + minute + ' ' + suffix;
-}
-
-function formatDateOnly(date) {
-    return weekdayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
-}
-function isSameDate(a, b) {
-    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-function formatDateForApi(dateObj) {
-    var year = dateObj.getFullYear();
-    var month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    var day = String(dateObj.getDate()).padStart(2, '0');
-    return year + '-' + month + '-' + day;
-}
-
-function calculateEndTime(startTime) {
-    var parts = startTime.split(':');
-    var hour = parseInt(parts[0], 10);
-    var minute = parseInt(parts[1], 10);
-
-    minute += 15;
-    if (minute >= 60) {
-        hour += 1;
-        minute -= 60;
-    }
-
-    return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
-}
-
-window.formatDateForApi = formatDateForApi;
-window.calculateEndTime = calculateEndTime;
-window.formatTimeStr = formatTimeStr;
 
 document.addEventListener('click', function (e) {
     var panel = document.getElementById('notifPanel');
@@ -900,12 +902,12 @@ async function loadInitialAppointmentData() {
         await loadType1Meetings();
     }
 
-    if (typeof loadType2Meetings === 'function') {
-        await loadType2Meetings();
+    if (typeof loadAllStudentGroupRows === 'function') {
+        await loadAllStudentGroupRows();
     }
 
-    if (typeof loadType3Bookings === 'function') {
-        await loadType3Bookings();
+    if (typeof loadType3Meetings === 'function') {
+        await loadType3Meetings();
     }
 
     if (typeof loadNotifications === 'function') {
