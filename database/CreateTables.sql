@@ -1,3 +1,10 @@
+-- Contributer:
+-- Maxim Miladinov-Genov - 260989667
+-- Hoi Kin Chiu - 261142005
+-- Enoch Chan - 261160969
+
+
+
 --======== Database =========
 PRAGMA foreign_keys = ON;
 

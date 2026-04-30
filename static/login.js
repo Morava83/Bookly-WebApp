@@ -1,3 +1,7 @@
+// Contributer
+// Brian Morava - 261032388
+
+
 (function () {
     var form = document.getElementById('loginForm');
     var requiredFields = form.querySelectorAll('[required]');

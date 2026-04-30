@@ -1,3 +1,12 @@
+# Contributers: 
+# Brian Morava - 261032388
+# Omer Ege Ozyaba - 261069925
+# Hoi Kin Chiu - 261142005
+# Enoch Chan - 261160969
+
+
+
+
 #Type3: Recurring Office Hours
 from flask import Blueprint, request, current_app, jsonify, session
 import os

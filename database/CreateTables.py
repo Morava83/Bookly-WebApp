@@ -1,3 +1,9 @@
+# Contributer:
+# Maxim Miladinov-Genov - 260989667
+# Hoi Kin Chiu - 261142005
+
+
+
 import os
 import sqlite3
 

@@ -1,4 +1,11 @@
 // ========== Office Hours ============
+// Contributer:
+// Brian Morava - 261032388
+// Omer Ege Ozyaba - 261069925
+// Hoi Kin Chiu - 261142005
+// Enoch Chan - 261160969
+
+
 
 
 // =========== Office Hours Bookings Table ===========

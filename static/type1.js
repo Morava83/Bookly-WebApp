@@ -1,4 +1,8 @@
 // --- INDIVIDUAL MEETING REQUESTS ----
+// Contributer:
+// Maxim Miladinov-Genov - 260989667
+// Enoch Chan - 261160969
+
 
 // ========= Page Setup ============
 document.addEventListener('DOMContentLoaded', function () {

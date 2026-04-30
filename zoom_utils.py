@@ -1,3 +1,6 @@
+# Contributer:
+# Enoch Chan - 261160969
+
 import requests
 from requests.auth import HTTPBasicAuth
 from datetime import datetime

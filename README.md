@@ -24,3 +24,23 @@ Database Initialized: database/CreateTables.py
 Deployed to the Render Hosting Service 
 
 Public URL: https://bookly-webapp.onrender.com/
+
+
+Contributers:
+
+Brian Morava - 261032388
+Type3.py, OwnerHomepage.ks, LandingLoginPage.html, CreateAccount.html, Homepage.html, Deployment, app.py
+
+Maxim Miladinov-Genov - 260989667
+Type1.py, Type2.py, CreateTable.sql, CreateTable.py, app.py
+
+Omer Ege Ozyaba - 261069925
+Homepage.html, OwnerHomePage.html, Type3.py, app.py
+
+Hoi Kin Chiu - 261142005
+Type3.py, OwnerHomePage.html, HomePage.html, app.py, CreatTable.sql
+
+
+
+
+

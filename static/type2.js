@@ -1,4 +1,7 @@
 // ==== GROUP MEETINGS ====
+// Contributer:
+// Enoch Chan - 261160969
+// Maxim Miladinov-Genov - 260989667
 
 
 // ======== State =========
