@@ -1,6 +1,7 @@
 Website: https://bookly-webapp.onrender.com/home
 
-The approximately 30% of the website code not written directly by our team consisted mainly of the base skeletons for `OwnerHomepage.html` and `Homepage.html`, along with general frontend debugging support. This included asking Google AI Search clarifying questions to help resolve frontend issues and improve page structure.
+The approximately 30% of the website code not written directly by our team consisted mainly of the base skeletons for `OwnerHomepage.html` and `Homepage.html`, along with general frontend debugging support. 
+This included asking Google AI Search clarifying questions to help resolve frontend issues and improve page structure.
 
 Name                    Student ID              Code / Features Worked On
 ------------------------------------------------------------------------------------
