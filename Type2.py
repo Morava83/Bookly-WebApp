@@ -30,11 +30,11 @@ def get_db_path():
 
 
 def get_db_connection():
-    conn = sqlite3.connect(get_db_path())
+    conn = sqlite3.connect(get_db_path(), timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 10000")
     return conn
-
 
 def get_user_id(email):
     conn = get_db_connection()
@@ -294,27 +294,52 @@ def create_group_meeting():
             )
 
         saved_invitees = 0
+        notifications_to_send = []
+
         for email in invitees:
             email = (email or "").strip().lower()
+
             if not email:
                 continue
-            student_id = get_participant_id_by_email(email)
-            if not student_id:
-                continue
+
             cursor.execute(
-                "INSERT OR IGNORE INTO GroupInvite (meetingID, studentID) VALUES (?, ?)",
+                """
+                SELECT userID
+                FROM User
+                WHERE email = ?
+                """,
+                (email,),
+            )
+
+            user_row = cursor.fetchone()
+
+            if not user_row:
+                continue
+
+            student_id = user_row["userID"]
+
+            cursor.execute(
+                """
+                INSERT OR IGNORE INTO GroupInvite (meetingID, studentID)
+                VALUES (?, ?)
+                """,
                 (meeting_id, student_id),
             )
+
             if cursor.rowcount > 0:
                 saved_invitees += 1
-                create_notification(
-                    student_id,
-                    f"You were invited to vote for group meeting '{title}'."
+                notifications_to_send.append(
+                    (
+                        student_id,
+                        f"You were invited to vote for group meeting '{title}'."
+                    )
                 )
 
-            
-
         conn.commit()
+
+        for user_id, message in notifications_to_send:
+            create_notification(user_id, message)
+                
         return jsonify(
             {
                 "status": "ok",

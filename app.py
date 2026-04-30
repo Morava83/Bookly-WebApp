@@ -6,9 +6,6 @@
 # Hoi Kin Chiu - 261142005
 
 
-
-
-
 from flask import Flask, render_template, request, jsonify, session, redirect
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -57,9 +54,10 @@ database.CreateTables.create_tables()
 
 # ======== DB helper ========
 def get_db_connection():
-    conn = sqlite3.connect(app.config["DB_PATH"])
+    conn = sqlite3.connect(app.config["DB_PATH"], timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 10000")
     return conn
 
 # ======== Authentication ========

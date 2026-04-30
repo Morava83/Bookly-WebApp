@@ -28,29 +28,21 @@ DB_PATH = os.path.join(BASE_DIR, "database", "bookly.db")
 
 # Database connection
 def get_db_connection():
-
     db_path = DB_PATH
 
-    #attempt to get DB_PATH from Flask app config, but fallback to default if not available 
     try:
         db_path = current_app.config.get("DB_PATH", DB_PATH)
     except RuntimeError:
         pass
 
-    # Opens connection to SQLite database file at DB_PATH
-    conn = sqlite3.connect(db_path)
-
-    # returns DB with dictionary format -> row["slotID"]
+    conn = sqlite3.connect(db_path, timeout=10)
     conn.row_factory = sqlite3.Row
-
-    # Emnable SQLite foreign-key checks
     conn.execute("PRAGMA foreign_keys = ON")
-
+    conn.execute("PRAGMA busy_timeout = 10000")
     return conn
 
 # Email function
 def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, username, password):
-    # Multipart email message container
     msg = MIMEMultipart()
     msg["From"] = from_email
     msg["To"] = to_email
