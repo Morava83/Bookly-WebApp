@@ -39,7 +39,7 @@ Enoch Chan              261160969               Database
                                                 User Homepage
                                                 Owner Homepage
 
-Note: Shared Code / Feature doesn't indicate equal contribution
+Note: each team member meaningfully  contributed to the project
 
                         
 
