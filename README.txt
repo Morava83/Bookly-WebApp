@@ -7,7 +7,7 @@ Name                    Student ID              Code / Features Worked On
 ------------------------------------------------------------------------------------
 Brian Morava            261032388               Landing / Login Page
                                                 Create Account
-                                                Deployment
+                                                Deployment & Web Hosting
                                                 Owner Homepage
                                                 User Homepage
                                                 app.py
