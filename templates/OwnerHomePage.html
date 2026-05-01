@@ -27,7 +27,10 @@
                     </p>
 
                     <div style="margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="table-action primary" onclick="activateAllSlots()">Activate all</button>
+                        <button class="table-action primary" onclick="ownerSwitchTab('createOHView')">
+                            + Create office hours
+                        </button>
+                        <button class="table-action" onclick="activateAllSlots()">Activate all</button>
                         <button class="table-action" onclick="deactivateAllSlots()">Deactivate all</button>
                     </div>
 
@@ -101,6 +104,12 @@
                             <button type="button" class="book-button" id="ohCreateBtn" onclick="createOfficeHours()">
                                 Create office hours
                             </button>
+
+                            <button type="button" class="book-button" onclick="ownerSwitchTab('mySlotsView')"
+                                style="margin-top:8px; background:#fff; color:#111; border:1px solid #8d8d8d;">
+                                ← Back to my slots
+                            </button>
+
                             <div class="booking-note" id="ohSuccessNote"></div>
                             <div class="error-note" id="ohErrorNote"></div>
                         </div>
@@ -172,6 +181,10 @@
                             <button type="button" class="book-button" onclick="createGroupMeeting()">
                                 Create &amp; send invitations
                             </button>
+                            <button type="button" class="book-button" onclick="ownerSwitchTab('manageGMView')"
+                                style="margin-top:8px; background:#fff; color:#111; border:1px solid #8d8d8d;">
+                                ← Back to group meetings
+                            </button>
                             <div class="booking-note" id="gmSuccessNote"></div>
                             <div class="error-note" id="gmErrorNote"></div>
                         </div>
@@ -179,10 +192,16 @@
                 </div>
 
                 <div class="owner-tab-view" id="manageGMView" style="display:none;">
-                    <h1>Manage Group Meetings</h1>
+                    <h1>Group Meetings</h1>
                     <p class="intro">
-                        View responses and finalize the best time for each group meeting.
+                        View, create, and finalize your group meetings.
                     </p>
+
+                    <div style="margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="table-action primary" onclick="ownerSwitchTab('createGMView')">
+                            + Create group meeting
+                        </button>
+                    </div>
 
                     <div class="meeting-tables">
                         <div class="appt-table-wrap">
@@ -204,6 +223,7 @@
                             </table>
                         </div>
                     </div>
+
                     <div class="booking-note" id="mgmSuccessNote"></div>
                     <div class="error-note" id="mgmErrorNote"></div>
                 </div>
@@ -372,21 +392,19 @@
                     <button onclick="ownerSwitchTab('mySlotsView')">
                         <h3>My slots</h3>
                     </button>
-                    <button onclick="ownerSwitchTab('createOHView')">
-                        <h3>Create office hours</h3>
-                    </button>
-                    <button onclick="ownerSwitchTab('createGMView')">
-                        <h3>Create group meeting</h3>
-                    </button>
+
                     <button onclick="ownerSwitchTab('manageGMView')">
-                        <h3>Manage group meetings</h3>
+                        <h3>Group meetings</h3>
                     </button>
+
                     <button onclick="ownerSwitchTab('pendingView')">
                         <h3>Pending requests</h3>
                     </button>
+
                     <button onclick="ownerSwitchTab('ownerApptsView')">
                         <h3>My appointments</h3>
                     </button>
+
                     <button type="button" onclick="window.location.href='/book'">
                         <h3>Book an appointment</h3>
                     </button>
