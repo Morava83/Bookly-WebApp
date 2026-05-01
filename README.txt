@@ -4,9 +4,10 @@ What changed after demo2:
 Type2 shouldn't have "database is locked" behavior anymore"
 Added delte notification feature to the notification bar
 De-cluttered the button on OwnerHomepage
-Removed Meeting ID from tables
+Removed Meeting ID from tables (except for "My Slot")
 Added "PM" and "AM" flags to the table for clarity
 Added "Pending request" counter
+
 
 
 The approximately 30% of the website code not written directly by our team consisted mainly of the base skeletons for `OwnerHomepage.html` and `Homepage.html`, along with general frontend debugging support. 
