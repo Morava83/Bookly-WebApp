@@ -127,6 +127,12 @@ async function sendType1MeetingRequest() {
         type1RequestSuccessNote.classList.add('show');
         type1RequestErrorNote.classList.remove('show');
 
+        if (typeof view_appointments === 'function') {
+            await view_appointments();
+        } else if (typeof loadType1Meetings === 'function') {
+            await loadType1Meetings();
+        }
+
     } catch (error) {
         type1RequestErrorNote.textContent = error.message || 'Could not connect to the server.';
         type1RequestErrorNote.classList.add('show');
