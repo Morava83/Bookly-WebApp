@@ -659,6 +659,35 @@ h2 {
     color: #999;
     margin-top: 4px;
 }
+
+.notif-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.notif-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notif-delete {
+    border: none;
+    background: transparent;
+    color: #999;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    flex: 0 0 auto;
+}
+
+.notif-delete:hover {
+    color: #7a1f1f;
+}
+
+
 /*#######################################################################################*/
 
 /*Logout button*/

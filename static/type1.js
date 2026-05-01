@@ -152,7 +152,7 @@ async function loadType1Meetings() {
         if (!response.ok) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="appt-table-empty">Could not load individual meetings.</td>
+                    <td colspan="7" class="appt-table-empty">Could not load individual meetings.</td>
                 </tr>
             `;
             return;
@@ -178,7 +178,7 @@ function renderType1Meetings(meetings) {
     if (!meetings || meetings.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="appt-table-empty">No individual meetings yet.</td>
+                <td colspan="7" class="appt-table-empty">No individual meetings yet.</td>
             </tr>
         `;
         return;
@@ -207,7 +207,6 @@ function renderType1Meetings(meetings) {
             `;
 
         row.innerHTML = `
-            <td>${meeting.meetingID}</td>
             <td>${meeting.owner_name}</td>
             <td>${meeting.date}</td>
             <td>${meeting.start_time}</td>

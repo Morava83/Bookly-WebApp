@@ -59,7 +59,7 @@ function renderType3Meetings(bookings) {
     if (!bookings || bookings.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="appt-table-empty">No office hours booked yet.</td>
+                <td colspan="7" class="appt-table-empty">No office hours booked yet.</td>
             </tr>
         `;
         return;
@@ -74,21 +74,20 @@ function renderType3Meetings(bookings) {
 
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${booking.slotID}</td>
-            <td>${ownerName}</td>
-            <td>${booking.start_date}</td>
-            <td>${booking.start_time}</td>
-            <td>${booking.end_time}</td>
+            <td>${escapeHtml(ownerName)}</td>
+            <td>${escapeHtml(booking.start_date || '')}</td>
+            <td>${formatTimeStr(booking.start_time)}</td>
+            <td>${formatTimeStr(booking.end_time)}</td>
             <td>${zoomCell}</td>
             <td><span class="status-badge booked">Booked</span></td>
             <td>
                 <div class="table-actions">
-                    ${ownerEmail ? `<a class="table-action" href="mailto:${ownerEmail}">Email</a>` : ''}
+                    ${ownerEmail ? `<a class="table-action" href="mailto:${escapeHtml(ownerEmail)}">Email</a>` : ''}
                     <button
                         class="table-action danger"
                         type="button"
                         data-booking-id="${booking.booking3ID}"
-                        data-owner-email="${booking.owner_email || ''}">
+                        data-owner-email="${escapeHtml(booking.owner_email || '')}">
                         Cancel
                     </button>
                 </div>

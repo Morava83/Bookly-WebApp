@@ -176,12 +176,12 @@ async function loadAllStudentGroupRows() {
                 <td>${escapeHtml(meeting.title || 'Untitled group meeting')}</td>
                 <td>${escapeHtml(meeting.owner_name || meeting.owner_email || '')}</td>
                 <td>${escapeHtml(meeting.date || '')}</td>
-                <td>${escapeHtml(meeting.start_time || '')}</td>
-                <td>${escapeHtml(meeting.end_time || '')}</td>
-                <td>${recurrenceText}</td>
-                <td>${zoomHtml}</td>
-                <td><span class="status-badge ${escapeHtml(meeting.status || '')}">${escapeHtml(meeting.status || '')}</span></td>
-                <td>${actionHtml}</td>
+                <td>${formatTimeStr(meeting.start_time)}</td>
+                <td>${formatTimeStr(meeting.end_time)}</td>
+                <td>${escapeHtml(meeting.recurrence || 'One-time')}</td>
+                <td>${zoomCell}</td>
+                <td><span class="status-badge ${meeting.status}">${meeting.status}</span></td>
+                <td>${actionButtons}</td>
             `;
 
 

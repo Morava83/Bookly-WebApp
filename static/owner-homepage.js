@@ -129,6 +129,25 @@ function updateOwnerBookingInviteUrl(user) {
     el.textContent = `${window.location.origin}/book/owner/${user.userID}`;
 }
 
+function formatTimeStr(timeStr) {
+    if (!timeStr) {
+        return '';
+    }
+
+    const parts = String(timeStr).split(':');
+    const hour = parseInt(parts[0], 10);
+    const minute = parts[1] || '00';
+
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+    let displayHour = hour % 12;
+
+    if (displayHour === 0) {
+        displayHour = 12;
+    }
+
+    return displayHour + ':' + minute + ' ' + suffix;
+}
+
 // ========================================================
 
 // ======= Current Owner Information ========
@@ -267,8 +286,14 @@ async function loadOwnerNotifications() {
             item.className = 'notif-item' + (notification.is_read ? '' : ' unread');
 
             item.innerHTML =
-                '<div class="notif-text">' + escapeHtml(notification.message) + '</div>' +
-                '<div class="notif-time">' + formatOwnerNotificationTime(notification.created_at) + '</div>';
+                '<div class="notif-content">' +
+                    '<div class="notif-text">' + escapeHtml(notification.message) + '</div>' +
+                    '<div class="notif-time">' + formatOwnerNotificationTime(notification.created_at) + '</div>' +
+                '</div>' +
+                '<button class="notif-delete" type="button" title="Delete notification" ' +
+                    'onclick="deleteOwnerNotification(event, ' + notification.notificationID + ')">' +
+                    '&times;' +
+                '</button>';
 
             notifList.appendChild(item);
         });
@@ -299,6 +324,31 @@ async function markOwnerNotificationsRead() {
 
     } catch (error) {
         console.error('Could not mark owner notifications as read:', error);
+    }
+}
+
+async function deleteOwnerNotification(event, notificationID) {
+    event.stopPropagation();
+
+    try {
+        const response = await fetch('/api/notifications/' + notificationID, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error(data.error || 'Could not delete notification.');
+            return;
+        }
+
+        await loadOwnerNotifications();
+
+    } catch (error) {
+        console.error('Owner delete notification error:', error);
     }
 }
 
@@ -605,15 +655,14 @@ async function loadOwnerType1Meetings() {
                 `;
 
             row.innerHTML = `
-                <td>${escapeHtml(meeting.meetingID)}</td>
                 <td>
                     ${escapeHtml(meeting.student_name || '')}
                     <br>
                     <span class="no-link">${escapeHtml(meeting.student_email || '')}</span>
                 </td>
                 <td>${escapeHtml(meeting.date || '')}</td>
-                <td>${escapeHtml(meeting.start_time || '')}</td>
-                <td>${escapeHtml(meeting.end_time || '')}</td>
+                <td>${formatTimeStr(meeting.start_time)}</td>
+                <td>${formatTimeStr(meeting.end_time)}</td>
                 <td>${zoomCell}</td>
                 <td>
                     <span class="status-badge ${escapeHtml(meeting.status || '')}">
@@ -1234,8 +1283,8 @@ async function loadOwnerGroupBookings() {
             row.innerHTML = `
                 <td>${escapeHtml(meeting.title || 'Untitled group meeting')}</td>
                 <td>${escapeHtml(meeting.date || '')}</td>
-                <td>${escapeHtml(meeting.start_time || '')}</td>
-                <td>${escapeHtml(meeting.end_time || '')}</td>
+                <td>${formatTimeStr(meeting.start_time)}</td>
+                <td>${formatTimeStr(meeting.end_time)}</td>
                 <td>${recurrenceText}</td>
                 <td>${zoomHtml}</td>
                 <td><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></td>
@@ -1599,15 +1648,14 @@ async function loadOwnerAppointments() {
                 : '<span class="no-link">—</span>';
 
             tr.innerHTML = `
-                <td>${escapeHtml(booking.slotID)}</td>
                 <td>
                     ${escapeHtml(booking.student_name || '')}
                     <br>
                     <span class="no-link">${escapeHtml(booking.student_email || '')}</span>
                 </td>
                 <td>${escapeHtml(booking.start_date || '')}</td>
-                <td>${escapeHtml(booking.start_time || '')}</td>
-                <td>${escapeHtml(booking.end_time || '')}</td>
+                <td>${formatTimeStr(booking.start_time)}</td>
+                <td>${formatTimeStr(booking.end_time)}</td>                
                 <td>${zoomHtml}</td>
                 <td>
                     <div class="table-actions">

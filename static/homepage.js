@@ -388,8 +388,14 @@ async function loadNotifications() {
             item.className = 'notif-item' + (n.is_read ? '' : ' unread');
 
             item.innerHTML =
-                '<div class="notif-text">' + escapeHtml(n.message) + '</div>' +
-                '<div class="notif-time">' + formatNotificationTime(n.created_at) + '</div>';
+                '<div class="notif-content">' +
+                    '<div class="notif-text">' + escapeHtml(n.message) + '</div>' +
+                    '<div class="notif-time">' + formatNotificationTime(n.created_at) + '</div>' +
+                '</div>' +
+                '<button class="notif-delete" type="button" title="Delete notification" ' +
+                    'onclick="deleteNotification(event, ' + n.notificationID + ')">' +
+                    '&times;' +
+                '</button>';
 
             notifList.appendChild(item);
         });
@@ -421,6 +427,31 @@ async function markNotificationsRead() {
 
     } catch (error) {
         console.error('Could not mark notifications as read:', error);
+    }
+}
+
+async function deleteNotification(event, notificationID) {
+    event.stopPropagation();
+
+    try {
+        const response = await fetch('/api/notifications/' + notificationID, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error(data.error || 'Could not delete notification.');
+            return;
+        }
+
+        await loadNotifications();
+
+    } catch (error) {
+        console.error('Delete notification error:', error);
     }
 }
 

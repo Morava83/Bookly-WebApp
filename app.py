@@ -424,6 +424,37 @@ def mark_notifications_read():
     finally:
         conn.close()
 
+
+@app.route("/api/notifications/<int:notification_id>", methods=["DELETE"])
+@login_required
+def delete_notification(notification_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            """
+            DELETE FROM Notification
+            WHERE notificationID = ?
+              AND userID = ?
+            """,
+            (notification_id, session["user_id"]),
+        )
+
+        conn.commit()
+
+        if cur.rowcount == 0:
+            return jsonify({"error": "Notification not found"}), 404
+
+        return jsonify({"success": True}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        conn.close()    
+
 # ======== Blueprints ======== 
 app.register_blueprint(type1_blueprint, url_prefix="/api/type1")
 app.register_blueprint(type2_blueprint, url_prefix="/api/type2")
