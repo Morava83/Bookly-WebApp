@@ -638,11 +638,13 @@ def decide_meeting():
 
         booked_students = cursor.fetchall()
 
+        notifications_to_send = []
+
         for student in booked_students:
-            create_notification(
+            notifications_to_send.append((
                 student["studentID"],
                 f"Group meeting '{meeting_row['title']}' has been finalized for {selected_slot['date']} at {selected_slot['start_time']}."
-            )
+            ))
 
         recurring_instance_ids = []
         if num_recurrences and num_recurrences > 1:
@@ -728,6 +730,10 @@ def decide_meeting():
             )
 
         conn.commit()
+
+        for user_id, message in notifications_to_send:
+            create_notification(user_id, message)
+
         return jsonify(
             {
                 "status": "ok",
@@ -931,7 +937,6 @@ def submit_vote():
             (meeting_id, student_id),
         )
 
-        # Notification
         cursor.execute("""
             SELECT ownerID, title
             FROM GroupMeeting
@@ -939,14 +944,22 @@ def submit_vote():
         """, (meeting_id,))
         meeting_info = cursor.fetchone()
 
+        notification_user_id = None
+        notification_message = None
+
         if meeting_info:
-            create_notification(
-                meeting_info["ownerID"],
+            notification_user_id = meeting_info["ownerID"]
+            notification_message = (
                 f"A student submitted availability for group meeting '{meeting_info['title']}'."
             )
 
-
         conn.commit()
+
+        # Now the vote transaction is finished, so the notification can safely use
+        # its own database connection.
+        if notification_user_id and notification_message:
+            create_notification(notification_user_id, notification_message)
+
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         conn.rollback()

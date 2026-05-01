@@ -152,7 +152,6 @@ async function loadAllStudentGroupRows() {
             tbody.appendChild(row);
         });
 
-        // 2. Finalized/booked group meetings
         bookings.forEach(function (meeting) {
             const row = document.createElement('tr');
 
@@ -172,19 +171,20 @@ async function loadAllStudentGroupRows() {
                 `
                 : `<span class="no-link">—</span>`;
 
+            const statusClass = escapeHtml(meeting.status || 'booked');
+            const statusText = escapeHtml(meeting.status || 'booked');
+
             row.innerHTML = `
                 <td>${escapeHtml(meeting.title || 'Untitled group meeting')}</td>
                 <td>${escapeHtml(meeting.owner_name || meeting.owner_email || '')}</td>
                 <td>${escapeHtml(meeting.date || '')}</td>
                 <td>${formatTimeStr(meeting.start_time)}</td>
                 <td>${formatTimeStr(meeting.end_time)}</td>
-                <td>${escapeHtml(meeting.recurrence || 'One-time')}</td>
-                <td>${zoomCell}</td>
-                <td><span class="status-badge ${meeting.status}">${meeting.status}</span></td>
-                <td>${actionButtons}</td>
+                <td>${recurrenceText}</td>
+                <td>${zoomHtml}</td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td>${actionHtml}</td>
             `;
-
-
 
             tbody.appendChild(row);
         });
