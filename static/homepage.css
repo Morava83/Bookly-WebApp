@@ -389,7 +389,8 @@ h2 {
     display: none;
 }
 
-/*Tables CSS*/
+/* Tables CSS */
+
 .table-link {
     font-size: 13px;
     font-weight: bold;
@@ -424,6 +425,7 @@ h2 {
 }
 
 /* Header */
+
 .appt-table thead th {
     padding: 12px 14px;
     text-align: left;
@@ -440,6 +442,7 @@ h2 {
 }
 
 /* Body rows */
+
 .appt-table tbody td {
     padding: 12px 14px;
     color: #222;
@@ -463,7 +466,7 @@ h2 {
     background-color: #ededed;
 }
 
-/* ── Status badges ── */
+/* Status badges */
 
 .status-badge {
     display: inline-block;
@@ -507,7 +510,7 @@ h2 {
     border: 1px solid #bdbdbd;
 }
 
-/* ── Row action buttons ── */
+/* Row action buttons */
 
 .table-action {
     padding: 6px 12px;
@@ -550,7 +553,7 @@ h2 {
     flex-wrap: wrap;
 }
 
-/* ── Empty state ── */
+/* Empty state */
 
 .appt-table-empty {
     padding: 32px 18px;
@@ -560,8 +563,7 @@ h2 {
     line-height: 1.6;
 }
 
-/*Notification CSS*/
-/* ── Notification dropdown ── */
+/* Notification CSS */
 
 .notif-wrapper {
     position: relative;
@@ -626,8 +628,15 @@ h2 {
 }
 
 .notif-item {
-    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+
+    width: 100%;
+    padding: 12px 14px;
     border-bottom: 1px solid #ececec;
+
     cursor: default;
 }
 
@@ -648,10 +657,18 @@ h2 {
     background-color: #e8f0fa;
 }
 
+.notif-content {
+    flex: 1;
+    min-width: 0;
+    padding-right: 8px;
+}
+
 .notif-text {
     font-size: 13px;
     line-height: 1.5;
     color: #222;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .notif-time {
@@ -660,37 +677,101 @@ h2 {
     margin-top: 4px;
 }
 
-.notif-item {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.notif-content {
-    flex: 1;
-    min-width: 0;
-}
-
 .notif-delete {
+    flex-shrink: 0;
+
+    width: 22px;
+    height: 22px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-left: auto;
+    padding: 0;
+
     border: none;
     background: transparent;
     color: #999;
-    font-size: 20px;
+
+    font-size: 18px;
     line-height: 1;
     cursor: pointer;
-    padding: 0 2px;
-    flex: 0 0 auto;
 }
 
 .notif-delete:hover {
     color: #7a1f1f;
+    background-color: #f5f5f5;
+    border-radius: 50%;
 }
 
 
+/* Fix notification delete button being affected by .right-panel-tabs button */
+.notif-panel .notif-item {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    padding: 12px 14px;
+    gap: 10px;
+    box-sizing: border-box;
+}
+
+.notif-panel .notif-content {
+    flex: 1;
+    min-width: 0;
+    max-width: calc(100% - 32px);
+}
+
+.notif-panel .notif-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #222;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+}
+
+.notif-panel .notif-time {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+}
+
+.notif-panel .notif-delete {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+
+    width: 22px !important;
+    min-width: 22px !important;
+    max-width: 22px !important;
+    height: 22px !important;
+
+    flex: 0 0 22px;
+
+    margin: 0 !important;
+    margin-left: auto !important;
+    padding: 0 !important;
+
+    border: none;
+    background: transparent;
+    color: #999;
+
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.notif-panel .notif-delete:hover {
+    color: #7a1f1f;
+    background-color: #f5f5f5;
+    border-radius: 50%;
+}
+
 /*#######################################################################################*/
 
-/*Logout button*/
+/* Logout button */
+
 .logout-button {
     margin-top: 10px;
     padding: 8px 16px;
@@ -708,7 +789,7 @@ h2 {
     background-color: #f3f3f3;
 }
 
-/*Prof search bar*/
+/* Prof search bar */
 
 .search-wrap {
     position: relative;
@@ -787,7 +868,8 @@ h2 {
     color: #111;
 }
 
-/*Invitation timeslot voting*/
+/* Invitation timeslot voting */
+
 .status-badge.invited {
     background-color: #e3f0fc;
     color: #1a5276;
@@ -804,7 +886,8 @@ h2 {
     background-color: #e3f0fc;
 }
 
-/*time vote view css*/
+/* Time vote view CSS */
+
 .vote-slot-row {
     display: flex;
     align-items: center;
@@ -873,7 +956,7 @@ h2 {
         width: 100%;
     }
 
-    /*Tables*/
+    /* Tables */
     .appt-table thead th,
     .appt-table tbody td {
         padding: 10px 10px;
@@ -924,7 +1007,8 @@ h2 {
         min-height: 68px;
         padding: 8px 6px;
     }
-    /*Tables*/
+
+    /* Tables */
     .appt-table {
         font-size: 13px;
     }
@@ -994,7 +1078,8 @@ h2 {
     }
 }
 
-/*owner specific css*/
+/* Owner specific CSS */
+
 .oh-slot-row {
     display: flex;
     gap: 10px;
@@ -1024,7 +1109,7 @@ h2 {
     border-bottom: none;
 }
 
-/* ── Invitation URL box ── */
+/* Invitation URL box */
 
 .invite-url-box {
     display: flex;
@@ -1034,7 +1119,8 @@ h2 {
     margin-top: 10px;
 }
 
-/* ── Invitation URL text: shared base style ── */
+/* Invitation URL text: shared base style */
+
 .invite-url-text {
     padding: 8px 12px;
     background-color: #f7f7f7;
@@ -1045,12 +1131,14 @@ h2 {
 }
 
 /* Right sidebar invitation URL card */
+
 .invite-url-box .invite-url-text {
     flex: 1;
     min-width: 180px;
 }
 
 /* Manage Group Meetings table cells */
+
 .appt-table td .invite-url-text {
     display: block;
     width: 100%;
@@ -1062,7 +1150,7 @@ h2 {
     word-break: break-word;
 }
 
-/* ── Finalize vote count ── */
+/* Finalize vote count */
 
 .finalize-count {
     font-size: 13px;
@@ -1073,7 +1161,7 @@ h2 {
     margin-right: 8px;
 }
 
-/* ── Responsive additions ── */
+/* Responsive additions */
 
 @media (max-width: 860px) {
     .oh-slot-row {
