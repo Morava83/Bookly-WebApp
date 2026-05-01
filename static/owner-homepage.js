@@ -530,7 +530,7 @@ async function loadPendingRequests() {
 
     tbody.innerHTML = `
         <tr>
-            <td colspan="7" class="appt-table-empty">Loading pending requests...</td>
+            <td colspan="6" class="appt-table-empty">Loading pending requests...</td>
         </tr>
     `;
 
@@ -541,7 +541,7 @@ async function loadPendingRequests() {
         if (!meResponse.ok) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="appt-table-empty">Could not load owner info.</td>
+                    <td colspan="6" class="appt-table-empty">Could not load owner info.</td>
                 </tr>
             `;
             return;
@@ -553,7 +553,7 @@ async function loadPendingRequests() {
         if (!response.ok) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="appt-table-empty">Could not load pending requests.</td>
+                    <td colspan="6" class="appt-table-empty">Could not load pending requests.</td>
                 </tr>
             `;
             updatePendingRequestCount(0);
@@ -565,7 +565,7 @@ async function loadPendingRequests() {
         if (!requests || requests.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="appt-table-empty">No pending requests.</td>
+                    <td colspan="6" class="appt-table-empty">No pending requests.</td>
                 </tr>
             `;
             return;
@@ -580,7 +580,6 @@ async function loadPendingRequests() {
             row.id = `pending-row-${request.meetingID}`;
 
             row.innerHTML = `
-                <td>${escapeHtml(request.meetingID)}</td>
                 <td>
                     ${escapeHtml(studentEmail)}
                     <br>
@@ -609,7 +608,7 @@ async function loadPendingRequests() {
 
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="appt-table-empty">Could not connect to server.</td>
+                <td colspan="6" class="appt-table-empty">Could not connect to server.</td>
             </tr>
         `;
     }
