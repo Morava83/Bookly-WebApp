@@ -1,4 +1,4 @@
-Website: https://bookly-webapp.onrender.com/home
+Website: https://bookly-webapp.onrender.com/
 
 What changed after demo2:
 Type2 shouldn't have "database is locked" behavior anymore"
