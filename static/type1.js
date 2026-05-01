@@ -213,12 +213,12 @@ function renderType1Meetings(meetings) {
             `;
 
         row.innerHTML = `
-            <td>${meeting.owner_name}</td>
-            <td>${meeting.date}</td>
-            <td>${meeting.start_time}</td>
-            <td>${meeting.end_time}</td>
+            <td>${escapeHtml(meeting.owner_name || '')}</td>
+            <td>${escapeHtml(meeting.date || '')}</td>
+            <td>${formatTimeStr(meeting.start_time)}</td>
+            <td>${formatTimeStr(meeting.end_time)}</td>
             <td>${zoomCell}</td>
-            <td><span class="status-badge ${meeting.status}">${meeting.status}</span></td>
+            <td><span class="status-badge ${escapeHtml(meeting.status || '')}">${escapeHtml(meeting.status || '')}</span></td>
             <td>
                 <div class="table-actions">
                     ${actionButtons}

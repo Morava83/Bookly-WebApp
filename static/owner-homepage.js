@@ -373,6 +373,10 @@ function setupOwnerSocket() {
         socket.on('notification', async function (data) {
             if (data && data.message) {
                 await loadOwnerNotifications();
+
+                if (typeof loadPendingRequests === 'function') {
+                    await loadPendingRequests();
+                }
             }
         });
 
@@ -398,6 +402,16 @@ function setupNotificationPanelClose() {
             panel.classList.remove('open');
         }
     });
+}
+
+function updatePendingRequestCount(count) {
+    const pendingRequestCount = document.getElementById('pendingRequestCount');
+
+    if (!pendingRequestCount) {
+        return;
+    }
+
+    pendingRequestCount.textContent = count > 0 ? String(count) : '';
 }
 
 
@@ -542,8 +556,11 @@ async function loadPendingRequests() {
                     <td colspan="7" class="appt-table-empty">Could not load pending requests.</td>
                 </tr>
             `;
+            updatePendingRequestCount(0);
             return;
         }
+
+        updatePendingRequestCount(requests ? requests.length : 0);
 
         if (!requests || requests.length === 0) {
             tbody.innerHTML = `
@@ -571,8 +588,8 @@ async function loadPendingRequests() {
                 </td>
                 <td>${escapeHtml(request.message || '')}</td>
                 <td>${escapeHtml(request.date || '')}</td>
-                <td>${escapeHtml(request.start_time || '')}</td>
-                <td>${escapeHtml(request.end_time || '')}</td>
+                <td>${formatTimeStr(request.start_time)}</td>
+                <td>${formatTimeStr(request.end_time)}</td>                
                 <td>
                     <div class="table-actions">
                         <button class="table-action vote" onclick="acceptRequest(${request.meetingID}, '${escapeForJs(studentEmail)}')">Accept</button>
@@ -587,6 +604,8 @@ async function loadPendingRequests() {
 
     } catch (error) {
         console.error('Load pending requests error:', error);
+
+        updatePendingRequestCount(0);
 
         tbody.innerHTML = `
             <tr>
@@ -1729,6 +1748,7 @@ async function initializeOwnerDashboard() {
     await loadPendingRequests();
     await loadOwnerGroupMeetings();
     await loadOwnerSlots();
+    await loadPendingRequests();
 }
 
 document.addEventListener('DOMContentLoaded', initializeOwnerDashboard);

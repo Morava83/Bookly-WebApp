@@ -1,5 +1,14 @@
 Website: https://bookly-webapp.onrender.com/home
 
+What changed after demo2:
+Type2 shouldn't have "database is locked" behavior anymore"
+Added delte notification feature to the notification bar
+De-cluttered the button on OwnerHomepage
+Removed Meeting ID from tables
+Added "PM" and "AM" flags to the table for clarity
+Added "Pending request" counter
+
+
 The approximately 30% of the website code not written directly by our team consisted mainly of the base skeletons for `OwnerHomepage.html` and `Homepage.html`, along with general frontend debugging support. 
 This included asking Google AI Search clarifying questions to help resolve frontend issues and improve page structure.
 
@@ -39,7 +48,7 @@ Enoch Chan              261160969               Database
                                                 User Homepage
                                                 Owner Homepage
 
-Note: each team member meaningfully  contributed to the project
+Note: each team member meaningfully contributed to the project
 
                         
 

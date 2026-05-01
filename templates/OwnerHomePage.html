@@ -398,11 +398,7 @@
                     </button>
 
                     <button onclick="ownerSwitchTab('pendingView')">
-                        <h3>Pending requests</h3>
-                    </button>
-
-                    <button onclick="ownerSwitchTab('ownerApptsView')">
-                        <h3>My appointments</h3>
+                        <h3>Pending requests <span class="notif-count" id="pendingRequestCount"></span></h3>
                     </button>
 
                     <button type="button" onclick="window.location.href='/book'">
@@ -411,7 +407,7 @@
 
                     <div class="notif-wrapper">
                         <button class="notif-toggle" id="notifToggle" onclick="toggleNotifications(event)">
-                            <h3>Notifications <span class="notif-count" id="notifCount">0</span></h3>
+                            <h3>Notifications <span class="notif-count" id="notifCount"></span></h3>
                         </button>
 
                         <div class="notif-panel" id="notifPanel">
